@@ -29,10 +29,11 @@ var jsPsychSpatialRecall = (function (jspsych) {
           default: 64,
           description: 'The size of each grid tile (in pixels).'
         },
+        // here is where to edit how long the tiles will be
         tile_duration: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Tile duration',
-          default: 750,
+          default: 750, // was originally 750
           description: 'How long to show a tile.'
         },
         iti_duration: {

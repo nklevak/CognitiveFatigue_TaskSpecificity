@@ -31,21 +31,23 @@ var instructions_01 = {
         type: jsPsychSpatialRecall,
         grid_size: 4,
         sequence: jsPsych.timelineVariable('sequence'),
+        tile_duration: jsPsych.timelineVariable('tile_duration'),
         backwards: false
       }
     ],
     // here I alter how many trials there are and how many squares get shown each time
     timeline_variables: [
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
-      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3)},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3), 
+        tile_duration: 100},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
+      {sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 3),tile_duration: 750},
     ]
   }
   
