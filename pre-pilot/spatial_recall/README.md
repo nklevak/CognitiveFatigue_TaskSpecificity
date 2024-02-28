@@ -1,0 +1,1 @@
+This task was adapted from code by Sam Zorowitz from the niv lab, found here: https://github.com/nivlab/jspsych-demos/blob/main/tasks/spatial-recall/
