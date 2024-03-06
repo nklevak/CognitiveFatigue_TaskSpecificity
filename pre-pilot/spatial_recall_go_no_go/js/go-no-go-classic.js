@@ -1,14 +1,17 @@
 // defines image and correct key association
-// counterbalance across participants later
+// randomly assign which stimuli is which 
+var index_go_stimuli = Math.random() < 0.5 ? 0 : 1
+var index_no_go_simuli = index_go_stimuli == 1 ? 0 : 1
+var stimuli_files = ["img/blue.png","img/orange.png"]
 var gng_test_stimuli = [
-    { stimulus: "img/blue.png",  correct_response: 'f'},
-    { stimulus: "img/orange.png",  correct_response: null}
+    { stimulus: stimuli_files[index_go_stimuli],  correct_response: 'f'},
+    { stimulus: stimuli_files[index_no_go_simuli],  correct_response: null}
 ];
 
 // preload the stimuli for the go no go
 var preload = {
     type: jsPsychPreload,
-    images: ['img/blue.png', 'img/orange.png'],
+    images: stimuli_files,
     auto_preload: true
 };
 
@@ -118,6 +121,9 @@ function getGngTrials(num_trials) {
     return timelineVarsGNG
 }
 
+// Extract the color name of the "go" color from the filename
+var goStimulusColor = stimuli_files[index_go_stimuli].match(/img\/(.*?)\.png/)[1];
+
 // instructions for the go no go 
 var gng_transition = {
     type: jsPsychHtmlKeyboardResponse,
@@ -127,13 +133,13 @@ var gng_instructions = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
         <p>In this task, a circle will appear in the center
-        of the screen.</p><p>If the circle is <strong>blue</strong>,
+        of the screen.</p><p>If the circle is <strong>${goStimulusColor}</strong>,
         press the letter F on the keyboard as fast as you can.</p>
-        <p>If the circle is <strong>orange</strong>, do not press a key.</p>
+        <p>If the circle is not <strong>${goStimulusColor}</strong>, do not press a key.</p>
         <div style='width: 700px;'>
-        <div style='float: left;'><img src='img/blue.png'></img>
+        <div style='float: left;'><img src='${stimuli_files[index_go_stimuli]}'></img>
         <p class='small'><strong>Press the F key</strong></p></div>
-        <div style='float: right;'><img src='img/orange.png'></img>
+        <div style='float: right;'><img src='${stimuli_files[index_no_go_simuli]}'></img>
         <p class='small'><strong>Do not press a key</strong></p></div>
         </div>
         <p>Press any key to begin.</p>
