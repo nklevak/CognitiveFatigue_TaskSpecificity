@@ -68,7 +68,7 @@ var sr_instructions_01 = {
   button_label_next: 'Next'
 }
 // Define forwards recall
-var recall_forwards = {
+var sr_recall_forwards = {
   timeline: [
     {
       type: jsPsychScreenCheck,

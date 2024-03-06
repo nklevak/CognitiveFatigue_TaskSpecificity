@@ -1,58 +1,9 @@
-// Define instructions
-// this function sets up the timing of each trial. It will start with the max duration for the first group of 5. Then for every subsequent group it will sample from prev_group - 100 +/- 50.
-// function getGridParams(num_trials,max_tile_duration) {
-//     // the number of trials i want to group together
-//     var num_trial_per_group = 5;
-//     // the difference in mean time I want per group
-//     var mean_time_diff = 100;
-//     // Initialize an array to hold the duration of each trial
-//     var trialDurations = [];
-//     // Calculate the number of full groups of 5 and the remainder
-//     var fullGroups = Math.floor(num_trials / num_trial_per_group);
-//     var remainder = num_trials % num_trial_per_group;
-//     // Initialize the current duration to the max duration
-//     var currentDuration = max_tile_duration;
-//     // Process full groups
-//     for (let i = 0; i < fullGroups; i++) {
-//         // make first group anywhere in the range of (the max time - 50)
-//         if (i == 0) {
-//           for (let j = 0; j < num_trial_per_group; j++) {
-//             trialDurations.push(Math.max(0, currentDuration - Math.floor(Math.random() * (mean_time_diff / 2))))
-//           }
-//           currentDuration = currentDuration - mean_time_diff
-//           continue;
-//         }
-//         // make each following groups anywhere in +50 or -50 of the previous max time - 100
-//         let min = 0
-//         if (((currentDuration - (mean_time_diff / 2)) >= 0)) {
-//           min = currentDuration - (mean_time_diff / 2)
-//         }
-//         // adding the +1 makes it inclusive
-//         for (let j = 0; j < num_trial_per_group; j++) {
-//           trialDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min))
-//         }
-//         // update the new current duration (mean duration) for the next group
-//         currentDuration = currentDuration - mean_time_diff
-//       }
-//     // Process any remaining trials and give them all the final value
-//     let min = 0
-//     if (((currentDuration - (mean_time_diff / 2)) >= 0)) {
-//       min = currentDuration - (mean_time_diff / 2)
-//     }
-//     for (let i = 0; i < remainder; i++) {
-//         trialDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min));
-//     }
-  
-//     // go through the trial durations and return the timeline vals
-//     let timeline_full_vals = []
-//     trialDurations.forEach((item, _) => {
-//       timeline_full_vals.push({
-//           sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 4),
-//           tile_duration: item
-//       });
-//     });
-//     return timeline_full_vals
-//   }
+// defines image and correct key association
+// counterbalance across participants later
+var gng_test_stimuli = [
+    { stimulus: "img/blue.png",  correct_response: 'f'},
+    { stimulus: "img/orange.png",  correct_response: null}
+];
 
 // preload the stimuli for the go no go
 var preload = {
@@ -61,11 +12,117 @@ var preload = {
     auto_preload: true
 };
 
+function getTrialGNG(time) {
+    // randomly pick if this will be a go or no go trial
+    var trial_stimuli = gng_test_stimuli[(Math.random() < 0.5 ? 0 : 1)]
+
+    // define go no go trials
+    var timed_gng_single_trial = {
+        type: jsPsychImageKeyboardResponse,
+        stimulus: trial_stimuli["stimulus"],
+        choices: ['f'],
+        data: {
+          task: 'response',
+          correct_response: trial_stimuli['correct_response']
+        },
+        trial_duration: function(){
+          return time;
+        },
+        // save the time in the on finish TODO
+        on_finish: function(data){
+          data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+        }
+    };
+
+    return timed_gng_single_trial
+}
+
+function getFixation(time) {
+    var timed_fixation = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: '<div style="font-size:60px;">+</div>',
+        choices: "NO_KEYS",
+        trial_duration: time,
+        data: {
+            task: 'fixation'
+        }// save the time in the on finish TODO
+    };
+
+    return timed_fixation
+}
+
+// this function provides a list of go no go trials and fixations that get increasingly more difficult (the fixation 
+// times get smaller on average)
+// should I make the amount of time a go is on screen smaller too? For now only changing fixation display time
+function getGngTrials(num_trials) {
+    // make the range of possible fixation times get smaller and smaller every n trials
+
+    // the number of trials i want to group together
+    var num_trial_per_group = 3;
+    // the difference in mean time I want per group
+    var mean_time_diff = 250;
+    // initialize an array to hold all of the fixation trial durations and all of the stimuli trial durations
+    var fixationDurations = [];
+    var stimuliDurations = [];
+    // Calculate the number of full groups of 5 and the remainder
+    var fullGroups = Math.floor(num_trials / num_trial_per_group);
+    var remainder = num_trials % num_trial_per_group;
+    // initialize array to hold all of the timeline variables
+    var timelineVarsGNG = []
+    var max_fixation_duration = 2000
+    var min_fixation_duration = 250
+
+    // Initialize the current duration to the max duration
+    var currentFixDuration = max_fixation_duration;
+    // Process full groups
+    for (let i = 0; i < fullGroups; i++) {
+        // make first group anywhere in the range of (the max time - 125)
+        if (i == 0) {
+          for (let j = 0; j < num_trial_per_group; j++) {
+            fixationDurations.push(Math.max(0, currentFixDuration - Math.floor(Math.random() * (mean_time_diff / 2))))
+            stimuliDurations.push(Math.random() < 0.5 ? 2000 : 3000)
+          }
+          currentFixDuration = currentFixDuration - mean_time_diff
+          continue;
+        }
+        // make each following groups anywhere in +125 or -125 of the previous max time - 250
+        let min = min_fixation_duration
+        if (((currentFixDuration - (mean_time_diff / 2)) >= min_fixation_duration)) {
+          min = currentFixDuration - (mean_time_diff / 2)
+        }
+        // adding the +1 makes it inclusive
+        for (let j = 0; j < num_trial_per_group; j++) {
+            fixationDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min))
+            stimuliDurations.push(Math.random() < 0.5 ? 2000 : 3000)
+        }
+        // update the new current duration (mean duration) for the next group
+        currentFixDuration = currentFixDuration - mean_time_diff
+      }
+    // Process any remaining trials and give them all the final value
+    let min = min_fixation_duration
+    if (((currentFixDuration - (mean_time_diff / 2)) >= 0)) {
+      min = currentFixDuration - (mean_time_diff / 2)
+    }
+    for (let i = 0; i < remainder; i++) {
+        fixationDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min));
+        stimuliDurations.push(Math.random() < 0.5 ? 2000 : 3000)
+    }
+
+    // add the timeline items
+    fixationDurations.forEach((item, i) => {
+        // add the trial
+        timelineVarsGNG.push(getTrialGNG(stimuliDurations[i]));
+        // add the fixation
+        timelineVarsGNG.push(getFixation(item));
+    });
+    return timelineVarsGNG
+}
+
+// instructions for the go no go 
 var gng_transition = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: "You will now do a new task. Press any key to begin."
-  };
-
+};
 var gng_instructions = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
@@ -84,48 +141,14 @@ var gng_instructions = {
     post_trial_gap: 2000
 };
 
- /* define trial stimuli array for timeline variables */
- var gng_test_stimuli = [
-    { stimulus: "img/blue.png",  correct_response: 'f'},
-    { stimulus: "img/orange.png",  correct_response: null}
-  ];
-
-   /* define fixation and test trials */
- var gng_fixation = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: '<div style="font-size:60px;">+</div>',
-    choices: "NO_KEYS",
-    trial_duration: function(){
-      return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
-    },
-    data: {
-      task: 'fixation'
-    }
-  };
-
-  var gng_single_trial = {
-    type: jsPsychImageKeyboardResponse,
-    stimulus: jsPsych.timelineVariable('stimulus'),
-    choices: ['f'],
-    data: {
-      task: 'response',
-      correct_response: jsPsych.timelineVariable('correct_response')
-    },
-    trial_duration: function(){
-      return jsPsych.randomization.sampleWithoutReplacement([3000, 2000], 1)[0];
-    },
-    on_finish: function(data){
-      data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
-    }
-  };
-  
-  /* define test procedure */
-  var gng_trials = {
-    timeline: [gng_fixation, gng_single_trial],
+// entire task timeline (of individual trials + fixations)
+// this one makes the fixations get shorter as it goes (to increase difficulty)
+var gng_trials_auto = {
+    timeline: getGngTrials(10),
     timeline_variables: gng_test_stimuli,
-    repetitions: 3,
-    randomize_order: true
-  };
+    repetitions: 0,
+    randomize_order: false
+};
 
   /* define debrief */
 var gng_debrief_block = {
@@ -142,29 +165,43 @@ var gng_debrief_block = {
         <p>Press any key to complete the experiment. Thank you!</p>`;
   
     }
-  };
+};
 
-//   // Define forwards recall
-//   var recall_forwards = {
-//     timeline: [
-//       {
-//         type: jsPsychScreenCheck,
-//         min_width: 258,
-//         min_height: 364
-//       },
-//       {
-//         type: jsPsychHtmlKeyboardResponse,
-//         stimulus: '<p style="font-size: 48px;">+</p>',
-//         choices: 'NO_KEYS',
-//         trial_duration: 1200,
-//       },
-//       {
-//         type: jsPsychSpatialRecall,
-//         grid_size: 4,
-//         sequence: jsPsych.timelineVariable('sequence'),
-//         tile_duration: jsPsych.timelineVariable('tile_duration'),
-//         backwards: false
-//       }
-//     ],
-//     timeline_variables: getGridParams(4,600)
-//   }
+// // define fixation 
+// // currently fixation presentation length is randomly selected from 250 to 2000 milliseconds without replacement
+// var gng_fixation = {
+//     type: jsPsychHtmlKeyboardResponse,
+//     stimulus: '<div style="font-size:60px;">+</div>',
+//     choices: "NO_KEYS",
+//     trial_duration: function(){
+//       return jsPsych.randomization.sampleWithoutReplacement([250, 500, 750, 1000, 1250, 1500, 1750, 2000], 1)[0];
+//     },
+//     data: {
+//       task: 'fixation'
+//     }
+// };
+
+// // define go no go trials
+// var gng_single_trial = {
+//     type: jsPsychImageKeyboardResponse,
+//     stimulus: jsPsych.timelineVariable('stimulus'),
+//     choices: ['f'],
+//     data: {
+//       task: 'response',
+//       correct_response: jsPsych.timelineVariable('correct_response')
+//     },
+//     trial_duration: function(){
+//       return jsPsych.randomization.sampleWithoutReplacement([3000, 2000], 1)[0];
+//     },
+//     on_finish: function(data){
+//       data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+//     }
+// };
+
+//   // entire task timeline (of individual trials + fixations)
+// var gng_trials = {
+//     timeline: [gng_fixation, gng_single_trial],
+//     timeline_variables: gng_test_stimuli,
+//     repetitions: 3,
+//     randomize_order: true
+// };

@@ -31,9 +31,12 @@
 // INITIALIZE TIMELINE
 var timeline = [];
 
+// GENERAL TASK INSTRUCTIONS
+// **INSERT INSTRUCTIONS HERE**
+
 // SPATIAL RECALL TASK (forward span only)
 timeline.push(sr_instructions_01);
-timeline.push(recall_forwards);
+timeline.push(sr_recall_forwards);
 
 // GO NO-GO TASK (simple version)
 // preload images 
@@ -43,7 +46,9 @@ timeline.push(gng_transition);
 // instructions about what to do 
 timeline.push(gng_instructions);
 // add the trials and fixations
-timeline.push(gng_trials);
+//timeline.push(gng_trials);
+timeline.push(gng_trials_auto);
+
 // the debrief (how many you got right)
 timeline.push(gng_debrief_block);
 
