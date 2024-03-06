@@ -89,5 +89,5 @@ var sr_recall_forwards = {
       backwards: false
     }
   ],
-  timeline_variables: getGridParams(4,600)
+  timeline_variables: getGridParams(10,600)
 }

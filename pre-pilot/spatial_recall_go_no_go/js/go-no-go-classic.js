@@ -15,18 +15,16 @@ var preload = {
     auto_preload: true
 };
 
-function getTrialGNG(time) {
-    // randomly pick if this will be a go or no go trial
-    var trial_stimuli = gng_test_stimuli[(Math.random() < 0.5 ? 0 : 1)]
-
+// takes in length of the stimulus onset, and also either a "go" or a "no go" stimuli value for this trial
+function getTrialGNG(time, stimuli_value) {
     // define go no go trials
     var timed_gng_single_trial = {
         type: jsPsychImageKeyboardResponse,
-        stimulus: trial_stimuli["stimulus"],
+        stimulus: stimuli_value["stimulus"],
         choices: ['f'],
         data: {
           task: 'response',
-          correct_response: trial_stimuli['correct_response']
+          correct_response: stimuli_value['correct_response']
         },
         trial_duration: function(){
           return time;
@@ -54,6 +52,24 @@ function getFixation(time) {
     return timed_fixation
 }
 
+// given num_trials is even, generates a shuffled list of 50% go indices and 50% no-go indices
+// NUM TRIALS NEEDS TO BE EVEN
+function getStimuliList(num_trials) {
+    stim_list = []
+    for (let i = 0; i < num_trials / 2; i++) {
+        stim_list.push(gng_test_stimuli[0]); 
+        stim_list.push(gng_test_stimuli[1]); 
+    }
+
+    // shuffle this stimulus list
+    for (let i = num_trials - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [stim_list[i], stim_list[j]] = [stim_list[j], stim_list[i]]; // Swap elements
+    }
+
+    return stim_list
+}
+
 // this function provides a list of go no go trials and fixations that get increasingly more difficult (the fixation 
 // times get smaller on average)
 // should I make the amount of time a go is on screen smaller too? For now only changing fixation display time
@@ -72,7 +88,7 @@ function getGngTrials(num_trials) {
     var remainder = num_trials % num_trial_per_group;
     // initialize array to hold all of the timeline variables
     var timelineVarsGNG = []
-    var max_fixation_duration = 2000
+    var max_fixation_duration = 1500
     var min_fixation_duration = 250
 
     // Initialize the current duration to the max duration
@@ -83,7 +99,7 @@ function getGngTrials(num_trials) {
         if (i == 0) {
           for (let j = 0; j < num_trial_per_group; j++) {
             fixationDurations.push(Math.max(0, currentFixDuration - Math.floor(Math.random() * (mean_time_diff / 2))))
-            stimuliDurations.push(Math.random() < 0.5 ? 2000 : 3000)
+            stimuliDurations.push(Math.random() < 0.5 ? 1000 : 2000)
           }
           currentFixDuration = currentFixDuration - mean_time_diff
           continue;
@@ -96,7 +112,7 @@ function getGngTrials(num_trials) {
         // adding the +1 makes it inclusive
         for (let j = 0; j < num_trial_per_group; j++) {
             fixationDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min))
-            stimuliDurations.push(Math.random() < 0.5 ? 2000 : 3000)
+            stimuliDurations.push(Math.random() < 0.5 ? 1000 : 2000)
         }
         // update the new current duration (mean duration) for the next group
         currentFixDuration = currentFixDuration - mean_time_diff
@@ -111,10 +127,13 @@ function getGngTrials(num_trials) {
         stimuliDurations.push(Math.random() < 0.5 ? 2000 : 3000)
     }
 
+    // create a list of indices of go or no-go to make sure there is an equal number of go and no-go trials
+    var stimuli_list = getStimuliList(num_trials);
+
     // add the timeline items
     fixationDurations.forEach((item, i) => {
         // add the trial
-        timelineVarsGNG.push(getTrialGNG(stimuliDurations[i]));
+        timelineVarsGNG.push(getTrialGNG(stimuliDurations[i],stimuli_list[i]));
         // add the fixation
         timelineVarsGNG.push(getFixation(item));
     });
@@ -150,7 +169,7 @@ var gng_instructions = {
 // entire task timeline (of individual trials + fixations)
 // this one makes the fixations get shorter as it goes (to increase difficulty)
 var gng_trials_auto = {
-    timeline: getGngTrials(10),
+    timeline: getGngTrials(14),
     timeline_variables: gng_test_stimuli,
     repetitions: 0,
     randomize_order: false
