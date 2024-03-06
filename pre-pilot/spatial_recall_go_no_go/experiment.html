@@ -30,11 +30,6 @@
   // goes forward
   timeline = timeline.concat(instructions_01);
   timeline = timeline.concat(recall_forwards);
-
-  // goes backwards (but don't need this for now)
-  // timeline = timeline.concat(instructions_02);
-  // timeline = timeline.concat(recall_backwards);
-
   // Execute timeline.
   jsPsych.run(timeline);
 
