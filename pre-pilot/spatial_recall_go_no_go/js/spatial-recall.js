@@ -54,7 +54,7 @@ function getGridParams(num_trials,max_tile_duration) {
   return timeline_full_vals
 }
 
-var instructions_01 = {
+var sr_instructions_01 = {
   type: jsPsychInstructions,
   pages: [
     "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
@@ -89,5 +89,5 @@ var recall_forwards = {
       backwards: false
     }
   ],
-  timeline_variables: getGridParams(15,600)
+  timeline_variables: getGridParams(4,600)
 }
