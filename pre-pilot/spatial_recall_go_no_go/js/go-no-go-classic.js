@@ -144,11 +144,24 @@ function getGngTrials(num_trials) {
 var goStimulusColor = stimuli_files[index_go_stimuli].match(/img\/(.*?)\.png/)[1];
 
 // instructions for the go no go 
-var gng_transition = {
+var transition = {
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: "You will now do a new task. Press any key to begin."
+    stimulus: "<p>You will now do a new task. Press any key to begin.</p>"
 };
-var gng_instructions = {
+// go no go new task instructions
+var gng_instructions_1 = {
+    type: jsPsychInstructions,
+    pages: [
+      "<p>Welcome to the next task! Click next for the instructions.</p>",
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+  }
+var gng_instructions_2 = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
         <p>In this task, a circle will appear in the center
@@ -175,7 +188,7 @@ var gng_trials_auto = {
     randomize_order: false
 };
 
-  /* define debrief */
+// go no go debrief
 var gng_debrief_block = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: function() {
@@ -191,3 +204,10 @@ var gng_debrief_block = {
   
     }
 };
+
+// overall task debrief
+var overall_debrief_block = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 
+      `<p>Great work! This experiment is over now.</p>`
+}
