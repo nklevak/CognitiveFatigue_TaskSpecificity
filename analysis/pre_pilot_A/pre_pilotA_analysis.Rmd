@@ -1,0 +1,118 @@
+This is the analysis on the really early pilot data for the spatial recall and
+go / no-go task. (Link here: https://duprbgais2.cognition.run)
+
+The goal of this pre-pilot was just to see how people perform on the go/no-go
+and spatial recall task (i.e. is one a lot harder, is one a lot easier) and also
+to check if people do make more errors as difficulty increases
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+**reading in the data**
+``` {r data_wrangling}
+setwd("../../data/pre_pilot_A/")
+
+csv_files <- list.files(pattern = "\\.csv$")
+
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+
+# Read each CSV file, ensuring all data is read as character, and combine them
+combined_df <- bind_rows(lapply(csv_files, read_csv_as_character))
+
+head(combined_df)
+```
+
+**pre-processing the data**
+```{r pre_process}
+# take out ip info etc
+anonymized_data_full <- combined_df %>%
+  select(-recorded_at,-ip,-user_agent,-referer,-fbclid,-sequence_length,
+         -accept_language,-device,-internal_node_id,-view_history)
+
+# take out browser info (maybe bring this back in later if I want to look at
+# different browser impact)
+# also take out source code version (they are all the same but can add 
+# verification later)
+# also take out screen information
+anonymized_data_full <- anonymized_data_full %>%
+  select(-source_code_version, -contains("browser"),-contains("platform"),
+         -contains("screen"),-contains("width"),-contains("height"),
+         -contains("failed"),-condition)
+
+# add task_type labels (either "sr" or gng")
+# remove instruction trials, and fixation trials from "sr"
+relevant_full <- anonymized_data_full %>%
+  filter(trial_type != "instructions", !grepl("screen", trial_type, ignore.case = TRUE)) %>%
+  select(-event_history) %>%
+  mutate(task_type = ifelse(grepl("^\\[.*\\]$", sequence),"sr",ifelse(task=="response","gng",ifelse(task=="fixation","gng_fix",NA))))
+
+## keep only sr, gng trials
+## for each gng trial, add the following fixation length as a column called
+# round_fix_len
+# score_pc is number /4 that are in the correct position
+# score_Ic is number / 4 of integers that are correct (indep. of position)
+trial_full <- relevant_full %>%
+  mutate(next_fixation_length = ifelse(lag(task_type) == "gng", fixation_time, NA)) %>%
+  mutate(next_fixation_length = lead(next_fixation_length)) %>%
+  mutate(round_fix_len = ifelse(task_type == "gng", next_fixation_length, NA)) %>%
+  select(-next_fixation_length) %>%
+  filter(task_type == "gng" | task_type == "sr") %>%
+  mutate(correct_bool = as.numeric(score_an)) %>%
+  mutate(correct_bool = ifelse(task_type=="gng",ifelse(correct=="true",1,0),correct_bool),run_id=as.numeric(run_id),score_pc = as.numeric(score_pc,na.RM=T)/4,tile_duration=as.numeric(tile_duration,na.RM=T),round_fix_len = as.numeric(round_fix_len,na.RM=T), rt= as.numeric(rt,na.RM=T),trial_index=as.numeric(trial_index,na.RM=T))  %>%
+  select(subject_id = run_id,task_type,correct_bool,sr_perc_corr = score_pc, sr_tile_duration = tile_duration,gng_corr_response = correct_response,gng_fix_len = round_fix_len,rt,trial_index)
+```
+**Spatial recall trial analysis**
+```{r sr_analysis}
+trial_full %>%
+  mutate(subject_id = as.factor(subject_id)) %>%
+  filter(task_type=="sr") %>%
+  ggplot(mapping=aes(x=trial_index,y=sr_perc_corr,color=subject_id,fill=subject_id)) +
+  facet_wrap(~subject_id) +
+  geom_point() +
+  labs(y="percent accuracy",title="4 square spatial recall accuracy by trial number")
+```
+```{r sr_analysis}
+trial_full %>%
+  mutate(subject_id = as.factor(subject_id)) %>%
+  filter(task_type=="sr") %>%
+  ggplot(mapping=aes(x=sr_tile_duration,y=sr_perc_corr,color=subject_id,fill=subject_id)) +
+  facet_wrap(~subject_id) +
+  geom_point() +
+  labs(y="percent accuracy",x="flash tile duration", title="4 square spatial recall accuracy by tile duration")
+```
+
+**GNG trial analysis**
+```{r gng_analysis}
+trial_full %>%
+  mutate(subject_id = as.factor(subject_id)) %>%
+  filter(task_type=="gng") %>%
+  ggplot(mapping=aes(x=trial_index,y=correct_bool,color=subject_id,fill=subject_id)) +
+  facet_wrap(~subject_id) +
+  geom_point() +
+  labs(y="accuracy",title="go no go accuracy by trial number")
+```
+```{r gng_analysis}
+trial_full %>%
+  mutate(subject_id = as.factor(subject_id)) %>%
+  filter(task_type=="gng") %>%
+  ggplot(mapping=aes(x=gng_fix_len,y=correct_bool,color=subject_id,fill=subject_id)) +
+  facet_wrap(~subject_id) +
+  geom_point() +
+  labs(y="accuracy",x="fixation (break) length", title="go no go accuracy by fixation length")
+```
+**gen info:**
+```{r trial_info}
+trial_full %>%
+  group_by(subject_id,task_type) %>%
+  summarize(count = n())
+```
