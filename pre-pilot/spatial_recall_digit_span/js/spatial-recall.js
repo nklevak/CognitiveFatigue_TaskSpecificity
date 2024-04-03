@@ -56,17 +56,32 @@ function getGridParams(num_trials,max_tile_duration) {
 
 // General instructions
 var gen_instructions = {
-  type: jsPsychHtmlKeyboardResponse,
-  stimulus:
-    "<p>In this task you will be presented with two tasks. When you're ready, click any key to get started.</p>`",
-  choices: 'NO_KEYS'
+  type: jsPsychInstructions,
+  pages: [
+    "<p>In this task you will be presented with two tasks. When you're ready, click \"Next\" to get started.</p>`"
+  ],
+  key_forward: 'ArrowRight',
+  key_backward: 'ArrowLeft',
+  allow_keys: true,
+  show_clickable_nav: true,
+  button_label_previous: 'Prev',
+  button_label_next: 'Next'
 };
 
 // spatial recall instructions
 var sr_instructions_01 = {
-  type: jsPsychHtmlKeyboardResponse,
-  stimulus: "<p>Welcome to the first task!</p><p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p><p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the Clear button to erase your entries.</p><p>When you're ready, click Next to get started.</p>`",
-  choices: 'NO_KEYS'
+  type: jsPsychInstructions,
+  pages: [
+    "<p>Welcome to the first task! Click next for the instructions.</p>",
+    "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
+    `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the "Clear" button to erase your entries.</p><p>When you're ready, click "Next" to get started.</p>`
+  ],
+  key_forward: 'ArrowRight',
+  key_backward: 'ArrowLeft',
+  allow_keys: true,
+  show_clickable_nav: true,
+  button_label_previous: 'Prev',
+  button_label_next: 'Next'
 }
 // Define forwards recall
 var sr_recall_forwards = {
