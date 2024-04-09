@@ -20,7 +20,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
         grid_size: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Grid size',
-          default: 4,
+          default: 5,
           description: 'The number of tiles in each grid row/column.'
         },
         tile_size: {

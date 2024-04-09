@@ -2,9 +2,9 @@
 
 //----- CUSTOMIZABLE VARIABLES -----------------------------------------
 
-nTrials = 14 // number of trials in the test
-minSetSize = 3 // starting digit length
-stimuli_duration = 1000 // number of miliseconds to display each digit
+nTrials = 3 // number of trials in the test
+minSetSize = 2 // number of digits per trial
+stimuli_duration = 750 // number of miliseconds to display each digit
 recall_duration = null // number of miliseconds to allow recall. If null, there is no time limit.
 file_name = null // file name for data file. if null, a default name consisting of the participant ID and a unique number is chosen.
 local = false // save the data file locally.
@@ -13,8 +13,60 @@ local = false // save the data file locally.
             // If changed to false, ensure that the php file (its in the directory!) and the empty "data" folder has also been appropriately uploaded to the server.
             // Incase of problems, feel free to contact me :)
 
-
 //----------------------------------------------------------------------
+// function ds_getGridParams_ds(num_trials,max_tile_duration) {
+//   // the number of trials i want to group together
+//   var num_trial_per_group = 5;
+//   // the difference in mean time I want per group
+//   var mean_time_diff = 100;
+//   // Initialize an array to hold the duration of each trial
+//   var trialDurations = [];
+//   // Calculate the number of full groups of 5 and the remainder
+//   var fullGroups = Math.floor(num_trials / num_trial_per_group);
+//   var remainder = num_trials % num_trial_per_group;
+//   // Initialize the current duration to the max duration
+//   var currentDuration = max_tile_duration;
+//   // Process full groups
+//   for (let i = 0; i < fullGroups; i++) {
+//       // make first group anywhere in the range of (the max time - 50)
+//       if (i == 0) {
+//         for (let j = 0; j < num_trial_per_group; j++) {
+//           trialDurations.push(Math.max(0, currentDuration - Math.floor(Math.random() * (mean_time_diff / 2))))
+//         }
+//         currentDuration = currentDuration - mean_time_diff
+//         continue;
+//       }
+//       // make each following groups anywhere in +50 or -50 of the previous max time - 100
+//       let min = 0
+//       if (((currentDuration - (mean_time_diff / 2)) >= 0)) {
+//         min = currentDuration - (mean_time_diff / 2)
+//       }
+//       // adding the +1 makes it inclusive
+//       for (let j = 0; j < num_trial_per_group; j++) {
+//         trialDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min))
+//       }
+//       // update the new current duration (mean duration) for the next group
+//       currentDuration = currentDuration - mean_time_diff
+//     }
+//   // Process any remaining trials and give them all the final value
+//   let min = 0
+//   if (((currentDuration - (mean_time_diff / 2)) >= 0)) {
+//     min = currentDuration - (mean_time_diff / 2)
+//   }
+//   for (let i = 0; i < remainder; i++) {
+//       trialDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min));
+//   }
+
+//   // go through the trial durations and return the timeline vals
+//   let timeline_full_vals = []
+//   trialDurations.forEach((item, _) => {
+//     timeline_full_vals.push({
+//         sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 4),
+//         tile_duration: item
+//     });
+//   });
+//   return timeline_full_vals
+// }
 
 possibleNumbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"]  //possible digits participants can get
 var selection = jsPsych.randomization.sampleWithoutReplacement(possibleNumbers, minSetSize)  //chooses random digits

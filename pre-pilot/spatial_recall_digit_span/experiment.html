@@ -20,7 +20,6 @@
 
   <!-- Load experiment -->
   <script src="./js/spatial-recall.js" type="text/javascript"></script>
-  <script src="./js/go-no-go-classic.js" type="text/javascript"></script>
   <script src="./js/digit-span-vars.js" type="text/javascript"></script>
 
   <!-- Load CSS styles -->
@@ -34,12 +33,19 @@
 // INITIALIZE TIMELINE
 var timeline = [];
 
+
+var overall_debrief_block = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: 
+    `<p>Great work! This experiment is over now.</p>`
+};
+
 // GENERAL TASK INSTRUCTIONS
 timeline.push(gen_instructions);
 
 // SPATIAL RECALL TASK (forward span only)
 timeline.push(sr_instructions_01);
-//timeline.push(sr_recall_forwards);
+timeline.push(sr_recall_forwards);
 
 // DIGIT SPAN TASK
 // practice instructions
@@ -53,21 +59,8 @@ timeline.push(test_procedure);
 // conclusion
 timeline.push(conclusion);
 
-// GO NO-GO TASK 
-// preload images 
-//timeline.push(preload);
-// first instructions about how this is a new task 
-//timeline.push(transition);
-// instructions about what to do 
-//timeline.push(gng_instructions_1);
-//timeline.push(gng_instructions_2);
-// add the trials and fixations
-//timeline.push(gng_trials);
-//timeline.push(gng_trials_auto);
-
-// the debrief (how many you got right)
-//timeline.push(gng_debrief_block);
-//timeline.push(overall_debrief_block)
+// overall debrief (located in init file)
+timeline.push(overall_debrief_block)
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);
