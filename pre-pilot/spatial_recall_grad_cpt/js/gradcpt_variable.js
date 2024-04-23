@@ -8,68 +8,19 @@ var all_stim = ["city_1.jpg","city_2.jpg","city_3.jpg","city_4.jpg", "city_5.jpg
 "c6_m1.gif","m1_c1.gif","m1_c2.gif","m1_c3.gif","m1_c4.gif","m1_c5.gif"]
 
 let duration_levels_dict = {
-    1: 700,
-    2: 680,
-    3: 660,
-    4: 640,
-    5: 620,
-    6: 600,
-    7: 580,
-    8: 560,
-    9: 540,
-    10: 520,
-    11: 500,
+    1: 700,2: 680,3: 660,4: 640,5: 620,6: 600,7: 580,8: 560,9: 540,10: 520,11: 500,
 }
 
 let stim_dict = {
-    '1': 'city_1.jpg',
-    '2': 'city_2.jpg',
-    '3': 'city_3.jpg',
-    '4': 'city_4.jpg',
-    '5': 'city_5.jpg',
-    '6': 'city_6.jpg',
-    '0': 'mountain_1.jpg',
-    '1-0': 'c1_m1.gif',
-    '1-2': 'c1_c2.gif',
-    '1-3': 'c1_c3.gif',
-    '1-4': 'c1_c4.gif',
-    '1-5': 'c1_c5.gif',
-    '1-6': 'c1_c6.gif',
-    '2-0': 'c2_m1.gif',
-    '2-1': 'c2_c1.gif',
-    '2-3': 'c2_c3.gif',
-    '2-4': 'c2_c4.gif',
-    '2-5': 'c2_c5.gif',
-    '2-6': 'c2_c6.gif',
-    '3-0': 'c3_m1.gif',
-    '3-1': 'c3_c1.gif',
-    '3-2': 'c3_c2.gif',
-    '3-4': 'c3_c4.gif',
-    '3-5': 'c3_c5.gif',
-    '3-6': 'c3_c6.gif',
-    '4-0': 'c4_m1.gif',
-    '4-1': 'c4_c1.gif',
-    '4-2': 'c4_c2.gif',
-    '4-3': 'c4_c3.gif',
-    '4-5': 'c4_c5.gif',
-    '4-6': 'c4_c6.gif',
-    '5-0': 'c5_m1.gif',
-    '5-1': 'c5_c1.gif',
-    '5-2': 'c5_c2.gif',
-    '5-3': 'c5_c3.gif',
-    '5-4': 'c5_c4.gif',
-    '5-6': 'c5_c6.gif',
-    '6-0': 'c2_m1.gif',
-    '6-1': 'c6_c1.gif',
-    '6-2': 'c6_c2.gif',
-    '6-3': 'c6_c3.gif',
-    '6-4': 'c6_c4.gif',
-    '6-5': 'c6_c5.gif',
-    '0-1': 'm1_c1.gif',
-    '0-2': 'm1_c2.gif',
-    '0-3': 'm1_c3.gif',
-    '0-4': 'm1_c4.gif',
-    '0-5': 'm1_c5.gif',
+    '1': 'city_1.jpg','2': 'city_2.jpg','3': 'city_3.jpg','4': 'city_4.jpg','5': 'city_5.jpg','6': 'city_6.jpg',
+    '0': 'mountain_1.jpg', '1-0': 'c1_m1.gif','1-2': 'c1_c2.gif','1-3': 'c1_c3.gif','1-4': 'c1_c4.gif','1-5': 'c1_c5.gif',
+    '1-6': 'c1_c6.gif','2-0': 'c2_m1.gif','2-1': 'c2_c1.gif','2-3': 'c2_c3.gif','2-4': 'c2_c4.gif','2-5': 'c2_c5.gif',
+    '2-6': 'c2_c6.gif','3-0': 'c3_m1.gif','3-1': 'c3_c1.gif','3-2': 'c3_c2.gif','3-4': 'c3_c4.gif',
+    '3-5': 'c3_c5.gif','3-6': 'c3_c6.gif','4-0': 'c4_m1.gif','4-1': 'c4_c1.gif','4-2': 'c4_c2.gif',
+    '4-3': 'c4_c3.gif', '4-5': 'c4_c5.gif','4-6': 'c4_c6.gif','5-0': 'c5_m1.gif','5-1': 'c5_c1.gif',
+    '5-2': 'c5_c2.gif','5-3': 'c5_c3.gif','5-4': 'c5_c4.gif','5-6': 'c5_c6.gif', '6-0': 'c2_m1.gif',
+    '6-1': 'c6_c1.gif','6-2': 'c6_c2.gif', '6-3': 'c6_c3.gif','6-4': 'c6_c4.gif','6-5': 'c6_c5.gif',
+    '0-1': 'm1_c1.gif','0-2': 'm1_c2.gif','0-3': 'm1_c3.gif','0-4': 'm1_c4.gif','0-5': 'm1_c5.gif',
     '0-6': 'm1_c6.gif'
 };
 
@@ -117,14 +68,14 @@ var random_stimulus_list = function(num_trials) {
 
     // transform the keys into image files
     for (const key of key_stim_list) {
-        final_stim_list.push("./img/" + stim_dict[key])
+        final_stim_list.push("./img950/" + stim_dict[key])
     }
     return final_stim_list;
 };
 
 // PRELOADING AND INSTRUCTIONS
 var preload_stim = []
-var path_to_img = "./img/"
+var path_to_img = "./img950/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }
@@ -157,9 +108,9 @@ stimulus: `
     press the letter q on the keyboard as fast as you can.</p>
     <p>If the image is a <strong>mountain</strong>, do not press a key.</p>
     <div style='width: 700px;'>
-    <div style='float: left;'><img src='./img/city_1.jpg'></img>
+    <div style='float: left;'><img src='./img950/city_1.jpg'></img>
     <p class='small'><strong>Press the q key</strong></p></div>
-    <div style='float: right;'><img src='./img/mountain_1.jpg'></img>
+    <div style='float: right;'><img src='./img950/mountain_1.jpg'></img>
     <p class='small'><strong>Do not press a key</strong></p></div>
     </div>
     <p>Press any key to begin.</p>
@@ -178,40 +129,21 @@ var overall_debrief_block = {
 var totalTrials = 40
 var final_list = []
 
-var prev_trial_duration_level = 1
 var curr_trial_duration_level = 1
 let max_dur = 11
 let min_dur = 1
 
-var prev_correct_trial = true
-var prev_correct_trial_index = 0
-
-// currently checks accuracy of previous trial and adapts level accordingly
-// currently only gets called for the image, not for the transition (which stays at level 1)
-// var get_duration = function(round_num,prev_correct){
-//     prev_trial_duration_level = curr_trial_duration_level
-//     if (round_num == 0) { // this is the first round
-//         return duration_levels_dict[curr_trial_duration_level]
-//     } else {
-//         // var last_trial_correct = prev_correct_trial
-//         // console.log(prev_correct_trial)
-//         // console.log(prev_correct_trial_index)
-//         if (prev_correct) {
-//             curr_trial_duration_level = curr_trial_duration_level + 1
-//             if (curr_trial_duration_level <= max_dur) {
-//                 return duration_levels_dict[curr_trial_duration_level]
-//             }
-//             curr_trial_duration_level = max_dur
-//             return duration_levels_dict[curr_trial_duration_level]
-//         } else {
-//             curr_trial_duration_level = curr_trial_duration_level - 1
-//             if (curr_trial_duration_level >= min_dur) {
-//                 return duration_levels_dict[curr_trial_duration_level]
-//             }
-//             curr_trial_duration_level = min_dur
-//             return duration_levels_dict[curr_trial_duration_level]
-//         }
-//     }
+// animation_test_trials = {
+//     timeline: [
+//         animation_trial = {
+//             type: jsPsychAnimation,
+//             stimuli: ["./img950/mountain_1.jpg","./img950/m1_c1.gif","./img950/city_1.jpg","./img950/c1_c6.gif","./img950/city_6.jpg"],
+//             sequence_reps: 1,
+//             frame_time: 600,
+//             prompt: '<p>Watch the faces.</p>',
+//             render_on_canvas: false,
+//         },
+//     ]
 // }
 
 // each "trial round" is the image being shown, and the following transition
@@ -230,13 +162,13 @@ var getTrials = function(){
         var img_correct_key = "q"
         var transition_correct_key = "q"
 
-        if (img_stim.includes("m")){
+        if (img_stim.includes("mountain")){
             img_stim_type = "no-go"
-            img_correct_key = "null"
+            img_correct_key = null
         }
-        if (transition_stim.split('_')[1].includes("m")){
+        if (transition_stim.split('/')[2].split('_')[1].includes("m")){
             transition_stim_type = "no-go"
-            transition_correct_key = "null"
+            transition_correct_key = null
         }
 
         // add image trials
@@ -250,29 +182,29 @@ var getTrials = function(){
                 trial_number: i,
             },
             prompt: "<p>press q if it is a city</p>",
-            // on_trial_start: function(trial) {
-            //     trial.trial_duration = get_duration(i,jsPsych.data.get().last(1).values()[0].correct)
-            // },
-            // trial_duration: get_duration(i,prev_correct_trial),
+            // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
             trial_duration: function(i){
                 if (i == 0) { // this is the first round
                     return duration_levels_dict[curr_trial_duration_level]
                 } else {
-                    prev_correct = jsPsych.data.get().last(1).values()[0].correct;
+                    // change based on last full image, not based on transition
+                    prev_correct = jsPsych.data.get().last(2).values()[0].correct;
                     if (prev_correct) {
                         curr_trial_duration_level = curr_trial_duration_level + 1
                         if (curr_trial_duration_level <= max_dur) {
                             return duration_levels_dict[curr_trial_duration_level]
+                        } else {
+                            curr_trial_duration_level = max_dur
+                            return duration_levels_dict[curr_trial_duration_level]
                         }
-                        curr_trial_duration_level = max_dur
-                        return duration_levels_dict[curr_trial_duration_level]
                     } else {
                         curr_trial_duration_level = curr_trial_duration_level - 1
                         if (curr_trial_duration_level >= min_dur) {
                             return duration_levels_dict[curr_trial_duration_level]
+                        } else {
+                            curr_trial_duration_level = min_dur
+                            return duration_levels_dict[curr_trial_duration_level]
                         }
-                        curr_trial_duration_level = min_dur
-                        return duration_levels_dict[curr_trial_duration_level]
                     }
                 }
             },
@@ -282,25 +214,21 @@ var getTrials = function(){
                 // first check if they got it correct during the previous transition trial
                 var prev_correct = false
                 if (i != 0) {// if this is the first trial, then there is no previous transition trial
-                    prev_correct = jsPsych.data.get().last(1).values()[0].correct
+                    prev_correct = jsPsych.data.get().last(2).values()[0].correct
                 }
                 // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, img_correct_key)){
+                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                   data.correct = true;
-
-                //   prev_correct_trial = true
-                //   prev_correct_trial_index = i
                 } else {
                   if (prev_correct){// if the transition was correct then it seeps onto the image trial
-                    data.correct = true;
-
-                    // prev_correct_trial = true
-                    // prev_correct_trial_index = i
+                    // unless its a mountain trial, then if they're wrong in image trial they're wrong
+                    if (data.stimulus_type == "no-go") {
+                        data.correct = false;
+                    } else {
+                        data.correct = true;
+                    }
                   } else {
                     data.correct = false; 
-
-                    // prev_correct_trial = false
-                    // prev_correct_trial_index = i
                   }
                 }
                 data.curr_level = curr_trial_duration_level
@@ -326,17 +254,10 @@ var getTrials = function(){
             render_on_canvas: false,
             on_finish: function(data){
                 // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, transition_correct_key)){
+                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                   data.correct = true;
-
-                  prev_correct_trial = true
-                  prev_correct_trial_index = i
-
                 } else {
                   data.correct = false; 
-
-                  prev_correct_trial = false
-                  prev_correct_trial_index = i
                 }
             }
         };

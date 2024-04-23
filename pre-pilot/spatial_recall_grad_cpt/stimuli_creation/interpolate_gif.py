@@ -1,8 +1,8 @@
 from PIL import Image, ImageChops
 import numpy as np
 
-# At 30 fps, the number of frames in 0.8 seconds is 0.8 × 30 = 24
-def interpolate_images(imageA, imageB, steps=24):
+# At 30 fps, the number of frames in 0.95 seconds is 0.95 × 30 = 28.5 ~ 29
+def interpolate_images(imageA, imageB, steps=29):
     """Generate a list of images interpolating between imageA and imageB."""
     frames = []
     for step in range(steps):
@@ -27,9 +27,9 @@ def load_and_resize_images(pathA, pathB):
     resizedB = imageB.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
     # Save the resized images
-    save_path = "./stimuli/initial/resized/"
-    resizedA.save(save_path + pathA)
-    resizedB.save(save_path + pathB)
+    # save_path = "./stimuli/initial/resized/"
+    # resizedA.save(save_path + pathA)
+    # resizedB.save(save_path + pathB)
     
     return resizedA, resizedB
 
@@ -47,7 +47,7 @@ for i in range(1,11):
     image_list.append(f'city_{i}')
 image_list.append('mountain_1')
 
-save_path = './stimuli/final_gifs/'
+save_path = './stimuli/final_gifs_950/'
 for image_a in image_list:
     image_a_fname = image_a.split('_')
     export_a = save_path
@@ -70,5 +70,4 @@ for image_a in image_list:
         fn_image_b = image_b + ".jpg"
         imageA, imageB = load_and_resize_images(fn_image_a,fn_image_b)
         frames = interpolate_images(imageA, imageB)
-        frames[0].save(export, save_all=True, append_images=frames[1:], duration=800/len(frames), loop=0)
-        
+        frames[0].save(export, save_all=True, append_images=frames[1:], duration=950/len(frames), loop=0)
