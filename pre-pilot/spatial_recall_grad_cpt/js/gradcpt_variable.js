@@ -200,7 +200,10 @@ var random_stimulus_list = function(num_trials) {
 // or should it just look at accuracy of previous trial?
 // and then changes the trial_duration (this will change how long the image appears and how long the gif appears)
 // should I keep the gif consistent but only change duration of image flash?
-var get_duration = function(data){
+var get_duration = function(round_num){
+    if (round_num == 0) {
+        return duration_levels_dict[min_dur]
+    }
     var last_trial_correct = jsPsych.data.get().last(1).values()[0].correct
     if (last_trial_correct) {
         prev_trial_duration_level = prev_trial_duration_level + 1
@@ -233,9 +236,11 @@ var getTrials = function(trialnum){
         var transition_correct_key = "q"
         if (img_stim.includes("m")){
             img_stim_type = "no-go"
+            img_correct_key = "NO_KEYS"
         }
         if (transition_stim.split('_')[1].includes("m")){
             transition_stim_type = "no-go"
+            transition_correct_key = "NO_KEYS"
         }
 
         var trial_img = {
@@ -244,9 +249,10 @@ var getTrials = function(trialnum){
             choices: ['q'],
             data: {
                 stimulus_type: img_stim_type,
+                correct_key: img_correct_key
             },
             prompt: "<p>press q if it is a city</p>",
-            trial_duration:get_duration(data),
+            trial_duration:get_duration(i),
             response_ends_trial:false,
             render_on_canvas: false,
             on_finish: function(data){
@@ -256,10 +262,13 @@ var getTrials = function(trialnum){
                     prev_correct = jsPsych.data.get().last(1).values()[0].correct
                 }
                 // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, "q")){
+                if(jsPsych.pluginAPI.compareKeys(data.response, img_correct_key)){
                   data.correct = true;
                 } else {
                   data.correct = false; 
+                  if (prev_correct){// if the transition was correct then it seeps onto the image trial
+                    data.correct = true;
+                  }
                 }
             }
         };
@@ -270,29 +279,25 @@ var getTrials = function(trialnum){
             choices: ['q'],
             data: {
                 stimulus_type: transition_stim_type,
+                correct_key: transition_correct_key
             },
             prompt: "<p>press q if it is a city</p>",
-            trial_duration:get_duration(data),
+            trial_duration:duration_levels_dict[1],
             response_ends_trial:false,
             render_on_canvas: false,
+            on_finish: function(data){
+                // Score the response as correct or incorrect.
+                if(jsPsych.pluginAPI.compareKeys(data.response, transition_correct_key)){
+                  data.correct = true;
+                } else {
+                  data.correct = false; 
+                }
+            }
         };
         trials.push(trial_img)
         trials.push(trial_transition)
     }
 }
-// var trials = []
-// for (const fn of list_stim) {
-//     var trial = {
-//       type: jsPsychImageKeyboardResponse,
-//       stimulus: fn,
-//       choices: ['q'],
-//       prompt: "<p>press q if it is a city</p>",
-//       trial_duration:700,
-//       response_ends_trial:false,
-//       render_on_canvas: false,
-//     }
-//     trials.push(trial)
-// }
 
 var gradcpt_trials = {
     timeline: getTrials(totalTrials)
