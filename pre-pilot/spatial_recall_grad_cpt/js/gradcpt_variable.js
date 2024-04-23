@@ -7,75 +7,6 @@ var all_stim = ["city_1.jpg","city_2.jpg","city_3.jpg","city_4.jpg", "city_5.jpg
 "c5_m1.gif","c6_c1.gif","c6_c2.gif","c6_c3.gif","c6_c4.gif","c6_c5.gif",
 "c6_m1.gif","m1_c1.gif","m1_c2.gif","m1_c3.gif","m1_c4.gif","m1_c5.gif"]
 
-var list_stim_temp = ["city_1.jpg","c1_c2.gif","city_2.jpg","c2_c3.gif","city_3.jpg",
-"c3_c4.gif","city_4.jpg","c4_c5.gif","city_5.jpg","c5_c6.gif","city_6.jpg","c6_m1.gif",
-"mountain_1.jpg","m1_c2.gif","city_2.jpg","c2_c3.gif","city_3.jpg","c3_c4.gif","city_4.jpg",
-"c4_c5.gif","city_5.jpg","c5_m1.gif","mountain_1.jpg","m1_c6.gif","city_6.jpg"]
-
-// preloading 
-var preload_stim = []
-var path_to_img = "./img/"
-for (let i = 0; i < all_stim.length; i++) {
-    preload_stim.push(path_to_img + all_stim[i]);
-}
-var list_stim = []
-for (let i = 0; i < list_stim_temp.length; i++) {
-    list_stim.push(path_to_img + list_stim_temp[i]);
-}
-
-var preload_auto = {
-    type: jsPsychPreload,
-    show_detailed_errors: true,
-    auto_preload: true,
-    message: 'Please wait while the experiment loads. This may take a few minutes.',
-};
-
-var preload_manual = {
-    type: jsPsychPreload,
-    show_detailed_errors: true,
-    images: preload_stim,
-    message: 'Please wait while the experiment loads. This may take a few minutes.',
-};
-
-// welcome and instructions
-var welcome_cpt = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: "Welcome to this task. Press any key to begin."
-  };
-  
-var instructions_cpt = {
-type: jsPsychHtmlKeyboardResponse,
-stimulus: `
-    <p>In this task, an image will appear in the center
-    of the screen.</p><p>If the image is a <strong>city</strong>,
-    press the letter q on the keyboard as fast as you can.</p>
-    <p>If the image is a <strong>mountain</strong>, do not press a key.</p>
-    <div style='width: 700px;'>
-    <div style='float: left;'><img src='./img/city_1.jpg'></img>
-    <p class='small'><strong>Press the q key</strong></p></div>
-    <div style='float: right;'><img src='./img/mountain_1.jpg'></img>
-    <p class='small'><strong>Do not press a key</strong></p></div>
-    </div>
-    <p>Press any key to begin.</p>
-`,
-post_trial_gap: 2000
-};
-
-// post-task debrief
-var overall_debrief_block = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: 
-      `<p>Great work! This experiment is over now. Please press any button.</p>`
-}
-
-// TRIAL SET UP
-var totalTrials = 40
-var currentTrial = 0
-var final_list = []
-var prev_trial_duration_level = 1
-let max_dur = 11
-let min_dur = 1
-
 let duration_levels_dict = {
     1: 700,
     2: 680,
@@ -89,10 +20,6 @@ let duration_levels_dict = {
     10: 520,
     11: 500,
 }
-
-// 1. function that randomly generates stimuli (should be 40 rounds for now, where mountain has a 0.1 chance and a city has a 0.9 chance)
-// this function should, for each round, get an image stimuli and then its corresponding transition gif
-// so, it should randomly generate 40 of the images and then insert each transition gif into the final list
 
 let stim_dict = {
     '1': 'city_1.jpg',
@@ -155,26 +82,26 @@ var random_stimulus_list = function(num_trials) {
     for (let i = 0; i < num_trials; i++) {
         let randomNumber = Math.floor(Math.random() * 10); // Generates a number between 0 and 9
 
-        // that means this is the first round, so for i = 0, there is just the original picture
+        // prev_trial_index = -1 means this is the first round, so for i = 0, there is just the original picture
         if (prev_trial_index == -1) {
             if (randomNumber == 0) {
-                key_stim_list.push(randomNumber.toString())
+                key_stim_list.push(randomNumber.toString()) // starts with mountain
             }
-            else {
+            else { // starts with a city picture
                 randomNumber = Math.floor(Math.random() * 6) + 1
                 key_stim_list.push(randomNumber.toString()) // number between 1 and 6
             }
-            prev_trial_index = randomNumber
+            prev_trial_index = randomNumber // update previous trial
             continue
         }
 
         // for all other rounds, we add the transition from the previous image first, then the new image
-        if (randomNumber == 0 && prev_trial_index != 0) {
-            key_stim_list.push(prev_trial_index + '-0')
-            key_stim_list.push('0')
-            prev_trial_index = 0
-        } else { // if the prior trial was 0 and we get 0 again, we have to give it a num 1 to 6 instead
-            if (prev_trial_index == 0) {
+        if (randomNumber == 0 && prev_trial_index != 0) { // same trial can't happen in a row
+            key_stim_list.push(prev_trial_index + '-' + randomNumber) // add transition to this image
+            key_stim_list.push(randomNumber.toString()) // add this image
+            prev_trial_index = randomNumber
+        } else { 
+            if (prev_trial_index == 0) { // if the prior trial was 0 and we get 0 again, we have to give it a num 1 to 6 instead
                 randomNumber = Math.floor(Math.random() * 6) + 1 
             } else {
                 randomNumber = Math.floor(Math.random() * 5) + 1 
@@ -182,8 +109,8 @@ var random_stimulus_list = function(num_trials) {
                     randomNumber++;
                 }
             }
-            key_stim_list.push(prev_trial_index + "-" + randomNumber)
-            key_stim_list.push(randomNumber.toString()) // number between 1 and 6 (excluding prev trial)
+            key_stim_list.push(prev_trial_index + "-" + randomNumber) // transition to this image
+            key_stim_list.push(randomNumber.toString()) // number between 1 and 6 (excluding prev trial), add this image
             prev_trial_index = randomNumber
         }
     }
@@ -192,67 +119,163 @@ var random_stimulus_list = function(num_trials) {
     for (const key of key_stim_list) {
         final_stim_list.push("./img/" + stim_dict[key])
     }
-
     return final_stim_list;
+};
+
+// PRELOADING AND INSTRUCTIONS
+var preload_stim = []
+var path_to_img = "./img/"
+for (let i = 0; i < all_stim.length; i++) {
+    preload_stim.push(path_to_img + all_stim[i]);
 }
 
-// 2. function that checks average accuracy of last 10 trials
-// or should it just look at accuracy of previous trial?
-// and then changes the trial_duration (this will change how long the image appears and how long the gif appears)
-// should I keep the gif consistent but only change duration of image flash?
-var get_duration = function(round_num){
-    if (round_num == 0) {
-        return duration_levels_dict[min_dur]
-    }
-    var last_trial_correct = jsPsych.data.get().last(1).values()[0].correct
-    if (last_trial_correct) {
-        prev_trial_duration_level = prev_trial_duration_level + 1
-        if (prev_trial_duration_level <= max_dur) {
-            return duration_levels_dict[prev_trial_duration_level]
-        }
-        prev_trial_duration_level = max_dur
-        return duration_levels_dict[max_dur]
-    } else {
-        prev_trial_duration_level = prev_trial_duration_level - 1
-        if (prev_trial_duration_level >= min_dur) {
-            return duration_levels_dict[prev_trial_duration_level]
-        }
-        prev_trial_duration_level = min_dur
-        return duration_levels_dict[min_dur]
-    }
+var preload_auto = {
+    type: jsPsychPreload,
+    show_detailed_errors: true,
+    auto_preload: true,
+    message: 'Please wait while the experiment loads. This may take a few minutes.',
+};
+
+var preload_manual = {
+    type: jsPsychPreload,
+    show_detailed_errors: true,
+    images: preload_stim,
+    message: 'Please wait while the experiment loads. This may take a few minutes.',
+};
+
+// welcome and instructions
+var welcome_cpt = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: "Welcome to this task. Press any key to begin."
+  };
+  
+var instructions_cpt = {
+type: jsPsychHtmlKeyboardResponse,
+stimulus: `
+    <p>In this task, an image will appear in the center
+    of the screen.</p><p>If the image is a <strong>city</strong>,
+    press the letter q on the keyboard as fast as you can.</p>
+    <p>If the image is a <strong>mountain</strong>, do not press a key.</p>
+    <div style='width: 700px;'>
+    <div style='float: left;'><img src='./img/city_1.jpg'></img>
+    <p class='small'><strong>Press the q key</strong></p></div>
+    <div style='float: right;'><img src='./img/mountain_1.jpg'></img>
+    <p class='small'><strong>Do not press a key</strong></p></div>
+    </div>
+    <p>Press any key to begin.</p>
+`,
+post_trial_gap: 2000
+};
+
+// post-task debrief
+var overall_debrief_block = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 
+      `<p>Great work! This experiment is over now. Please press any button.</p>`
 }
+
+// TRIAL SET UP
+var totalTrials = 40
+var final_list = []
+
+var prev_trial_duration_level = 1
+var curr_trial_duration_level = 1
+let max_dur = 11
+let min_dur = 1
+
+var prev_correct_trial = true
+var prev_correct_trial_index = 0
+
+// currently checks accuracy of previous trial and adapts level accordingly
+// currently only gets called for the image, not for the transition (which stays at level 1)
+// var get_duration = function(round_num,prev_correct){
+//     prev_trial_duration_level = curr_trial_duration_level
+//     if (round_num == 0) { // this is the first round
+//         return duration_levels_dict[curr_trial_duration_level]
+//     } else {
+//         // var last_trial_correct = prev_correct_trial
+//         // console.log(prev_correct_trial)
+//         // console.log(prev_correct_trial_index)
+//         if (prev_correct) {
+//             curr_trial_duration_level = curr_trial_duration_level + 1
+//             if (curr_trial_duration_level <= max_dur) {
+//                 return duration_levels_dict[curr_trial_duration_level]
+//             }
+//             curr_trial_duration_level = max_dur
+//             return duration_levels_dict[curr_trial_duration_level]
+//         } else {
+//             curr_trial_duration_level = curr_trial_duration_level - 1
+//             if (curr_trial_duration_level >= min_dur) {
+//                 return duration_levels_dict[curr_trial_duration_level]
+//             }
+//             curr_trial_duration_level = min_dur
+//             return duration_levels_dict[curr_trial_duration_level]
+//         }
+//     }
+// }
 
 // each "trial round" is the image being shown, and the following transition
-var getTrials = function(trialnum){
-    final_list = random_stimulus_list(trialnum)
+var getTrials = function(){
+    final_list = random_stimulus_list(totalTrials)
+
     var trials = []
     for (let i = 0; i < final_list.length - 1; i = i + 2) {
-
+        // get each stimuli
         var img_stim = final_list[i]
         var transition_stim = final_list[i + 1]
+
+        // define correct values for give stimuli
         var img_stim_type = "go"
         var transition_stim_type = "go"
         var img_correct_key = "q"
         var transition_correct_key = "q"
+
         if (img_stim.includes("m")){
             img_stim_type = "no-go"
-            img_correct_key = "NO_KEYS"
+            img_correct_key = "null"
         }
         if (transition_stim.split('_')[1].includes("m")){
             transition_stim_type = "no-go"
-            transition_correct_key = "NO_KEYS"
+            transition_correct_key = "null"
         }
 
+        // add image trials
         var trial_img = {
             type: jsPsychImageKeyboardResponse,
             stimulus: img_stim,
             choices: ['q'],
             data: {
                 stimulus_type: img_stim_type,
-                correct_key: img_correct_key
+                correct_key: img_correct_key,
+                trial_number: i,
             },
             prompt: "<p>press q if it is a city</p>",
-            trial_duration:get_duration(i),
+            // on_trial_start: function(trial) {
+            //     trial.trial_duration = get_duration(i,jsPsych.data.get().last(1).values()[0].correct)
+            // },
+            // trial_duration: get_duration(i,prev_correct_trial),
+            trial_duration: function(i){
+                if (i == 0) { // this is the first round
+                    return duration_levels_dict[curr_trial_duration_level]
+                } else {
+                    prev_correct = jsPsych.data.get().last(1).values()[0].correct;
+                    if (prev_correct) {
+                        curr_trial_duration_level = curr_trial_duration_level + 1
+                        if (curr_trial_duration_level <= max_dur) {
+                            return duration_levels_dict[curr_trial_duration_level]
+                        }
+                        curr_trial_duration_level = max_dur
+                        return duration_levels_dict[curr_trial_duration_level]
+                    } else {
+                        curr_trial_duration_level = curr_trial_duration_level - 1
+                        if (curr_trial_duration_level >= min_dur) {
+                            return duration_levels_dict[curr_trial_duration_level]
+                        }
+                        curr_trial_duration_level = min_dur
+                        return duration_levels_dict[curr_trial_duration_level]
+                    }
+                }
+            },
             response_ends_trial:false,
             render_on_canvas: false,
             on_finish: function(data){
@@ -264,22 +287,38 @@ var getTrials = function(trialnum){
                 // Score the response as correct or incorrect.
                 if(jsPsych.pluginAPI.compareKeys(data.response, img_correct_key)){
                   data.correct = true;
+
+                //   prev_correct_trial = true
+                //   prev_correct_trial_index = i
                 } else {
-                  data.correct = false; 
                   if (prev_correct){// if the transition was correct then it seeps onto the image trial
                     data.correct = true;
+
+                    // prev_correct_trial = true
+                    // prev_correct_trial_index = i
+                  } else {
+                    data.correct = false; 
+
+                    // prev_correct_trial = false
+                    // prev_correct_trial_index = i
                   }
                 }
+                data.curr_level = curr_trial_duration_level
+                data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
             }
         };
 
+        // add transition trials
         var trial_transition = {
             type: jsPsychImageKeyboardResponse,
             stimulus: transition_stim,
             choices: ['q'],
             data: {
                 stimulus_type: transition_stim_type,
-                correct_key: transition_correct_key
+                correct_key: transition_correct_key,
+                curr_level: 1,
+                curr_trial_duration: duration_levels_dict[1],
+                trial_number: i+1,
             },
             prompt: "<p>press q if it is a city</p>",
             trial_duration:duration_levels_dict[1],
@@ -289,16 +328,25 @@ var getTrials = function(trialnum){
                 // Score the response as correct or incorrect.
                 if(jsPsych.pluginAPI.compareKeys(data.response, transition_correct_key)){
                   data.correct = true;
+
+                  prev_correct_trial = true
+                  prev_correct_trial_index = i
+
                 } else {
                   data.correct = false; 
+
+                  prev_correct_trial = false
+                  prev_correct_trial_index = i
                 }
             }
         };
+
         trials.push(trial_img)
         trials.push(trial_transition)
     }
+    return trials
 }
 
 var gradcpt_trials = {
-    timeline: getTrials(totalTrials)
+    timeline: getTrials()
 }
