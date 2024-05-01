@@ -253,6 +253,147 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
     return trials
 }
 
+// GET TRIALS FUNCTION
+// each "trial round" is the image being shown, and the following transition
+// pass in how many trial timeline rounds you want it to generate, and remove those from the final_list
+var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
+    // array you return with the timeline objects
+    var trials = []
+
+    // calculate how many elements of the final_list we need to take off
+    // for num_trials_gradcpt_block rounds, it is num_trials_gradcpt_block * 2 - 1 items of the list
+    // when we splice off items from the front of the list though, it should be num_trials_gradcpt_block * 2 
+    // since we won't use the final transition for anything anyways
+    var num_items = num_trials_gradcpt_block * 2
+
+    for (let i = 0; i < num_items - 1; i = i + 2) {
+        // get each stimuli
+        var img_stim = final_list[i]
+        var transition_stim = final_list[i + 1]
+
+        // define correct values for give stimuli
+        var img_stim_type = "go"
+        var transition_stim_type = "go"
+        var img_correct_key = "enter"
+        var transition_correct_key = "enter"
+
+        if (img_stim.includes("mountain")){
+            img_stim_type = "no-go"
+            img_correct_key = null
+        }
+        if (transition_stim.split('/')[2].split('_')[1].includes("m")){
+            transition_stim_type = "no-go"
+            transition_correct_key = null
+        }
+
+        // add image trials
+        var trial_img = {
+            type: jsPsychImageKeyboardResponse,
+            stimulus: img_stim,
+            choices: ['enter'],
+            data: {
+                stimulus_type: img_stim_type,
+                correct_key: img_correct_key,
+                trial_number: i,
+            },
+            prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
+            // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
+            trial_duration: function(i,adjust_duration=false){
+                // this means for every single trial we maintain the level at level_for_all_trials
+                if (adjust_duration == false) {
+                    curr_trial_duration_level = level_for_all_trials
+                    return duration_levels_dict[curr_trial_duration_level]
+                } else {
+                    if (i == 0) { // this is the first round
+                        return duration_levels_dict[curr_trial_duration_level]
+                    } else {
+                        // change based on last full image, not based on transition
+                        prev_correct = jsPsych.data.get().last(2).values()[0].correct;
+                        if (prev_correct) {
+                            curr_trial_duration_level = curr_trial_duration_level + 1
+                            if (curr_trial_duration_level <= max_dur) {
+                                return duration_levels_dict[curr_trial_duration_level]
+                            } else {
+                                curr_trial_duration_level = max_dur
+                                return duration_levels_dict[curr_trial_duration_level]
+                            }
+                        } else {
+                            curr_trial_duration_level = curr_trial_duration_level - 1
+                            if (curr_trial_duration_level >= min_dur) {
+                                return duration_levels_dict[curr_trial_duration_level]
+                            } else {
+                                curr_trial_duration_level = min_dur
+                                return duration_levels_dict[curr_trial_duration_level]
+                            }
+                        }
+                    }
+                }
+            },
+            response_ends_trial:false,
+            render_on_canvas: false,
+            on_finish: function(data){
+                // first check if they got it correct during the previous transition trial
+                var prev_correct = false
+                if (i != 0) {// if this is the first trial, then there is no previous transition trial
+                    prev_correct = jsPsych.data.get().last(2).values()[0].correct
+                }
+                // Score the response as correct or incorrect.
+                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
+                  data.correct = true;
+                } else {
+                  if (prev_correct){// if the transition was correct then it seeps onto the image trial
+                    // unless its a mountain trial, then if they're wrong in image trial they're wrong
+                    if (data.stimulus_type == "no-go") {
+                        data.correct = false;
+                    } else {
+                        data.correct = true;
+                    }
+                  } else {
+                    data.correct = false; 
+                  }
+                }
+                data.curr_level = curr_trial_duration_level
+                data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
+            }
+        };
+
+        // add transition trials
+        var trial_transition = {
+            type: jsPsychImageKeyboardResponse,
+            stimulus: transition_stim,
+            choices: ['enter'],
+            prompt: "<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
+            data: {
+                stimulus_type: transition_stim_type,
+                correct_key: transition_correct_key,
+                curr_level: 1,
+                curr_trial_duration: duration_levels_dict[1],
+                trial_number: i+1,
+            },
+            trial_duration:duration_levels_dict[1],
+            response_ends_trial:false,
+            render_on_canvas: false,
+            on_finish: function(data){
+                // Score the response as correct or incorrect.
+                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
+                  data.correct = true;
+                } else {
+                  data.correct = false; 
+                }
+            }
+        };
+
+        trials.push(trial_img)
+        trials.push(trial_transition)
+    }
+
+    // remove the items you used from the final_list array
+    final_list.splice(num_items)
+    console.log(trials)
+
+    return trials
+}
+
 //////////////////////////////////////////////////////////////////////////////
 //// TIMELINE CREATION
 
@@ -261,6 +402,5 @@ var final_list = random_stimulus_list(totalTrialNum_gradcpt)
 
 // PRACTICE TRIALS
 var gradcpt_practice_trials = {
-    timeline: getTrials_gradcpt(practice_trials_gradcpt_num)
+    timeline: getTrials_practice_gradcpt(practice_trials_gradcpt_num)
 }
-
