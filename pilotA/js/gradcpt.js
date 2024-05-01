@@ -2,7 +2,7 @@
 // GRADCPT EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
 var practice_trials_gradcpt_num = 20
-var num_blocks = 3
+var num_blocks = 6
 var gradcpt_trials_per_block = 6
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
@@ -248,6 +248,7 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
 
     // remove the items you used from the final_list array
     final_list.splice(num_items)
+    console.log(trials)
 
     return trials
 }

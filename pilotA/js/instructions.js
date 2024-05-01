@@ -109,17 +109,6 @@ var final_exp_instructions = {
     button_label_next: 'Next'
 }
 
-
-// SWITCH OFFER
-// var switch_offer_screen = {
-//     type: jsPsychHtmlSliderResponse,
-//     stimulus: `<div style="width:500px;">
-//         <p>How many points do you want to trade to switch games?</p>
-//         </div>`,
-//     require_movement: true,
-//     labels: ['0 points', '50 points', '100 points']
-// };
-
 // FINAL DEBRIEF
 var overall_debrief = {
     type: jsPsychHtmlKeyboardResponse,
