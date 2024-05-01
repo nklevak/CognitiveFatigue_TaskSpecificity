@@ -120,6 +120,5 @@ function sr_getBlock() {
     timeline_sr_block.push(screenCheck,response_key,recall_sr)
   }
 
-  console.log(timeline_sr_block)
   return timeline_sr_block
 }

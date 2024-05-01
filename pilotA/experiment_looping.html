@@ -74,7 +74,6 @@ var switch_offer_screen = {
         data.prevBlockType = currentTask
 
         if (trade_value >= generated_value) {
-            console.log("switch")
             nextSwitch = true
 
             if (currentTask == "spatial_recall") {
@@ -82,8 +81,6 @@ var switch_offer_screen = {
             } else if (currentTask == "gradcpt") {
                 currentTask = "spatial_recall"
             }
-        } else {
-            console.log("stay")
         }
 
         data.switch_next_block = nextSwitch
@@ -120,11 +117,9 @@ var full_sr_block = {
 
 // FIRST BLOCK ADD MANUALLY
 if (curr_block == 0 && currentTask == "spatial_recall") {
-    console.log("spatial_recall")
     timeline.push(full_sr_block,switch_offer_screen)
     curr_block = curr_block + 1
 } else {
-    console.log("gradcpt")
     timeline.push(full_gradcpt_block,switch_offer_screen)
     curr_block = curr_block + 1
 }
@@ -135,15 +130,11 @@ var if_cpt_node = {
     conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
         // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
         if (curr_block == num_blocks || currentTask == "spatial_recall"){
-            console.log("cpt false")
             return false
-        } else if (curr_block > 0 && currentTask == "gradcpt") {
-            console.log("cpt true")
+        } else {
             curr_block = curr_block + 1
             return true
-        } else{
-            console.log("all broken cpt node")
-        }
+        } 
     }
 }
 var if_sr_node = {
@@ -151,14 +142,10 @@ var if_sr_node = {
     conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
         // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
         if (curr_block == num_blocks || currentTask == "gradcpt"){
-            console.log("sr false")
             return false
-        } else if (curr_block > 0 && currentTask == "spatial_recall") {
-            console.log("sr true")
+        } else {
             curr_block = curr_block + 1
             return true
-        } else {
-            console.log("all broken sr node")
         }
     }
 }
@@ -166,10 +153,8 @@ var if_debrief_node = {
     timeline: [overall_debrief],
     conditional_function: function() {
         if (curr_block == num_blocks){
-            console.log("debrief true")
             return true
         } else {
-            console.log("debrief false")
             return false
         }
     }
@@ -180,10 +165,8 @@ var main_loop = {
     timeline: [if_cpt_node,if_sr_node,switch_offer_screen,if_debrief_node],
     loop_function: function(data){
         if (curr_block >= num_blocks) {
-            console.log("blocks are done. so is loop: ")
             return false
         } else {
-            console.log("still looping")
             return true
         }
     }
