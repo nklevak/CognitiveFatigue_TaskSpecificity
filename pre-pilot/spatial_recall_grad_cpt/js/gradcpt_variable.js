@@ -68,14 +68,14 @@ var random_stimulus_list = function(num_trials) {
 
     // transform the keys into image files
     for (const key of key_stim_list) {
-        final_stim_list.push("./img950/" + stim_dict[key])
+        final_stim_list.push("./img900_esterman/" + stim_dict[key])
     }
     return final_stim_list;
 };
 
 // PRELOADING AND INSTRUCTIONS
 var preload_stim = []
-var path_to_img = "./img950/"
+var path_to_img = "./img900_esterman/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }
@@ -105,12 +105,12 @@ type: jsPsychHtmlKeyboardResponse,
 stimulus: `
     <p>In this task, an image will appear in the center
     of the screen.</p><p>If the image is a <strong>city</strong>,
-    press the letter q on the keyboard as fast as you can.</p>
+    press enter on the keyboard as fast as you can.</p>
     <p>If the image is a <strong>mountain</strong>, do not press a key.</p>
     <div style='width: 700px;'>
-    <div style='float: left;'><img src='./img950/city_1.jpg'></img>
-    <p class='small'><strong>Press the q key</strong></p></div>
-    <div style='float: right;'><img src='./img950/mountain_1.jpg'></img>
+    <div style='float: left;'><img src='./img900_esterman/city_1.jpg'></img>
+    <p class='small'><strong>Press the enter key</strong></p></div>
+    <div style='float: right;'><img src='./img900_esterman/mountain_1.jpg'></img>
     <p class='small'><strong>Do not press a key</strong></p></div>
     </div>
     <p>Press any key to begin.</p>
@@ -133,19 +133,6 @@ var curr_trial_duration_level = 1
 let max_dur = 11
 let min_dur = 1
 
-// animation_test_trials = {
-//     timeline: [
-//         animation_trial = {
-//             type: jsPsychAnimation,
-//             stimuli: ["./img950/mountain_1.jpg","./img950/m1_c1.gif","./img950/city_1.jpg","./img950/c1_c6.gif","./img950/city_6.jpg"],
-//             sequence_reps: 1,
-//             frame_time: 600,
-//             prompt: '<p>Watch the faces.</p>',
-//             render_on_canvas: false,
-//         },
-//     ]
-// }
-
 // each "trial round" is the image being shown, and the following transition
 var getTrials = function(){
     final_list = random_stimulus_list(totalTrials)
@@ -159,8 +146,8 @@ var getTrials = function(){
         // define correct values for give stimuli
         var img_stim_type = "go"
         var transition_stim_type = "go"
-        var img_correct_key = "q"
-        var transition_correct_key = "q"
+        var img_correct_key = "enter"
+        var transition_correct_key = "enter"
 
         if (img_stim.includes("mountain")){
             img_stim_type = "no-go"
@@ -175,13 +162,12 @@ var getTrials = function(){
         var trial_img = {
             type: jsPsychImageKeyboardResponse,
             stimulus: img_stim,
-            choices: ['q'],
+            choices: ['enter'],
             data: {
                 stimulus_type: img_stim_type,
                 correct_key: img_correct_key,
                 trial_number: i,
             },
-            prompt: "<p>press q if it is a city</p>",
             // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
             trial_duration: function(i){
                 if (i == 0) { // this is the first round
@@ -240,7 +226,7 @@ var getTrials = function(){
         var trial_transition = {
             type: jsPsychImageKeyboardResponse,
             stimulus: transition_stim,
-            choices: ['q'],
+            choices: ['enter'],
             data: {
                 stimulus_type: transition_stim_type,
                 correct_key: transition_correct_key,
@@ -248,7 +234,6 @@ var getTrials = function(){
                 curr_trial_duration: duration_levels_dict[1],
                 trial_number: i+1,
             },
-            prompt: "<p>press q if it is a city</p>",
             trial_duration:duration_levels_dict[1],
             response_ends_trial:false,
             render_on_canvas: false,

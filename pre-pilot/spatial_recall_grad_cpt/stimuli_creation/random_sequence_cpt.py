@@ -1,1 +1,0 @@
-# generates a random order for the gradCPT where mountain is ~10% and cities are ~90%
