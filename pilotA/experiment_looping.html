@@ -47,6 +47,7 @@ timeline.push(preload_auto, preload_manual)
 //timeline.push(main_exp_BDM_instructions, BDM_quiz, final_exp_instructions)
 timeline.push(final_exp_instructions)
 
+///////////////////////////////////////////////////////////
 // MAIN EXPERIMENT
 var generated_value = Math.floor(Math.random() * 101);
 var currentTask = "spatial_recall" //(50% chance of either task being the first block) // other option is "gradcpt"
@@ -81,33 +82,38 @@ var switch_offer_screen = {
             } else if (currentTask == "gradcpt") {
                 currentTask = "spatial_recall"
             }
+        } else {
+            nextSwitch = false
         }
 
         data.switch_next_block = nextSwitch
     }
 }
 
-// IF TRIALS (these will be pre-made block variables of each game)
-//var gradcpt_block_trials = {
-//    timeline: getTrials_gradcpt(gradcpt_trials_per_block),
-//    on_start: function(gradcpt_block_trials){
-//        gradcpt_block_trials.stimulus = getTrials_gradcpt(gradcpt_trials_per_block)
-//    }
-//}
+// task switch  or stay trials
+var switchingGamesNotification = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 'You will now switch to a new game',
+    choices: 'NO_KEYS',  // No responses allowed
+    trial_duration: 1000,
+    on_start: function(switchingGamesNotification) {
+        if (curr_block >= num_blocks){
+            switchingGamesNotification.stimulus = "Great work! We will now debrief you."
+        } else if (nextSwitch == false) {
+            console.log("stay in same game")
+            switchingGamesNotification.stimulus = "You will now stay in the same game"
+        }
+    }
+};
+
 var gradcpt_block_trials = {
     timeline: getTrials_gradcpt(gradcpt_trials_per_block)
 }
-//var sr_block_trials = {
-//    timeline: sr_getBlock(),
-//    on_start: function(sr_block_trials){
-//        sr_block_trials.stimulus = sr_getBlock()
-//    }
-//}
+
 var sr_block_trials = {
     timeline: sr_getBlock()
 }
 
-// should I add switch_offer_screen to this???
 var full_gradcpt_block = {
     timeline: [gradcpt_block_trials]
 }
@@ -117,10 +123,10 @@ var full_sr_block = {
 
 // FIRST BLOCK ADD MANUALLY
 if (curr_block == 0 && currentTask == "spatial_recall") {
-    timeline.push(full_sr_block,switch_offer_screen)
+    timeline.push(full_sr_block,switch_offer_screen,switchingGamesNotification)
     curr_block = curr_block + 1
 } else {
-    timeline.push(full_gradcpt_block,switch_offer_screen)
+    timeline.push(full_gradcpt_block,switch_offer_screen,switchingGamesNotification)
     curr_block = curr_block + 1
 }
 
@@ -162,7 +168,7 @@ var if_debrief_node = {
 
 // add the main experiment
 var main_loop = {
-    timeline: [if_cpt_node,if_sr_node,switch_offer_screen,if_debrief_node],
+    timeline: [if_cpt_node,if_sr_node,switch_offer_screen,switchingGamesNotification,if_debrief_node],
     loop_function: function(data){
         if (curr_block >= num_blocks) {
             return false
