@@ -112,12 +112,3 @@ var final_exp_instructions = {
     button_label_previous: 'Prev',
     button_label_next: 'Next'
 }
-
-// FINAL DEBRIEF
-var overall_debrief = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: 
-      `<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
-      effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
-    were) is <strong>insert</strong>. The experiment is over now, press any button to continue</p>`
-}

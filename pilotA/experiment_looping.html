@@ -34,6 +34,9 @@
 <body></body>
 <script>
 
+// important variables to customize
+var dollars_per_correct_bonus = 0.30
+
 // INITIALIZE TIMELINE
 var timeline = [];
 
@@ -86,6 +89,62 @@ var switch_offer_screen = {
         }
 
         data.switch_next_block = nextSwitch
+    }
+}
+
+// final debrief 
+var calculate_bonus = function(){
+    // get grad cpt trials which are NOT practice and which are img trials (these have updated correctness info)
+    // can try doing .select('correct')
+    var gradcpt_img_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"false",cpt_type: "img"}).values();
+
+    // get sr trials which are NOT practice
+    // can try doing .select("score_an")
+    var sr_trials = jsPsych.data.get().filter({game_type:"spatial_recall",practice:"false"}).values();
+
+    // get their accuracies
+    var accuracy_count = 0
+    var sr_len = sr_trials.length
+    var gradcpt_len = gradcpt_img_trials.length
+    for (let i = 0; i < sr_len;i++) {
+        accuracy_count = accuracy_count + sr_trials[i].score_an
+    }
+    for (let i = 0; i < gradcpt_len; i++){
+        if(gradcpt_img_trials[i].correct){
+            accuracy_count += 1
+        }
+    }
+
+    // for now let's say 35 cents per correct answer
+    var total_trials = sr_len + gradcpt_len
+    var accuracy_calc = total_trials > 0 ? (accuracy_count / total_trials) : 0;    
+    var final_bonus = (accuracy_count * dollars_per_correct_bonus).toFixed(2)
+
+    console.log(gradcpt_len)
+    condole.log(sr_len)
+    console.log(accuracy_calc)
+    console.log(accuracy_count)
+    console.log(total_trials)
+    console.log(final_bonus)
+
+    // add the final accuracy and bonus to data
+    jsPsych.data.get().addToLast({bonus: final_bonus,overall_accuracy: accuracy_calc});
+
+    return final_bonus
+}
+
+var overall_debrief = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 
+      `<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
+      effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
+    were) is <strong>insert</strong>. The experiment is over now, press any button to continue</p>`,
+    on_start: function(overall_debrief) {
+        var bonus = calculate_bonus()
+
+        overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
+            effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
+          were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
     }
 }
 
@@ -152,6 +211,7 @@ var if_sr_node = {
         }
     }
 }
+
 var if_debrief_node = {
     timeline: [overall_debrief],
     conditional_function: function() {

@@ -1,8 +1,8 @@
 //////////////////////////////////////
 // EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
-var practice_trials_gradcpt_num = 20
-var num_blocks = 6
+var practice_trials_gradcpt_num = 6
+var num_blocks = 4
 var gradcpt_trials_per_block = 6
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
@@ -156,7 +156,9 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
                 stimulus_type: img_stim_type,
                 correct_key: img_correct_key,
                 trial_number: i,
-                game_type: "gradcpt"
+                game_type: "gradcpt",
+                practice: "false",
+                cpt_type: "img"
             },
             // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
             trial_duration: function(i,adjust_duration=false){
@@ -229,7 +231,9 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
                 curr_level: 1,
                 curr_trial_duration: duration_levels_dict[1],
                 trial_number: i+1,
-                game_type: "gradcpt"
+                game_type: "gradcpt",
+                practice: "false",
+                cpt_type: "transition"
             },
             trial_duration:duration_levels_dict[1],
             response_ends_trial:false,
@@ -297,7 +301,9 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 stimulus_type: img_stim_type,
                 correct_key: img_correct_key,
                 trial_number: i,
-                game_type: "gradcpt_practice"
+                game_type: "gradcpt",
+                practice: "true",
+                cpt_type: "img"
             },
             prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
             // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
@@ -357,8 +363,6 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 }
                 data.curr_level = curr_trial_duration_level
                 data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
-                data.type = "practice"
-                data.trial_type = "gradcpt_img"
             }
         };
 
@@ -374,7 +378,9 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 curr_level: 1,
                 curr_trial_duration: duration_levels_dict[1],
                 trial_number: i+1,
-                game_type: "gradcpt_practice"
+                game_type: "gradcpt",
+                practice: "true",
+                cpt_type: "transition"
             },
             trial_duration:duration_levels_dict[1],
             response_ends_trial:false,
@@ -386,8 +392,6 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 } else {
                   data.correct = false; 
                 }
-                data.gradcpt_type = "practice"
-                data.trial_type = "gradcpt_transition"
             }
         };
         trials.push(trial_img)
@@ -397,33 +401,25 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
     // add a feedback trial here
     var cpt_practice_feedback = {
         type: jsPsychHtmlKeyboardResponse,
-        trial_duration: 1000,
+        trial_duration: 5000,
+        response_ends_trial:false,
         stimulus: function(){
-            // total numbers of trials
-            // to look at correctness, look at the very first item (which is an image item)
-            // then look only at the img not transition items
-            // if totaly number of trials in this practice are num_trials_gradcpt_block
-            // starts with img of trial 1, ends with transition of trial num_trials_gradcpt_block + 1
-            // total num_items = num_trials_gradcpt_block * 2
-            // num_trials_gradcpt_block * 2 - 1 position = transition we don't care about
-            // last img we care about is num_trials_gradcpt_block * 2 - 2
-            // last(1) gives data from trial right before this one (which is the transition we don't want)
-            // last (2) gives data from img which we want
-            
-            var count = 0
-            var count_correct = 0
-            var index_img_trial = 2
-            while (count < 20) {
-                var last_trial_correct = jsPsych.data.get().last(index_img_trial).values()[0].correct;
-                if (last_trial_correct) {
-                    count_correct = count_correct + 1
-                } 
-                count = count + 1
-                index_img_trial = index_img_trial + 2
+            var cpt_practice_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"true",cpt_type: "img"}).values();
+            var num_cpt_practice_trials = cpt_practice_trials.length
+            var accuracy_count = 0
+            console.log(cpt_practice_trials)
+            for (let i = 0; i < num_cpt_practice_trials; i++){
+                if(cpt_practice_trials[i].correct){
+                    accuracy_count += 1
+                }
             }
+            console.log(accuracy_count)
+            console.log(num_cpt_practice_trials)
+            var accuracy =  num_cpt_practice_trials > 0 ? (100 * accuracy_count / num_cpt_practice_trials) : 0;
+            
+            jsPsych.data.get().addToLast({cpt_practice_accuracy: accuracy});// should I do something where if they get a lot wrong they have to do it again? or would this just be exclusion criteria?
 
-            var accuracy = (count_correct / count) * 100
-            return '<div>Great job! You got ' + accuracy + '% correct </p>'
+            return '<div>You got ' + accuracy + '% correct </p>'
         }
       }
     

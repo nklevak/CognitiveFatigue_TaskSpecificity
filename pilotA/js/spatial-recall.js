@@ -1,8 +1,9 @@
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 2
-var sr_practice_trial_num = 4
+var sr_trials_per_block = 1
+var sr_practice_trial_num = 1
 var consistent_tile_duration = 300
 var grid_size_constant = 5
+var digits_to_mem = 5
 
 ///////////////////////////////////////////////////////////////
 ////// SET UP GRID DIFFICULTY TO BE MAX_TILE_DURATION & CREATE num_trials TRIALS
@@ -63,7 +64,7 @@ function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
   let timeline_full_vals = []
   trialDurations.forEach((item, _) => {
     timeline_full_vals.push({
-        sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 4),
+        sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
         tile_duration: item
     });
   });
@@ -91,7 +92,8 @@ var sr_recall_forwards_practice = {
       tile_duration: jsPsych.timelineVariable('tile_duration'),
       backwards: false,
       on_finish: function(data){
-        data.type = "practice"
+        data.practice = "true"
+        data.game_type = "spatial_recall"
       }
     },
     {
@@ -130,9 +132,13 @@ function sr_getBlock() {
   var recall_sr = {
     type: jsPsychSpatialRecall,
     grid_size: grid_size_constant,
-    sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 4),
+    sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
     tile_duration: consistent_tile_duration,
-    backwards: false
+    backwards: false,
+    on_finish: function(data){
+      data.practice = "false"
+      data.game_type = "spatial_recall"
+    }
   }
 
   for (i=0; i < sr_trials_per_block; i++){
