@@ -1,5 +1,5 @@
 //////////////////////////////////////
-// GRADCPT EXPERIMENT SET UP VARIABLES
+// EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
 var practice_trials_gradcpt_num = 20
 var num_blocks = 6
@@ -156,6 +156,7 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
                 stimulus_type: img_stim_type,
                 correct_key: img_correct_key,
                 trial_number: i,
+                game_type: "gradcpt"
             },
             // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
             trial_duration: function(i,adjust_duration=false){
@@ -228,6 +229,7 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
                 curr_level: 1,
                 curr_trial_duration: duration_levels_dict[1],
                 trial_number: i+1,
+                game_type: "gradcpt"
             },
             trial_duration:duration_levels_dict[1],
             response_ends_trial:false,
@@ -295,6 +297,7 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 stimulus_type: img_stim_type,
                 correct_key: img_correct_key,
                 trial_number: i,
+                game_type: "gradcpt_practice"
             },
             prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
             // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
@@ -354,7 +357,7 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 }
                 data.curr_level = curr_trial_duration_level
                 data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
-                data.gradcpt_type = "practice"
+                data.type = "practice"
                 data.trial_type = "gradcpt_img"
             }
         };
@@ -371,6 +374,7 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 curr_level: 1,
                 curr_trial_duration: duration_levels_dict[1],
                 trial_number: i+1,
+                game_type: "gradcpt_practice"
             },
             trial_duration:duration_levels_dict[1],
             response_ends_trial:false,

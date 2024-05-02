@@ -1,6 +1,10 @@
-// BLOCK VARIABLES
+// EXPERIMENT SET UP VARIABLES
 var sr_trials_per_block = 2
+var sr_practice_trial_num = 4
+var consistent_tile_duration = 300
+var grid_size_constant = 5
 
+///////////////////////////////////////////////////////////////
 ////// SET UP GRID DIFFICULTY TO BE MAX_TILE_DURATION & CREATE num_trials TRIALS
 // this function sets up the timing of each trial. 
 // IF CHANGE_DIFFICULTY = TRUE: It will start with the max duration for the first group of 5. Then for every subsequent group it will sample from prev_group - 100 +/- 50.
@@ -66,8 +70,7 @@ function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
   return timeline_full_vals
 }
 
-var consistent_tile_duration = 300
-// Define forwards recall for the practice session
+// PRACTICE SESSION
 var sr_recall_forwards_practice = {
   timeline: [
     {
@@ -79,14 +82,17 @@ var sr_recall_forwards_practice = {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: '<p style="font-size: 48px;">+</p>',
       choices: 'NO_KEYS',
-      trial_duration: 1200,
+      trial_duration: 400,
     },
     {
       type: jsPsychSpatialRecall,
-      grid_size: 4,
+      grid_size: grid_size_constant,
       sequence: jsPsych.timelineVariable('sequence'),
       tile_duration: jsPsych.timelineVariable('tile_duration'),
-      backwards: false
+      backwards: false,
+      on_finish: function(data){
+        data.type = "practice"
+      }
     },
     {
       type: jsPsychHtmlKeyboardResponse,
@@ -101,9 +107,10 @@ var sr_recall_forwards_practice = {
       }
     }
   ],
-  timeline_variables: getGridParams(4,consistent_tile_duration,false)
+  timeline_variables: getGridParams(sr_practice_trial_num,consistent_tile_duration,false)
 }
 
+// MAIN EXPERIMENT GET BLOCK TRIALS FUNCTION
 function sr_getBlock() {
   var timeline_sr_block = []
 
@@ -117,12 +124,12 @@ function sr_getBlock() {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<p style="font-size: 48px;">+</p>',
     choices: 'NO_KEYS',
-    trial_duration: 1200,
+    trial_duration: 400,
   }
 
   var recall_sr = {
     type: jsPsychSpatialRecall,
-    grid_size: 4,
+    grid_size: grid_size_constant,
     sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], 4),
     tile_duration: consistent_tile_duration,
     backwards: false

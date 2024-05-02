@@ -480,7 +480,8 @@ var jsPsychSpatialRecall = (function (jspsych) {
             score_pc: score_pc,
             score_ls: score_ls,
             rt: rt,
-            event_history: event_history
+            event_history: event_history,
+            game_type:"sr"
           };
   
           // clear the display

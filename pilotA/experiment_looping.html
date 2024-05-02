@@ -40,12 +40,11 @@ var timeline = [];
 // PRELOADS
 timeline.push(preload_auto, preload_manual)
 
-// INTRUCTIONS AND PRACTICE SESSION (edit to include feedback for the trials)
-timeline.push(welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,cpt_task_instructions,gradcpt_practice_trials)
+// INTRUCTIONS AND PRACTICE SESSION
+timeline.push(welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,cpt_task_instructions,gradcpt_practice_trials)
 
 // MAIN EXPERIMENT INSTRUCTIONS
-//timeline.push(main_exp_BDM_instructions, BDM_quiz, final_exp_instructions)
-timeline.push(final_exp_instructions)
+timeline.push(main_exp_BDM_instructions, BDM_quiz, final_exp_instructions)
 
 ///////////////////////////////////////////////////////////
 // MAIN EXPERIMENT
@@ -90,7 +89,7 @@ var switch_offer_screen = {
     }
 }
 
-// task switch  or stay trials
+// task switch or stay trials
 var switchingGamesNotification = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: 'You will now switch to a new game',
@@ -101,7 +100,7 @@ var switchingGamesNotification = {
             switchingGamesNotification.stimulus = "Great work! We will now debrief you."
         } else if (nextSwitch == false) {
             console.log("stay in same game")
-            switchingGamesNotification.stimulus = "You will now stay in the same game"
+            switchingGamesNotification.stimulus = "You will now stay in the same game."
         }
     }
 };
@@ -109,11 +108,9 @@ var switchingGamesNotification = {
 var gradcpt_block_trials = {
     timeline: getTrials_gradcpt(gradcpt_trials_per_block)
 }
-
 var sr_block_trials = {
     timeline: sr_getBlock()
 }
-
 var full_gradcpt_block = {
     timeline: [gradcpt_block_trials]
 }

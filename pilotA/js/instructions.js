@@ -12,7 +12,7 @@ var welcome_practice_instructions = {
     button_label_next: 'Next'
   }
 
-// CONSENT FORM
+// #TODO CONSENT FORM
 
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
 var sr_task_instructions = {
@@ -28,6 +28,14 @@ var sr_task_instructions = {
     show_clickable_nav: true,
     button_label_previous: 'Prev',
     button_label_next: 'Next'
+  }
+
+  // TRANSITION BETWEEN GAMES IN PRACTICE SESSION
+  var practice_transition = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p> Great work! You will now have practice for the next game. Press any key to continue. </p>',
+    choices: "ALL_KEYS"
+    //trial_duration: 1200,
   }
 
 // GRADCPT TASK INSTRUCTIONS (before each gradcpt block)
@@ -51,10 +59,6 @@ var cpt_task_instructions = {
     button_label_previous: 'Prev',
     button_label_next: 'Next'
   }
-
-// FEEDBACK FOR THE GRADCPT PRACTICE
-
-// FEEDBACK FOR THE SPATIAL RECALL PRACTICE
 
 // MAIN EXPERIMENT INSTRUCTIONS + BDM
 var main_exp_BDM_instructions = {
