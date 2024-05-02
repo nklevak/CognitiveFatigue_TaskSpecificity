@@ -1,11 +1,32 @@
-//////////////////////////////////////
+// init-jspsych file
+var jsPsych = initJsPsych({
+    on_finish: function() {
+      // Add interactions to the data variable
+      // var interaction_data = jsPsych.data.getInteractionData();
+      // jsPsych.data.get().addToLast({interactions: interaction_data.json()});
+  
+      // Display jsPsych data in viewport.
+      jsPsych.data.displayData();
+    }
+  });
+  
+// gradcpt file//////////////////////////////////////
 // EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
-var practice_trials_gradcpt_num = 1
+var practice_trials_gradcpt_num = 6
 var num_blocks = 4
-var gradcpt_trials_per_block = 1
+var gradcpt_trials_per_block = 6
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
+
+// spatial recall variables;
+// EXPERIMENT SET UP VARIABLES
+var sr_trials_per_block = 1
+var sr_practice_trial_num = 1
+var consistent_tile_duration = 300
+var grid_size_constant = 5
+var digits_to_mem = 5
+
 
 //////////////////////////////
 // STIMULI AND DURATION
@@ -254,7 +275,6 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
 
     // remove the items you used from the final_list array
     final_list.splice(num_items)
-    console.log(trials)
 
     return trials
 }
@@ -407,14 +427,12 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
             var cpt_practice_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"true",cpt_type: "img"}).values();
             var num_cpt_practice_trials = cpt_practice_trials.length
             var accuracy_count = 0
-            console.log(cpt_practice_trials)
             for (let i = 0; i < num_cpt_practice_trials; i++){
                 if(cpt_practice_trials[i].correct){
                     accuracy_count += 1
                 }
             }
-            console.log(accuracy_count)
-            console.log(num_cpt_practice_trials)
+
             var accuracy =  num_cpt_practice_trials > 0 ? (100 * accuracy_count / num_cpt_practice_trials) : 0;
             
             jsPsych.data.get().addToLast({cpt_practice_accuracy: accuracy});// should I do something where if they get a lot wrong they have to do it again? or would this just be exclusion criteria?
@@ -427,7 +445,6 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
 
     // remove the items you used from the final_list array
     final_list.splice(num_items)
-    console.log(trials)
 
     return trials
 }
@@ -442,3 +459,464 @@ var final_list = random_stimulus_list(totalTrialNum_gradcpt)
 var gradcpt_practice_trials = {
     timeline: getTrials_practice_gradcpt(practice_trials_gradcpt_num)
 }
+
+/////////////////////////////////////////////////////
+// spatial-recall file
+///////////////////////////////////////////////////////////////
+////// SET UP GRID DIFFICULTY TO BE MAX_TILE_DURATION & CREATE num_trials TRIALS
+// this function sets up the timing of each trial. 
+// IF CHANGE_DIFFICULTY = TRUE: It will start with the max duration for the first group of 5. Then for every subsequent group it will sample from prev_group - 100 +/- 50.
+// IF CHANGE_DIFFICULTY = FALSE (default): it will give every trial the given max_tile_duration
+function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
+  // the number of trials i want to group together
+  var num_trial_per_group = 5;
+  // the difference in mean time I want per group
+  var mean_time_diff = 100;
+  // Initialize an array to hold the duration of each trial
+  var trialDurations = [];
+  // Calculate the number of full groups of 5 and the remainder
+  var fullGroups = Math.floor(num_trials / num_trial_per_group);
+  var remainder = num_trials % num_trial_per_group;
+  // Initialize the current duration to the max duration
+  var currentDuration = max_tile_duration;
+
+  if (change_difficulty) {
+    // Process full groups
+    for (let i = 0; i < fullGroups; i++) {
+      // make first group anywhere in the range of (the max time - 50)
+      if (i == 0) {
+        for (let j = 0; j < num_trial_per_group; j++) {
+          trialDurations.push(Math.max(0, currentDuration - Math.floor(Math.random() * (mean_time_diff / 2))))
+        }
+        currentDuration = currentDuration - mean_time_diff
+        continue;
+      }
+      // make each following groups anywhere in +50 or -50 of the previous max time - 100
+      let min = 0
+      if (((currentDuration - (mean_time_diff / 2)) >= 0)) {
+        min = currentDuration - (mean_time_diff / 2)
+      }
+      // adding the +1 makes it inclusive
+      for (let j = 0; j < num_trial_per_group; j++) {
+        trialDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min))
+      }
+      // update the new current duration (mean duration) for the next group
+      currentDuration = currentDuration - mean_time_diff
+    }
+    // Process any remaining trials and give them all the final value
+    let min = 0
+    if (((currentDuration - (mean_time_diff / 2)) >= 0)) {
+    min = currentDuration - (mean_time_diff / 2)
+    }
+    for (let i = 0; i < remainder; i++) {
+      trialDurations.push(Math.floor(Math.random() * (mean_time_diff + 1) + min));
+    }
+  } else {
+    for (i=0;i < num_trials;i++) {
+      trialDurations.push(max_tile_duration)
+    }
+  }
+
+  // go through the trial durations and return the timeline vals
+  let timeline_full_vals = []
+  trialDurations.forEach((item, _) => {
+    timeline_full_vals.push({
+        sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
+        tile_duration: item
+    });
+  });
+  return timeline_full_vals
+}
+
+// PRACTICE SESSION
+var sr_recall_forwards_practice = {
+  timeline: [
+    {
+      type: jsPsychScreenCheck,
+      min_width: 258,
+      min_height: 364
+    },
+    {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '<p style="font-size: 48px;">+</p>',
+      choices: 'NO_KEYS',
+      trial_duration: 400,
+    },
+    {
+      type: jsPsychSpatialRecall,
+      grid_size: grid_size_constant,
+      sequence: jsPsych.timelineVariable('sequence'),
+      tile_duration: jsPsych.timelineVariable('tile_duration'),
+      backwards: false,
+      on_finish: function(data){
+        data.practice = "true"
+        data.game_type = "spatial_recall"
+      }
+    },
+    {
+      type: jsPsychHtmlKeyboardResponse,
+      trial_duration: 1000,
+      stimulus: function(){
+        var last_trial_correct = jsPsych.data.get().last(1).values()[0].score_an;
+        if(last_trial_correct){
+          return "<p>Correct!</p>"; // the parameter value has to be returned from the function
+        } else {
+          return "<p>Incorrect! Please try to focus on the order in which the squares appear.</p>"; // the parameter value has to be returned from the function
+        }
+      }
+    }
+  ],
+  timeline_variables: getGridParams(sr_practice_trial_num,consistent_tile_duration,false)
+}
+
+// MAIN EXPERIMENT GET BLOCK TRIALS FUNCTION
+function sr_getBlock() {
+  var timeline_sr_block = []
+
+  var screenCheck={
+    type: jsPsychScreenCheck,
+    min_width: 258,
+    min_height: 364
+  }
+
+  var response_key = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p style="font-size: 48px;">+</p>',
+    choices: 'NO_KEYS',
+    trial_duration: 400,
+  }
+
+  var recall_sr = {
+    type: jsPsychSpatialRecall,
+    grid_size: grid_size_constant,
+    sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
+    tile_duration: consistent_tile_duration,
+    backwards: false,
+    on_finish: function(data){
+      data.practice = "false"
+      data.game_type = "spatial_recall"
+    }
+  }
+
+  for (i=0; i < sr_trials_per_block; i++){
+    timeline_sr_block.push(screenCheck,response_key,recall_sr)
+  }
+
+  return timeline_sr_block
+}
+//////////////////////
+// INSTRUCTIONS file
+// WELCOME TO EXPERIMENT
+var welcome_practice_instructions = {
+    type: jsPsychInstructions,
+    pages: [
+      "<p>Welcome to this experiment! In this experiment, you will be doing two tasks. Before we begin the actual experiment, let\'s do some practice trials.</p>"
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+  }
+
+// #TODO CONSENT FORM
+
+// SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
+var sr_task_instructions = {
+    type: jsPsychInstructions,
+    pages: [
+      "<p>Welcome to the spatial recall game! Click next for the instructions.</p>",
+      "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
+      `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the "Clear" button to erase your entries.</p><p>When you're ready, click "Next" to get started.</p>`
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+  }
+
+  // TRANSITION BETWEEN GAMES IN PRACTICE SESSION
+  var practice_transition = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p> Great work! You will now have practice for the next game. Press any key to continue. </p>',
+    choices: "ALL_KEYS"
+    //trial_duration: 1200,
+  }
+
+// GRADCPT TASK INSTRUCTIONS (before each gradcpt block)
+var cpt_task_instructions = {
+    type: jsPsychInstructions,
+    pages: [
+      "<p>Welcome to the gradual onset game! Click next for the instructions.</p>",
+      "<p>In this task, an image will appear in the center of the screen.</p><p>\
+      If the image is a <strong>city</strong> press enter on the keyboard as fast as you can.</p><p>\
+      If the image is a <strong>mountain</strong>, do not press a key.</p>\
+      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman/city_1.jpg'></img>\
+      <p class='small'><strong>Press the enter key</strong></p></div>\
+      <div style='float: right;'><img src='./img900_esterman/mountain_1.jpg'></img>\
+      <p class='small'><strong>Do not press a key</strong></p></div>\
+      </div>",
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+  }
+
+// MAIN EXPERIMENT INSTRUCTIONS + BDM
+var main_exp_BDM_instructions = {
+    type: jsPsychInstructions,
+    pages: [
+      "<p>We will now go into instructions for the main experiment.</p>",
+      "<p>You will be given points based on your accuracy in each trial, which will be converted to a monetary bonus at the end of the experiment. \
+      You will not be shown how many points you have until the end.</p><p>",
+      "<p>In this experiment, you will be switching between the two games you practiced earlier. You will occasionally be asked how many points \
+      (on a scale of 1 to 100)  you are willing to give away in order to switch to the other game</p>",
+      "<p>Think of this like an auction. We will also randomly generate a value from 1 to 100 each time you pick a value, and if your selection is \
+      larger <strong>you will get to switch games</strong> and <strong>you will only pay the number that we randomly generated </strong>\
+      (even if your value was significantly higher). If the value you offered is <strong>lower</strong> than our randomly generated value, you will continue playing \
+      your current game. Because of this,<strong> it is to your benefit to be honest in how much you are willing to pay</strong>.</p>",
+      "<p>You will now be asked to answer a few questions about this, so feel free to re-read the instructions before you click Next </p>"
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+  }
+
+// BDM QUIZ
+var BDM_quiz = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [
+      {
+        prompt: "To get the best result when it comes to switching, I should:", 
+        name: 'BDM_should', 
+        options: ['always give a higher number of points than I would really want to trade to switch', 'always give a lower number of points than I would really want to trade to switch', 'always be honest about exactly how many points I would be willing to switch'], 
+        required: true
+      }
+    ],
+  };
+
+var final_exp_instructions = {
+    type: jsPsychInstructions,
+    pages: [
+      "<p>Great! You are now ready to begin.</p>",
+      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. You will be given points each time you are correct (although you will not see them). You will also occasionally be asked how many points you would trade to switch to the other game. \
+      If your answer is higher than our randomly generated one, you will be switched! \
+      If not, you will stay on this game</p>",
+      "<p>When you're ready, press Next to begin</p>",
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+}
+
+// MAIN HTML file (experiment-looping)
+
+// important variables to customize
+var dollars_per_correct_bonus = 0.30
+
+// INITIALIZE TIMELINE
+var timeline = [];
+
+// PRELOADS
+timeline.push(preload_auto, preload_manual)
+
+// INTRUCTIONS AND PRACTICE SESSION
+timeline.push(welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,cpt_task_instructions,gradcpt_practice_trials)
+
+// MAIN EXPERIMENT INSTRUCTIONS
+timeline.push(main_exp_BDM_instructions, BDM_quiz, final_exp_instructions)
+
+///////////////////////////////////////////////////////////
+// MAIN EXPERIMENT
+var generated_value = Math.floor(Math.random() * 101);
+var currentTask = "spatial_recall" //(50% chance of either task being the first block) // other option is "gradcpt"
+if (Math.random() < 0.5) {
+    currentTask = "gradcpt"
+}
+var curr_block = 0
+var nextSwitch = false // update this in the on_finish of the switch_offer_screen
+
+// SWITCH OFFER SCREEN
+var switch_offer_screen = {
+    type: jsPsychHtmlSliderResponse,
+    stimulus: `<div style="width:500px;">
+        <p>How many points do you want to trade to switch games?</p>
+        </div>`,
+    require_movement: true,
+    labels: ['0 points', '50 points', '100 points'],
+    on_start: function(switch_offer_screen) {
+        generated_value =  Math.floor(Math.random() * 101);
+    },
+    on_finish: function(data){
+        var trade_value = jsPsych.data.get().last(1).values()[0].response
+        data.generated_BDM_value = generated_value
+        data.blocks_completed = curr_block
+        data.prevBlockType = currentTask
+
+        if (trade_value >= generated_value) {
+            nextSwitch = true
+
+            if (currentTask == "spatial_recall") {
+                currentTask = "gradcpt"
+            } else if (currentTask == "gradcpt") {
+                currentTask = "spatial_recall"
+            }
+        } else {
+            nextSwitch = false
+        }
+
+        data.switch_next_block = nextSwitch
+    }
+}
+
+// final debrief 
+var calculate_bonus = function(){
+    // get grad cpt trials which are NOT practice and which are img trials (these have updated correctness info)
+    // can try doing .select('correct')
+    var gradcpt_img_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"false",cpt_type: "img"}).values();
+
+    // get sr trials which are NOT practice
+    // can try doing .select("score_an")
+    var sr_trials = jsPsych.data.get().filter({game_type:"spatial_recall",practice:"false"}).values();
+
+    // get their accuracies
+    var accuracy_count = 0
+    var sr_len = sr_trials.length
+    var gradcpt_len = gradcpt_img_trials.length
+    for (let i = 0; i < sr_len;i++) {
+        accuracy_count = accuracy_count + sr_trials[i].score_an
+    }
+    for (let i = 0; i < gradcpt_len; i++){
+        if(gradcpt_img_trials[i].correct){
+            accuracy_count += 1
+        }
+    }
+
+    // for now let's say 35 cents per correct answer
+    var total_trials = sr_len + gradcpt_len
+    var accuracy_calc = total_trials > 0 ? (accuracy_count / total_trials) : 0;    
+    var final_bonus = (accuracy_count * dollars_per_correct_bonus).toFixed(2)
+
+
+    // add the final accuracy and bonus to data
+    jsPsych.data.get().addToLast({bonus: final_bonus,overall_accuracy: accuracy_calc});
+
+    return final_bonus
+}
+
+var overall_debrief = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 
+      `<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
+      effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
+    were) is <strong>insert</strong>. The experiment is over now, press any button to continue</p>`,
+    on_start: function(overall_debrief) {
+        var bonus = calculate_bonus()
+
+        overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
+            effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
+          were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
+    }
+}
+
+// task switch or stay trials
+var switchingGamesNotification = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 'You will now switch to a new game',
+    choices: 'NO_KEYS',  // No responses allowed
+    trial_duration: 1000,
+    on_start: function(switchingGamesNotification) {
+        if (curr_block >= num_blocks){
+            switchingGamesNotification.stimulus = "Great work! We will now debrief you."
+        } else if (nextSwitch == false) {
+            switchingGamesNotification.stimulus = "You will now stay in the same game."
+        }
+    }
+};
+
+var gradcpt_block_trials = {
+    timeline: getTrials_gradcpt(gradcpt_trials_per_block)
+}
+var sr_block_trials = {
+    timeline: sr_getBlock()
+}
+var full_gradcpt_block = {
+    timeline: [gradcpt_block_trials]
+}
+var full_sr_block = {
+    timeline: [sr_block_trials]
+}
+
+// FIRST BLOCK ADD MANUALLY
+if (curr_block == 0 && currentTask == "spatial_recall") {
+    timeline.push(full_sr_block,switch_offer_screen,switchingGamesNotification)
+    curr_block = curr_block + 1
+} else {
+    timeline.push(full_gradcpt_block,switch_offer_screen,switchingGamesNotification)
+    curr_block = curr_block + 1
+}
+
+// IF NODES FOR REST OF THE BLOCKS
+var if_cpt_node = {
+    timeline: [full_gradcpt_block],
+    conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
+        // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
+        if (curr_block == num_blocks || currentTask == "spatial_recall"){
+            return false
+        } else {
+            curr_block = curr_block + 1
+            return true
+        } 
+    }
+}
+var if_sr_node = {
+    timeline: [full_sr_block],
+    conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
+        // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
+        if (curr_block == num_blocks || currentTask == "gradcpt"){
+            return false
+        } else {
+            curr_block = curr_block + 1
+            return true
+        }
+    }
+}
+
+var if_debrief_node = {
+    timeline: [overall_debrief],
+    conditional_function: function() {
+        if (curr_block == num_blocks){
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
+// add the main experiment
+var main_loop = {
+    timeline: [if_cpt_node,if_sr_node,switch_offer_screen,switchingGamesNotification,if_debrief_node],
+    loop_function: function(data){
+        if (curr_block >= num_blocks) {
+            return false
+        } else {
+            return true
+        }
+    }
+}
+timeline.push(main_loop)
+
+// RUN THE EXPERIMENT
+jsPsych.run(timeline);

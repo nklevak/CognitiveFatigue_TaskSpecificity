@@ -1,6 +1,6 @@
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 1
-var sr_practice_trial_num = 1
+var sr_trials_per_block = 2
+var sr_practice_trial_num = 2
 var consistent_tile_duration = 300
 var grid_size_constant = 5
 var digits_to_mem = 5
@@ -116,32 +116,36 @@ var sr_recall_forwards_practice = {
 function sr_getBlock() {
   var timeline_sr_block = []
 
-  var screenCheck={
-    type: jsPsychScreenCheck,
-    min_width: 258,
-    min_height: 364
-  }
-
-  var response_key = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: '<p style="font-size: 48px;">+</p>',
-    choices: 'NO_KEYS',
-    trial_duration: 400,
-  }
-
-  var recall_sr = {
-    type: jsPsychSpatialRecall,
-    grid_size: grid_size_constant,
-    sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
-    tile_duration: consistent_tile_duration,
-    backwards: false,
-    on_finish: function(data){
-      data.practice = "false"
-      data.game_type = "spatial_recall"
-    }
-  }
-
   for (i=0; i < sr_trials_per_block; i++){
+    var screenCheck={
+      type: jsPsychScreenCheck,
+      min_width: 258,
+      min_height: 364
+    }
+  
+    var response_key = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '<p style="font-size: 48px;">+</p>',
+      choices: 'NO_KEYS',
+      trial_duration: 400,
+    }
+  
+    var recall_sr = {
+      type: jsPsychSpatialRecall,
+      grid_size: grid_size_constant,
+      sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
+      tile_duration: consistent_tile_duration,
+      backwards: false,
+      on_start: function(recall_sr) {
+        recall_sr.sequence = jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem)
+        console.log(recall_sr.sequence)
+      },
+      on_finish: function(data){
+        data.practice = "false"
+        data.game_type = "spatial_recall"
+      }
+    }
+
     timeline_sr_block.push(screenCheck,response_key,recall_sr)
   }
 
