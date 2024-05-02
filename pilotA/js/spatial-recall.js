@@ -87,6 +87,18 @@ var sr_recall_forwards_practice = {
       sequence: jsPsych.timelineVariable('sequence'),
       tile_duration: jsPsych.timelineVariable('tile_duration'),
       backwards: false
+    },
+    {
+      type: jsPsychHtmlKeyboardResponse,
+      trial_duration: 1000,
+      stimulus: function(){
+        var last_trial_correct = jsPsych.data.get().last(1).values()[0].score_an;
+        if(last_trial_correct){
+          return "<p>Correct!</p>"; // the parameter value has to be returned from the function
+        } else {
+          return "<p>Incorrect! Please try to focus on the order in which the squares appear.</p>"; // the parameter value has to be returned from the function
+        }
+      }
     }
   ],
   timeline_variables: getGridParams(4,consistent_tile_duration,false)
