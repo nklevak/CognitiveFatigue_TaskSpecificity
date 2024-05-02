@@ -81,14 +81,14 @@ var random_stimulus_list = function(num_trials) {
 
     // transform the keys into image files
     for (const key of key_stim_list) {
-        final_stim_list.push("./img900_esterman/" + stim_dict[key])
+        final_stim_list.push("./img875_esterman/" + stim_dict[key])
     }
     return final_stim_list;
 };
 
 // PRELOADING
 var preload_stim = []
-var path_to_img = "./img900_esterman/"
+var path_to_img = "./img875_esterman/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }

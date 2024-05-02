@@ -1,7 +1,7 @@
 from PIL import Image, ImageChops
 import numpy as np
 
-# At 30 fps, the number of frames in 0.90 seconds is 0.90 × 30 = 27 $ previously 29
+# At 30 fps, the number of frames in 0.875 seconds is 0.875 × 30 = 26 $ previously 29
 def interpolate_images(imageA, imageB, steps=27):
     """Generate a list of images interpolating between imageA and imageB."""
     frames = []
@@ -20,8 +20,9 @@ def load_and_resize_images(pathA, pathB):
     imageB = Image.open(B_path).convert('L')
     
     # used to be 100 by 150
-    target_width=200
-    target_height= 200
+    # then 200 by 200
+    target_width=230
+    target_height= 230
     
     # Resize both images
     resizedA = imageA.resize((target_width, target_height), Image.Resampling.LANCZOS)
@@ -47,13 +48,16 @@ image_list = []
 for i in range(1,11):
     image_list.append(f'city_{i}')
 image_list.append('mountain_1')
+image_list.append('white_1') # white background that we can transition from in the first trial and transition to in the last trial 
 
-save_path = './stimuli/final_gifs_900_esterman/'
+save_path = './stimuli/final_gifs_900_esterman_bigger/'
 for image_a in image_list:
     image_a_fname = image_a.split('_')
     export_a = save_path
     if (image_a_fname[0]=="city"):
         export_a = export_a + "c" + image_a_fname[1] + "_"
+    elif (image_a_fname[0]=="white"):
+        export_a = export_a + "white" + image_a_fname[1] + "_"
     else:
         export_a = export_a + "m" + image_a_fname[1] + "_"
     
@@ -64,6 +68,8 @@ for image_a in image_list:
         image_b_fname = image_b.split('_')
         if (image_b_fname[0]=="city"):
             export = export + "c" + image_b_fname[1] + ".gif"
+        elif(image_b_fname[0]=="white"):
+            export = export + "white1.gif"
         else:
             export = export + "m" + image_b_fname[1] + ".gif"
         
@@ -71,4 +77,4 @@ for image_a in image_list:
         fn_image_b = image_b + ".jpg"
         imageA, imageB = load_and_resize_images(fn_image_a,fn_image_b)
         frames = interpolate_images(imageA, imageB)
-        frames[0].save(export, save_all=True, append_images=frames[1:], duration=900/len(frames), loop=0)
+        frames[0].save(export, save_all=True, append_images=frames[1:], duration=875/len(frames), loop=0)
