@@ -253,7 +253,7 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
     return trials
 }
 
-// GET TRIALS FUNCTION
+// GET PRACTICE TRIALS FUNCTION
 // each "trial round" is the image being shown, and the following transition
 // pass in how many trial timeline rounds you want it to generate, and remove those from the final_list
 var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
@@ -354,6 +354,8 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 }
                 data.curr_level = curr_trial_duration_level
                 data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
+                data.gradcpt_type = "practice"
+                data.trial_type = "gradcpt_img"
             }
         };
 
@@ -380,12 +382,48 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
                 } else {
                   data.correct = false; 
                 }
+                data.gradcpt_type = "practice"
+                data.trial_type = "gradcpt_transition"
             }
         };
-
         trials.push(trial_img)
         trials.push(trial_transition)
     }
+
+    // add a feedback trial here
+    var cpt_practice_feedback = {
+        type: jsPsychHtmlKeyboardResponse,
+        trial_duration: 1000,
+        stimulus: function(){
+            // total numbers of trials
+            // to look at correctness, look at the very first item (which is an image item)
+            // then look only at the img not transition items
+            // if totaly number of trials in this practice are num_trials_gradcpt_block
+            // starts with img of trial 1, ends with transition of trial num_trials_gradcpt_block + 1
+            // total num_items = num_trials_gradcpt_block * 2
+            // num_trials_gradcpt_block * 2 - 1 position = transition we don't care about
+            // last img we care about is num_trials_gradcpt_block * 2 - 2
+            // last(1) gives data from trial right before this one (which is the transition we don't want)
+            // last (2) gives data from img which we want
+            
+            var count = 0
+            var count_correct = 0
+            var index_img_trial = 2
+            while (count < 20) {
+                var last_trial_correct = jsPsych.data.get().last(index_img_trial).values()[0].correct;
+                if (last_trial_correct) {
+                    count_correct = count_correct + 1
+                } 
+                count = count + 1
+                index_img_trial = index_img_trial + 2
+            }
+
+            var accuracy = (count_correct / count) * 100
+            return '<div>Great job! You got ' + accuracy + '% correct </p>'
+        }
+      }
+    
+    trials.push(cpt_practice_feedback)
 
     // remove the items you used from the final_list array
     final_list.splice(num_items)
