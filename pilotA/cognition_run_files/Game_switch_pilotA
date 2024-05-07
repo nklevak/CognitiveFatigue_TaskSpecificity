@@ -21,7 +21,7 @@ var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_tri
 
 // spatial recall variables;
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 1
+var sr_trials_per_block = 3
 var sr_practice_trial_num = 1
 var consistent_tile_duration = 300
 var grid_size_constant = 5
@@ -102,14 +102,14 @@ var random_stimulus_list = function(num_trials) {
 
     // transform the keys into image files
     for (const key of key_stim_list) {
-        final_stim_list.push("./img900_esterman/" + stim_dict[key])
+        final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
     }
     return final_stim_list;
 };
 
 // PRELOADING
 var preload_stim = []
-var path_to_img = "./img900_esterman/"
+var path_to_img = "./img900_esterman_w/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }
@@ -573,32 +573,36 @@ var sr_recall_forwards_practice = {
 function sr_getBlock() {
   var timeline_sr_block = []
 
-  var screenCheck={
-    type: jsPsychScreenCheck,
-    min_width: 258,
-    min_height: 364
-  }
-
-  var response_key = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: '<p style="font-size: 48px;">+</p>',
-    choices: 'NO_KEYS',
-    trial_duration: 400,
-  }
-
-  var recall_sr = {
-    type: jsPsychSpatialRecall,
-    grid_size: grid_size_constant,
-    sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
-    tile_duration: consistent_tile_duration,
-    backwards: false,
-    on_finish: function(data){
-      data.practice = "false"
-      data.game_type = "spatial_recall"
-    }
-  }
-
   for (i=0; i < sr_trials_per_block; i++){
+    var screenCheck={
+      type: jsPsychScreenCheck,
+      min_width: 258,
+      min_height: 364
+    }
+
+    var response_key = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: '<p style="font-size: 48px;">+</p>',
+      choices: 'NO_KEYS',
+      trial_duration: 400,
+    }
+
+    var recall_sr = {
+      type: jsPsychSpatialRecall,
+      grid_size: grid_size_constant,
+      sequence: jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem),
+      tile_duration: consistent_tile_duration,
+      backwards: false,
+      on_start: function(recall_sr) {
+        recall_sr.sequence = jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem)
+        console.log(recall_sr.sequence)
+      },
+      on_finish: function(data){
+        data.practice = "false"
+        data.game_type = "spatial_recall"
+      }
+    }
+
     timeline_sr_block.push(screenCheck,response_key,recall_sr)
   }
 
@@ -654,9 +658,9 @@ var cpt_task_instructions = {
       "<p>In this task, an image will appear in the center of the screen.</p><p>\
       If the image is a <strong>city</strong> press enter on the keyboard as fast as you can.</p><p>\
       If the image is a <strong>mountain</strong>, do not press a key.</p>\
-      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman/city_1.jpg'></img>\
+      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman_w/city_1.jpg'></img>\
       <p class='small'><strong>Press the enter key</strong></p></div>\
-      <div style='float: right;'><img src='./img900_esterman/mountain_1.jpg'></img>\
+      <div style='float: right;'><img src='./img900_esterman_w/mountain_1.jpg'></img>\
       <p class='small'><strong>Do not press a key</strong></p></div>\
       </div>",
     ],

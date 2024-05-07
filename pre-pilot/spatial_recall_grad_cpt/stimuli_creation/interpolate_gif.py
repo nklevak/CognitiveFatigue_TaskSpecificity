@@ -12,7 +12,7 @@ def interpolate_images(imageA, imageB, steps=27):
     return frames
 
 def load_and_resize_images(pathA, pathB):
-    large_path = "./stimuli/initial_esterman/"
+    large_path = "./stimuli/initial_esterman_w/"
     A_path = large_path + pathA
     B_path = large_path + pathB
 
@@ -28,7 +28,7 @@ def load_and_resize_images(pathA, pathB):
     resizedB = imageB.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
     # Save the resized images
-    save_path = "./stimuli/initial_esterman/resized/"
+    save_path = "./stimuli/initial_esterman_w/resized/"
     resizedA.save(save_path + pathA)
     resizedB.save(save_path + pathB)
     
@@ -46,14 +46,17 @@ def load_and_resize_images(pathA, pathB):
 image_list = []
 for i in range(1,11):
     image_list.append(f'city_{i}')
+image_list.append('white_1') # white background that we can transition from in the first trial and transition to in the last trial
 image_list.append('mountain_1')
 
-save_path = './stimuli/final_gifs_900_esterman/'
+save_path = './stimuli/final_gifs_900_e_w/'
 for image_a in image_list:
     image_a_fname = image_a.split('_')
     export_a = save_path
     if (image_a_fname[0]=="city"):
         export_a = export_a + "c" + image_a_fname[1] + "_"
+    elif (image_a_fname[0]=="white"):
+        export_a = export_a + "white" + image_a_fname[1] + "_"
     else:
         export_a = export_a + "m" + image_a_fname[1] + "_"
     
@@ -64,6 +67,8 @@ for image_a in image_list:
         image_b_fname = image_b.split('_')
         if (image_b_fname[0]=="city"):
             export = export + "c" + image_b_fname[1] + ".gif"
+        elif(image_b_fname[0]=="white"):
+            export = export + "white1.gif"
         else:
             export = export + "m" + image_b_fname[1] + ".gif"
         
