@@ -43,34 +43,100 @@ let stim_dict = {
 // ORDER OF STIMULI
 // this generates a random stimulus list for num_trials, with mountains appearing 10% of the time
 // the num_trials inputted here should be for the entire experiment 
+// var random_stimulus_list = function(num_trials) {
+//     var prev_trial_index = -1
+//     let key_stim_list = []
+//     let final_stim_list = []
+
+//     // get the keys with the fillers
+//     for (let i = 0; i < num_trials; i++) {
+//         let randomNumber = Math.floor(Math.random() * 10); // Generates a number between 0 and 9
+
+//         // prev_trial_index = -1 means this is the first round, so for i = 0, there is just the original picture
+//         if (prev_trial_index == -1) {
+//             if (randomNumber == 0) {
+//                 key_stim_list.push(randomNumber.toString()) // starts with mountain
+//             }
+//             else { // starts with a city picture
+//                 randomNumber = Math.floor(Math.random() * 6) + 1
+//                 key_stim_list.push(randomNumber.toString()) // number between 1 and 6
+//             }
+//             prev_trial_index = randomNumber // update previous trial
+//             continue
+//         }
+
+//         // for all other rounds, we add the transition from the previous image first, then the new image
+//         if (randomNumber == 0 && prev_trial_index != 0) { // same trial can't happen in a row
+//             key_stim_list.push(prev_trial_index + '-' + randomNumber) // add transition to this image
+//             key_stim_list.push(randomNumber.toString()) // add this image
+//             prev_trial_index = randomNumber
+//         } else { 
+//             if (prev_trial_index == 0) { // if the prior trial was 0 and we get 0 again, we have to give it a num 1 to 6 instead
+//                 randomNumber = Math.floor(Math.random() * 6) + 1 
+//             } else {
+//                 randomNumber = Math.floor(Math.random() * 5) + 1 
+//                 if (randomNumber >= prev_trial_index) { // random number is 1-6 now (but will not be = to prev trial)
+//                     randomNumber++;
+//                 }
+//             }
+//             key_stim_list.push(prev_trial_index + "-" + randomNumber) // transition to this image
+//             key_stim_list.push(randomNumber.toString()) // number between 1 and 6 (excluding prev trial), add this image
+//             prev_trial_index = randomNumber
+//         }
+//     }
+
+//     // transform the keys into image files
+//     for (const key of key_stim_list) {
+//         final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
+//     }
+//     return final_stim_list;
+// };
+
+
+// UPDATED TO ADD THE TRANSITION FROM WHITE AND THE TRANSITION TO WHITE
+// num_trials = practice_trials_gradcpt_num + gradcpt_trials_per_block * num_blocks
+// each trial will be white to first img, transiton from first to next img, ....., transition to last, 
+// last img, transition from last img to white
 var random_stimulus_list = function(num_trials) {
     var prev_trial_index = -1
     let key_stim_list = []
     let final_stim_list = []
+    var randomNumber = 0
 
-    // get the keys with the fillers
-    for (let i = 0; i < num_trials; i++) {
-        let randomNumber = Math.floor(Math.random() * 10); // Generates a number between 0 and 9
-
-        // prev_trial_index = -1 means this is the first round, so for i = 0, there is just the original picture
-        if (prev_trial_index == -1) {
+    // do the practice trials
+    var num_trials = practice_trials_gradcpt_num
+    prev_trial_index = -1
+    for (let i =0; i < num_trials;i++){
+        randomNumber = Math.floor(Math.random() * 10); // Generates a number between 0 and 9
+        // this means this is the first trial
+        if (prev_trial_index == -1){
             if (randomNumber == 0) {
+                // starts with mountain
+                // push transition from white to mountain
+                key_stim_list.push('-1-'+randomNumber.toString()) // starts with transition white to mountain
+
+                // push mountain
                 key_stim_list.push(randomNumber.toString()) // starts with mountain
-            }
-            else { // starts with a city picture
+            } else {
+                // starts with a city
                 randomNumber = Math.floor(Math.random() * 6) + 1
-                key_stim_list.push(randomNumber.toString()) // number between 1 and 6
+
+                // push transition from white to city
+                key_stim_list.push('-1-'+randomNumber.toString()) // starts with transition white to city
+                // push city
+                key_stim_list.push(randomNumber.toString())
             }
-            prev_trial_index = randomNumber // update previous trial
+            prev_trial_index = randomNumber
+            // skip to next trial
             continue
         }
 
-        // for all other rounds, we add the transition from the previous image first, then the new image
-        if (randomNumber == 0 && prev_trial_index != 0) { // same trial can't happen in a row
+        // this part will only get activated if it is not the first trial
+        // adds transition from prev trial index and then a new img
+        if (randomNumber == 0 && prev_trial_index != 0) {
             key_stim_list.push(prev_trial_index + '-' + randomNumber) // add transition to this image
             key_stim_list.push(randomNumber.toString()) // add this image
-            prev_trial_index = randomNumber
-        } else { 
+        } else {
             if (prev_trial_index == 0) { // if the prior trial was 0 and we get 0 again, we have to give it a num 1 to 6 instead
                 randomNumber = Math.floor(Math.random() * 6) + 1 
             } else {
@@ -81,7 +147,70 @@ var random_stimulus_list = function(num_trials) {
             }
             key_stim_list.push(prev_trial_index + "-" + randomNumber) // transition to this image
             key_stim_list.push(randomNumber.toString()) // number between 1 and 6 (excluding prev trial), add this image
+        }
+        prev_trial_index = randomNumber
+
+        // this part will only get activated if it is the last trial
+        // after adding the last trial, add a transition from img to white
+        if (i == (num_trials - 1)){
+            key_stim_list.push(prev_trial_index.toString() + '--1')// transition from img to white
+        }
+    }
+
+    // do the blocks, same as practice but do it num_blocks times
+    for (j = 0; j < num_blocks; j++){
+        num_trials = gradcpt_trials_per_block
+        prev_trial_index = -1
+
+        for (let i =0; i < num_trials;i++){
+            randomNumber = Math.floor(Math.random() * 10); // Generates a number between 0 and 9
+            // this means this is the first trial
+            if (prev_trial_index == -1){
+                if (randomNumber == 0) {
+                    // starts with mountain
+                    // push transition from white to mountain
+                    key_stim_list.push('-1-'+randomNumber.toString()) // starts with transition white to mountain
+    
+                    // push mountain
+                    key_stim_list.push(randomNumber.toString()) // starts with mountain
+                } else {
+                    // starts with a city
+                    randomNumber = Math.floor(Math.random() * 6) + 1
+    
+                    // push transition from white to city
+                    key_stim_list.push('-1-'+randomNumber.toString()) // starts with transition white to city
+                    // push city
+                    key_stim_list.push(randomNumber.toString())
+                }
+                prev_trial_index = randomNumber
+                // skip to next trial
+                continue
+            }
+    
+            // this part will only get activated if it is not the first trial
+            // adds transition from prev trial index and then a new img
+            if (randomNumber == 0 && prev_trial_index != 0) {
+                key_stim_list.push(prev_trial_index + '-' + randomNumber) // add transition to this image
+                key_stim_list.push(randomNumber.toString()) // add this image
+            } else {
+                if (prev_trial_index == 0) { // if the prior trial was 0 and we get 0 again, we have to give it a num 1 to 6 instead
+                    randomNumber = Math.floor(Math.random() * 6) + 1 
+                } else {
+                    randomNumber = Math.floor(Math.random() * 5) + 1 
+                    if (randomNumber >= prev_trial_index) { // random number is 1-6 now (but will not be = to prev trial)
+                        randomNumber++;
+                    }
+                }
+                key_stim_list.push(prev_trial_index + "-" + randomNumber) // transition to this image
+                key_stim_list.push(randomNumber.toString()) // number between 1 and 6 (excluding prev trial), add this image
+            }
             prev_trial_index = randomNumber
+    
+            // this part will only get activated if it is the last trial
+            // after adding the last trial, add a transition from img to white
+            if (i == (num_trials - 1)){
+                key_stim_list.push(prev_trial_index.toString() + '--1')// transition from img to white
+            }
         }
     }
 
@@ -89,6 +218,12 @@ var random_stimulus_list = function(num_trials) {
     for (const key of key_stim_list) {
         final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
     }
+    console.log("here:")
+    console.log(key_stim_list)
+    console.log(final_stim_list)
+    console.log(final_stim_list.length)
+    var how_many_should_be = practice_trials_gradcpt_num*2 + 1 + num_blocks*(gradcpt_trials_per_block*2 + 1)
+    console.log(how_many_should_be)
     return final_stim_list;
 };
 
@@ -260,7 +395,6 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
 
     // remove the items you used from the final_list array
     final_list.splice(num_items)
-    console.log(trials)
 
     return trials
 }
@@ -433,7 +567,6 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
 
     // remove the items you used from the final_list array
     final_list.splice(num_items)
-    console.log(trials)
 
     return trials
 }
