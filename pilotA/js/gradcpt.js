@@ -15,7 +15,10 @@ var all_stim = ["city_1.jpg","city_2.jpg","city_3.jpg","city_4.jpg", "city_5.jpg
 "c3_m1.gif","c4_c1.gif","c4_c2.gif","c4_c3.gif","c4_c5.gif","c4_c6.gif",
 "c4_m1.gif","c5_c1.gif","c5_c2.gif","c5_c3.gif","c5_c4.gif","c5_c6.gif",
 "c5_m1.gif","c6_c1.gif","c6_c2.gif","c6_c3.gif","c6_c4.gif","c6_c5.gif",
-"c6_m1.gif","m1_c1.gif","m1_c2.gif","m1_c3.gif","m1_c4.gif","m1_c5.gif"]
+"c6_m1.gif","m1_c1.gif","m1_c2.gif","m1_c3.gif","m1_c4.gif","m1_c5.gif",
+"white_1.jpg","c1_white1.gif", "c2_white1.gif","c3_white1.gif","c4_white1.gif",
+"c5_white1.gif","c6_white1.gif","m1_white1.gif","white1_c1.gif","white1_c2.gif",
+"white1_c3.gif","white1_c4.gif","white1_c5.gif","white1_c6.gif","white1_m1.gif"]
 
 let duration_levels_dict = {
     1: 700,2: 680,3: 660,4: 640,5: 620,6: 600,7: 580,8: 560,9: 540,10: 520,11: 500,
@@ -31,7 +34,10 @@ let stim_dict = {
     '5-2': 'c5_c2.gif','5-3': 'c5_c3.gif','5-4': 'c5_c4.gif','5-6': 'c5_c6.gif', '6-0': 'c2_m1.gif',
     '6-1': 'c6_c1.gif','6-2': 'c6_c2.gif', '6-3': 'c6_c3.gif','6-4': 'c6_c4.gif','6-5': 'c6_c5.gif',
     '0-1': 'm1_c1.gif','0-2': 'm1_c2.gif','0-3': 'm1_c3.gif','0-4': 'm1_c4.gif','0-5': 'm1_c5.gif',
-    '0-6': 'm1_c6.gif'
+    '0-6': 'm1_c6.gif','-1':"white_1.jpg",'-1-1':"white1_c1.gif",'-1-2':"white1_c2.gif",
+    '-1-3':"white1_c3.gif",'-1-4':"white1_c4.gif",'-1-5':"white1_c5.gif",'-1-6':"white1_c6.gif",'-1-0':"white1_m1.gif",
+    '1--1':"c1_white1.gif", '2--1':"c2_white1.gif",'3--1':"c3_white1.gif",'4--1':"c4_white1.gif",'5--1':"c5_white1.gif",
+    '6--1':"c6_white1.gif",'0--1':"m1_white1.gif"
 };
 
 // ORDER OF STIMULI
