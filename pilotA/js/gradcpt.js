@@ -1,9 +1,9 @@
 //////////////////////////////////////
 // EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
-var practice_trials_gradcpt_num = 1
+var practice_trials_gradcpt_num = 6
 var num_blocks = 4
-var gradcpt_trials_per_block = 1
+var gradcpt_trials_per_block = 6
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
 
@@ -81,14 +81,14 @@ var random_stimulus_list = function(num_trials) {
 
     // transform the keys into image files
     for (const key of key_stim_list) {
-        final_stim_list.push("./img900_esterman/" + stim_dict[key])
+        final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
     }
     return final_stim_list;
 };
 
 // PRELOADING
 var preload_stim = []
-var path_to_img = "./img900_esterman/"
+var path_to_img = "./img900_esterman_w/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }

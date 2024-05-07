@@ -2,7 +2,7 @@
 var sr_trials_per_block = 2
 var sr_practice_trial_num = 2
 var consistent_tile_duration = 300
-var grid_size_constant = 5
+var grid_size_constant = 4
 var digits_to_mem = 5
 
 ///////////////////////////////////////////////////////////////
