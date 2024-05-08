@@ -454,7 +454,7 @@ var getTrials_practice_gradcpt = function(num_trials){
     // add a feedback trial here
     var cpt_practice_feedback = {
         type: jsPsychHtmlKeyboardResponse,
-        trial_duration: 5000,
+        trial_duration: 2000,
         response_ends_trial:false,
         stimulus: function(){
             var cpt_practice_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"true",cpt_type: "img"}).values();

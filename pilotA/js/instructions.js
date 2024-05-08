@@ -2,7 +2,8 @@
 var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>Welcome to this experiment! In this experiment, you will be doing two tasks. Before we begin the actual experiment, let\'s do some practice trials.</p>"
+      "<p>Welcome to this experiment! In this experiment, you will be doing two tasks. Before we begin the actual experiment, let\'s do some practice trials.</p><br>\
+      We will begin with the first game."
     ],
     key_forward: 'ArrowRight',
     key_backward: 'ArrowLeft',
@@ -13,6 +14,19 @@ var welcome_practice_instructions = {
   }
 
 // #TODO CONSENT FORM
+var consent_form = {
+  type: jsPsychSurveyMultiChoice,
+  preamble: '<p>Welcome! Thank you for agreeing to take part in the pilot version of this study. If you consent to participating, please click the option below. If not, please exit out of the experiment.</p>',
+  questions: [
+    {
+      prompt: "Are you willing to take part in this study?", 
+      name: 'Consent_response', 
+      options: ['I agree to take part in this study.'], 
+      required: true,
+      horizontal: true
+    }, 
+  ]
+}
 
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
 var sr_task_instructions = {
@@ -60,19 +74,43 @@ var cpt_task_instructions = {
     button_label_next: 'Next'
   }
 
+var gradcpt_quiz = {
+  type: jsPsychSurveyMultiChoice,
+  questions: [
+    {
+      prompt: "For this game, I should:", 
+      name: 'gradcpt_question', 
+      options: ['Press the Space key for a city, and nothing for a mountain', 'Press the Enter key for a city, and nothing for a mountain', 'Press the Enter key for all images'], 
+      required: true
+    }
+  ],
+};
+
+var gradcpt_begin = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: 'The correct answer is to press the Enter key when you see a city, and nothing when you see a mountain. <br><br> When you are ready, press any key to continue to the game.</p>',
+  choices: "ALL_KEYS"
+  //trial_duration: 1200,
+}
+
+
 // MAIN EXPERIMENT INSTRUCTIONS + BDM
 var main_exp_BDM_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>We will now go into instructions for the main experiment.</p>",
-      "<p>You will be given points based on your accuracy in each trial, which will be converted to a monetary bonus at the end of the experiment. \
-      You will not be shown how many points you have until the end.</p><p>",
+      "<p>You will be given a monetary bonus based on your accuracy in this experiment.\
+      You will not be shown the bonus until the end.</p><p>",
+      "<p>You will be also be given an endowment of <strong>1000</strong> points which you can use throughout the game </p>",
       "<p>In this experiment, you will be switching between the two games you practiced earlier. You will occasionally be asked how many points \
-      (on a scale of 1 to 100)  you are willing to give away in order to switch to the other game</p>",
-      "<p>Think of this like an auction. We will also randomly generate a value from 1 to 100 each time you pick a value, and if your selection is \
-      larger <strong>you will get to switch games</strong> and <strong>you will only pay the number that we randomly generated </strong>\
-      (even if your value was significantly higher). If the value you offered is <strong>lower</strong> than our randomly generated value, you will continue playing \
-      your current game. Because of this,<strong> it is to your benefit to be honest in how much you are willing to pay</strong>.</p>",
+      (from 1 to 100) you are willing to offer in order to switch to the other game (these points will come from your endowment).</p>",
+      "<p>Think of this like an <strong>auction</strong>. <br><br>\
+      We will randomly select a value from 1 to 100 each time you are given the option to switch. Let's call this <strong> our bid </strong> <br><br> \
+      <strong> If the number of points you offer </strong> is \
+      <strong> larger </strong> than our bid, <strong> you will get to switch games</strong>, and <strong>you will only pay our bid value </strong>\
+      (even if your offer was significantly higher).<br><br>\
+      <strong>If the value you offer </strong> is <strong>lower</strong> than our bid value, <strong>you will continue playing \
+      your current game</strong>. Because of this,<strong> it is to your benefit to be honest in how much you are willing to pay</strong>.</p>",
       "<p>You will now be asked to answer a few questions about this, so feel free to re-read the instructions before you click Next </p>"
     ],
     key_forward: 'ArrowRight',
@@ -88,20 +126,46 @@ var BDM_quiz = {
     type: jsPsychSurveyMultiChoice,
     questions: [
       {
+        prompt: "Every time I get the option to switch, my offer will be compared to a randomly selected bid. Which of the following is true:", 
+        name: 'BDM_gen', 
+        options: ['This randomly selected bid is the same throughout the experiment.','This randomly selected bid gets re-generated every time I am given the option to switch.','This randomly selected bid will always be larger than mine.'], 
+        required: true
+      },
+      {
+        prompt: "When I get the option to switch, the points I'm offering come from:", 
+        name: 'BDM_points', 
+        options: ['My initial endowment of points.','The points I have gained from being accurate in the experiment so far.','They come from nowhere. I have an infinite amount of points to give.'], 
+        required: true
+      },
+      {
         prompt: "To get the best result when it comes to switching, I should:", 
         name: 'BDM_should', 
-        options: ['always give a higher number of points than I would really want to trade to switch', 'always give a lower number of points than I would really want to trade to switch', 'always be honest about exactly how many points I would be willing to switch'], 
+        options: ['Always offer a higher number of points than I would really want to trade to switch.', 'Always offer a lower number of points than I would really want to trade to switch.', 'Always be honest about exactly how many points I would be willing to trade.'], 
         required: true
-      }
+      },
     ],
+    randomize_question_order: false,
   };
+
+  var BDM_quiz_answers = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p> The correct answers are: <br><br> 1. The randomly selected bid that your offer will be compared to \
+    will be re-generated every time you get the option to switch. <br><br>\
+     2. The points you offer when you get the option to switch come from your initial endowment of points.<br><br>\
+     3. To get the best results when it comes to switching, you should always be honest about exactly how many points \
+     you would be willing to trade. <br><br> Press any key to continue. </p>',
+    choices: "ALL_KEYS",
+    trial_duration: 5000,
+  }
 
 var final_exp_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great! You are now ready to begin.</p>",
-      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. You will be given points each time you are correct (although you will not see them). You will also occasionally be asked how many points you would trade to switch to the other game. \
-      If your answer is higher than our randomly generated one, you will be switched! \
+      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. <br><br>\
+      You will be given points each time you are correct (although you will not see them). <br><br>You will also occasionally be asked \
+      how many points you would be willing to trade to switch to the other game. \
+      <br><br>If your answer is higher than our randomly generated one, you will be switched! \
       If not, you will stay on this game</p>",
       "<p>When you're ready, press Next to begin</p>",
     ],
