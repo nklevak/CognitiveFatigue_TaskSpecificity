@@ -6,6 +6,8 @@ var num_blocks = 4
 var gradcpt_trials_per_block = 6
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
+var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
+var curr_trial_duration_level = 1
 
 //////////////////////////////
 // STIMULI AND DURATION
@@ -165,12 +167,7 @@ var random_stimulus_list = function(num_trials) {
     for (const key of key_stim_list) {
         final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
     }
-    console.log("here:")
-    console.log(key_stim_list)
-    console.log(final_stim_list)
-    console.log(final_stim_list.length)
-    var how_many_should_be = practice_trials_gradcpt_num*2 + 1 + num_blocks*(gradcpt_trials_per_block*2 + 1)
-    console.log(how_many_should_be)
+
     return final_stim_list;
 };
 
@@ -192,13 +189,6 @@ var preload_manual = {
     images: preload_stim,
     message: 'Please wait while the experiment loads. This may take a few minutes.',
 };
-
-//////////////////////////////////////////////////////////////////////////////
-// DURATION MANIPULATION SECTION (for this pilot version, we do not need auto-titrating for now)
-// for this verion, these variables are initialized and exist but don't really mean anything because
-// adjust_duration = false
-var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
-var curr_trial_duration_level = 1
 
 // UPDATED GET TRIALS FUNCTION
 // each trial round is the transition and then the following image
@@ -320,6 +310,7 @@ var getTrials_gradcpt = function(num_trials){
             practice: "false",
             cpt_type: "transition"
         },
+        prompt:"<div style='text-align: center; margin-top: 20px;'>Ending now.</div>",
         trial_duration:duration_levels_dict[1],
         response_ends_trial:false,
         render_on_canvas: false,
@@ -328,7 +319,6 @@ var getTrials_gradcpt = function(num_trials){
 
     // remove the items you used from the final_list array
     final_list.splice(0,num_items + 1)
-    console.log(final_list)
 
     return trials
 }
@@ -403,7 +393,7 @@ var getTrials_practice_gradcpt = function(num_trials){
                     trial_number: i / 2,
                     curr_trial_duration: duration_levels_dict[level_for_all_trials],
                     game_type: "gradcpt",
-                    practice: "false",
+                    practice: "true",
                     cpt_type: "img"
                 },
                 prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
@@ -470,15 +460,13 @@ var getTrials_practice_gradcpt = function(num_trials){
             var cpt_practice_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"true",cpt_type: "img"}).values();
             var num_cpt_practice_trials = cpt_practice_trials.length
             var accuracy_count = 0
-            console.log(cpt_practice_trials)
             for (let i = 0; i < num_cpt_practice_trials; i++){
                 if(cpt_practice_trials[i].correct){
                     accuracy_count += 1
                 }
             }
-            console.log(accuracy_count)
-            console.log(num_cpt_practice_trials)
-            var accuracy =  num_cpt_practice_trials > 0 ? (100 * accuracy_count / num_cpt_practice_trials) : 0;
+
+            var accuracy =  num_trials > 0 ? (100 * accuracy_count / num_trials) : 0;
             
             jsPsych.data.get().addToLast({cpt_practice_accuracy: accuracy});// should I do something where if they get a lot wrong they have to do it again? or would this just be exclusion criteria?
 
@@ -490,7 +478,6 @@ var getTrials_practice_gradcpt = function(num_trials){
 
     // remove the items you used from the final_list array
     final_list.splice(0,num_items + 1)
-    console.log(final_list)
 
     return trials
 }
