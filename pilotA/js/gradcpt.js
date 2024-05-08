@@ -40,59 +40,6 @@ let stim_dict = {
     '6--1':"c6_white1.gif",'0--1':"m1_white1.gif"
 };
 
-// ORDER OF STIMULI
-// this generates a random stimulus list for num_trials, with mountains appearing 10% of the time
-// the num_trials inputted here should be for the entire experiment 
-// var random_stimulus_list = function(num_trials) {
-//     var prev_trial_index = -1
-//     let key_stim_list = []
-//     let final_stim_list = []
-
-//     // get the keys with the fillers
-//     for (let i = 0; i < num_trials; i++) {
-//         let randomNumber = Math.floor(Math.random() * 10); // Generates a number between 0 and 9
-
-//         // prev_trial_index = -1 means this is the first round, so for i = 0, there is just the original picture
-//         if (prev_trial_index == -1) {
-//             if (randomNumber == 0) {
-//                 key_stim_list.push(randomNumber.toString()) // starts with mountain
-//             }
-//             else { // starts with a city picture
-//                 randomNumber = Math.floor(Math.random() * 6) + 1
-//                 key_stim_list.push(randomNumber.toString()) // number between 1 and 6
-//             }
-//             prev_trial_index = randomNumber // update previous trial
-//             continue
-//         }
-
-//         // for all other rounds, we add the transition from the previous image first, then the new image
-//         if (randomNumber == 0 && prev_trial_index != 0) { // same trial can't happen in a row
-//             key_stim_list.push(prev_trial_index + '-' + randomNumber) // add transition to this image
-//             key_stim_list.push(randomNumber.toString()) // add this image
-//             prev_trial_index = randomNumber
-//         } else { 
-//             if (prev_trial_index == 0) { // if the prior trial was 0 and we get 0 again, we have to give it a num 1 to 6 instead
-//                 randomNumber = Math.floor(Math.random() * 6) + 1 
-//             } else {
-//                 randomNumber = Math.floor(Math.random() * 5) + 1 
-//                 if (randomNumber >= prev_trial_index) { // random number is 1-6 now (but will not be = to prev trial)
-//                     randomNumber++;
-//                 }
-//             }
-//             key_stim_list.push(prev_trial_index + "-" + randomNumber) // transition to this image
-//             key_stim_list.push(randomNumber.toString()) // number between 1 and 6 (excluding prev trial), add this image
-//             prev_trial_index = randomNumber
-//         }
-//     }
-
-//     // transform the keys into image files
-//     for (const key of key_stim_list) {
-//         final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
-//     }
-//     return final_stim_list;
-// };
-
-
 // UPDATED TO ADD THE TRANSITION FROM WHITE AND THE TRANSITION TO WHITE
 // num_trials = practice_trials_gradcpt_num + gradcpt_trials_per_block * num_blocks
 // each trial will be white to first img, transiton from first to next img, ....., transition to last, 
@@ -250,151 +197,138 @@ var preload_manual = {
 // DURATION MANIPULATION SECTION (for this pilot version, we do not need auto-titrating for now)
 // for this verion, these variables are initialized and exist but don't really mean anything because
 // adjust_duration = false
-var level_for_all_trials = 2 // this is all that matters in this version since adjust_duration below is false
+var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
 var curr_trial_duration_level = 1
-let max_dur = 11
-let min_dur = 1
 
-// GET TRIALS FUNCTION
-// each "trial round" is the image being shown, and the following transition
+// UPDATED GET TRIALS FUNCTION
+// each trial round is the transition and then the following image
+// it ends with an extra transition from img to white
 // pass in how many trial timeline rounds you want it to generate, and remove those from the final_list
-var getTrials_gradcpt = function(num_trials_gradcpt_block){
+var getTrials_gradcpt = function(num_trials){
     // array you return with the timeline objects
     var trials = []
 
-    // calculate how many elements of the final_list we need to take off
-    // for num_trials_gradcpt_block rounds, it is num_trials_gradcpt_block * 2 - 1 items of the list
-    // when we splice off items from the front of the list though, it should be num_trials_gradcpt_block * 2 
-    // since we won't use the final transition for anything anyways
-    var num_items = num_trials_gradcpt_block * 2
+    // take of num_trials from final_list
+    var num_items = num_trials * 2
 
-    for (let i = 0; i < num_items - 1; i = i + 2) {
-        // get each stimuli
-        var img_stim = final_list[i]
-        var transition_stim = final_list[i + 1]
+    // add a transition then image for each trial
+    for (let i = 0; i < num_items; i++){// evens are transitions odds are images
+        var stim = final_list[i]
+        var stim_type = "go"
+        var correct_key = "enter"
 
-        // define correct values for give stimuli
-        var img_stim_type = "go"
-        var transition_stim_type = "go"
-        var img_correct_key = "enter"
-        var transition_correct_key = "enter"
+        var trial_type = i % 2 == 0 ? 'transition' : 'img'
 
-        if (img_stim.includes("mountain")){
-            img_stim_type = "no-go"
-            img_correct_key = null
-        }
-        if (transition_stim.split('/')[2].split('_')[1].includes("m")){
-            transition_stim_type = "no-go"
-            transition_correct_key = null
-        }
+        if (trial_type == 'transition') { // that means adding a transition trial
+            if (stim.split('/')[2].split('_')[1].includes("m")){
+                stim_type = "no-go"
+                correct_key = null
+            }
 
-        // add image trials
-        var trial_img = {
-            type: jsPsychImageKeyboardResponse,
-            stimulus: img_stim,
-            choices: ['enter'],
-            data: {
-                stimulus_type: img_stim_type,
-                correct_key: img_correct_key,
-                trial_number: i,
-                game_type: "gradcpt",
-                practice: "false",
-                cpt_type: "img"
-            },
-            // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
-            trial_duration: function(i,adjust_duration=false){
-                // this means for every single trial we maintain the level at level_for_all_trials
-                if (adjust_duration == false) {
-                    curr_trial_duration_level = level_for_all_trials
-                    return duration_levels_dict[curr_trial_duration_level]
-                } else {
-                    if (i == 0) { // this is the first round
-                        return duration_levels_dict[curr_trial_duration_level]
+            // add transition trials
+            var trial_transition = {
+                type: jsPsychImageKeyboardResponse,
+                stimulus: stim,
+                choices: ['enter'],
+                data: {
+                    stimulus_type: stim_type,
+                    correct_key: correct_key,
+                    curr_level: 1,
+                    curr_trial_duration: duration_levels_dict[1],
+                    trial_number: i / 2,
+                    game_type: "gradcpt",
+                    practice: "false",
+                    cpt_type: "transition"
+                },
+                trial_duration:duration_levels_dict[1],
+                response_ends_trial:false,
+                render_on_canvas: false,
+                on_finish: function(data){
+                    // Score the response as correct or incorrect.
+                    if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
+                        data.correct = true;
                     } else {
-                        // change based on last full image, not based on transition
-                        prev_correct = jsPsych.data.get().last(2).values()[0].correct;
-                        if (prev_correct) {
-                            curr_trial_duration_level = curr_trial_duration_level + 1
-                            if (curr_trial_duration_level <= max_dur) {
-                                return duration_levels_dict[curr_trial_duration_level]
+                        data.correct = false; 
+                    }
+                }
+            };
+            trials.push(trial_transition)
+            continue
+        } else { // that means adding an imaage trial
+            if (stim.includes("mountain")){
+                stim_type = "no-go"
+                correct_key = null
+            }
+            // add image trials
+            var trial_img = {
+                type: jsPsychImageKeyboardResponse,
+                stimulus: stim,
+                choices: ['enter'],
+                data: {
+                    stimulus_type: stim_type,
+                    correct_key: correct_key,
+                    trial_number: i / 2,
+                    curr_trial_duration: duration_levels_dict[level_for_all_trials],
+                    game_type: "gradcpt",
+                    practice: "false",
+                    cpt_type: "img"
+                },
+                // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
+                trial_duration: duration_levels_dict[level_for_all_trials],
+                response_ends_trial:false,
+                render_on_canvas: false,
+                on_finish: function(data){
+                    // first check if they got it correct during the previous transition trial
+                    var prev_correct = jsPsych.data.get().last(2).values()[0].correct
+                    
+                    // Score the response as correct or incorrect.
+                    if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
+                        data.correct = true;
+                    } else {
+                        if (prev_correct){// if the transition was correct then it seeps onto the image trial
+                            // unless its a mountain trial, then if they're wrong in image trial they're wrong
+                            if (data.stimulus_type == "no-go") {
+                                data.correct = false;
                             } else {
-                                curr_trial_duration_level = max_dur
-                                return duration_levels_dict[curr_trial_duration_level]
+                                data.correct = true;
                             }
                         } else {
-                            curr_trial_duration_level = curr_trial_duration_level - 1
-                            if (curr_trial_duration_level >= min_dur) {
-                                return duration_levels_dict[curr_trial_duration_level]
-                            } else {
-                                curr_trial_duration_level = min_dur
-                                return duration_levels_dict[curr_trial_duration_level]
-                            }
+                            data.correct = false; 
                         }
                     }
+                    data.curr_level = curr_trial_duration_level
+                    data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
                 }
-            },
-            response_ends_trial:false,
-            render_on_canvas: false,
-            on_finish: function(data){
-                // first check if they got it correct during the previous transition trial
-                var prev_correct = false
-                if (i != 0) {// if this is the first trial, then there is no previous transition trial
-                    prev_correct = jsPsych.data.get().last(2).values()[0].correct
-                }
-                // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
-                  data.correct = true;
-                } else {
-                  if (prev_correct){// if the transition was correct then it seeps onto the image trial
-                    // unless its a mountain trial, then if they're wrong in image trial they're wrong
-                    if (data.stimulus_type == "no-go") {
-                        data.correct = false;
-                    } else {
-                        data.correct = true;
-                    }
-                  } else {
-                    data.correct = false; 
-                  }
-                }
-                data.curr_level = curr_trial_duration_level
-                data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
-            }
-        };
-
-        // add transition trials
-        var trial_transition = {
-            type: jsPsychImageKeyboardResponse,
-            stimulus: transition_stim,
-            choices: ['enter'],
-            data: {
-                stimulus_type: transition_stim_type,
-                correct_key: transition_correct_key,
-                curr_level: 1,
-                curr_trial_duration: duration_levels_dict[1],
-                trial_number: i+1,
-                game_type: "gradcpt",
-                practice: "false",
-                cpt_type: "transition"
-            },
-            trial_duration:duration_levels_dict[1],
-            response_ends_trial:false,
-            render_on_canvas: false,
-            on_finish: function(data){
-                // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
-                  data.correct = true;
-                } else {
-                  data.correct = false; 
-                }
-            }
-        };
-
-        trials.push(trial_img)
-        trials.push(trial_transition)
+            };
+            trials.push(trial_img)
+            continue
+        }
     }
 
+    // add final transition from prev image to white
+    var trial_transition = {
+        type: jsPsychImageKeyboardResponse,
+        stimulus: final_list[num_items],
+        choices: ['enter'],
+        data: {
+            stimulus_type: 'filler',
+            correct_key: 'enter',
+            curr_level: 1,
+            curr_trial_duration: duration_levels_dict[1],
+            trial_number: i / 2,
+            game_type: "gradcpt",
+            practice: "false",
+            cpt_type: "transition"
+        },
+        trial_duration:duration_levels_dict[1],
+        response_ends_trial:false,
+        render_on_canvas: false,
+    };
+    trials.push(trial_transition)
+
     // remove the items you used from the final_list array
-    final_list.splice(num_items)
+    final_list.splice(0,num_items + 1)
+    console.log(final_list)
 
     return trials
 }
@@ -402,141 +336,130 @@ var getTrials_gradcpt = function(num_trials_gradcpt_block){
 // GET PRACTICE TRIALS FUNCTION
 // each "trial round" is the image being shown, and the following transition
 // pass in how many trial timeline rounds you want it to generate, and remove those from the final_list
-var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
+var getTrials_practice_gradcpt = function(num_trials){
     // array you return with the timeline objects
     var trials = []
 
-    // calculate how many elements of the final_list we need to take off
-    // for num_trials_gradcpt_block rounds, it is num_trials_gradcpt_block * 2 - 1 items of the list
-    // when we splice off items from the front of the list though, it should be num_trials_gradcpt_block * 2 
-    // since we won't use the final transition for anything anyways
-    var num_items = num_trials_gradcpt_block * 2
+    // take of num_trials from final_list
+    var num_items = num_trials * 2
 
-    for (let i = 0; i < num_items - 1; i = i + 2) {
-        // get each stimuli
-        var img_stim = final_list[i]
-        var transition_stim = final_list[i + 1]
+    // add a transition then image for each trial
+    for (let i = 0; i < num_items; i++){// evens are transitions odds are images
+        var stim = final_list[i]
+        var stim_type = "go"
+        var correct_key = "enter"
 
-        // define correct values for give stimuli
-        var img_stim_type = "go"
-        var transition_stim_type = "go"
-        var img_correct_key = "enter"
-        var transition_correct_key = "enter"
+        var trial_type = i % 2 == 0 ? 'transition' : 'img'
 
-        if (img_stim.includes("mountain")){
-            img_stim_type = "no-go"
-            img_correct_key = null
-        }
-        if (transition_stim.split('/')[2].split('_')[1].includes("m")){
-            transition_stim_type = "no-go"
-            transition_correct_key = null
-        }
+        if (trial_type == 'transition') { // that means adding a transition trial
+            if (stim.split('/')[2].split('_')[1].includes("m")){
+                stim_type = "no-go"
+                correct_key = null
+            }
 
-        // add image trials
-        var trial_img = {
-            type: jsPsychImageKeyboardResponse,
-            stimulus: img_stim,
-            choices: ['enter'],
-            data: {
-                stimulus_type: img_stim_type,
-                correct_key: img_correct_key,
-                trial_number: i,
-                game_type: "gradcpt",
-                practice: "true",
-                cpt_type: "img"
-            },
-            prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
-            // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
-            trial_duration: function(i,adjust_duration=false){
-                // this means for every single trial we maintain the level at level_for_all_trials
-                if (adjust_duration == false) {
-                    curr_trial_duration_level = level_for_all_trials
-                    return duration_levels_dict[curr_trial_duration_level]
-                } else {
-                    if (i == 0) { // this is the first round
-                        return duration_levels_dict[curr_trial_duration_level]
+            // add transition trials
+            var trial_transition = {
+                type: jsPsychImageKeyboardResponse,
+                stimulus: stim,
+                choices: ['enter'],
+                data: {
+                    stimulus_type: stim_type,
+                    correct_key: correct_key,
+                    curr_level: 1,
+                    curr_trial_duration: duration_levels_dict[1],
+                    trial_number: i / 2,
+                    game_type: "gradcpt",
+                    practice: "true",
+                    cpt_type: "transition"
+                },
+                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
+                trial_duration:duration_levels_dict[1],
+                response_ends_trial:false,
+                render_on_canvas: false,
+                on_finish: function(data){
+                    // Score the response as correct or incorrect.
+                    if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
+                        data.correct = true;
                     } else {
-                        // change based on last full image, not based on transition
-                        prev_correct = jsPsych.data.get().last(2).values()[0].correct;
-                        if (prev_correct) {
-                            curr_trial_duration_level = curr_trial_duration_level + 1
-                            if (curr_trial_duration_level <= max_dur) {
-                                return duration_levels_dict[curr_trial_duration_level]
+                        data.correct = false; 
+                    }
+                }
+            };
+            trials.push(trial_transition)
+            continue
+        } else { // that means adding an imaage trial
+            if (stim.includes("mountain")){
+                stim_type = "no-go"
+                correct_key = null
+            }
+            // add image trials
+            var trial_img = {
+                type: jsPsychImageKeyboardResponse,
+                stimulus: stim,
+                choices: ['enter'],
+                data: {
+                    stimulus_type: stim_type,
+                    correct_key: correct_key,
+                    trial_number: i / 2,
+                    curr_trial_duration: duration_levels_dict[level_for_all_trials],
+                    game_type: "gradcpt",
+                    practice: "false",
+                    cpt_type: "img"
+                },
+                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
+                // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
+                trial_duration: duration_levels_dict[level_for_all_trials],
+                response_ends_trial:false,
+                render_on_canvas: false,
+                on_finish: function(data){
+                    // first check if they got it correct during the previous transition trial
+                    var prev_correct = jsPsych.data.get().last(2).values()[0].correct
+                    
+                    // Score the response as correct or incorrect.
+                    if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
+                        data.correct = true;
+                    } else {
+                        if (prev_correct){// if the transition was correct then it seeps onto the image trial
+                            // unless its a mountain trial, then if they're wrong in image trial they're wrong
+                            if (data.stimulus_type == "no-go") {
+                                data.correct = false;
                             } else {
-                                curr_trial_duration_level = max_dur
-                                return duration_levels_dict[curr_trial_duration_level]
+                                data.correct = true;
                             }
                         } else {
-                            curr_trial_duration_level = curr_trial_duration_level - 1
-                            if (curr_trial_duration_level >= min_dur) {
-                                return duration_levels_dict[curr_trial_duration_level]
-                            } else {
-                                curr_trial_duration_level = min_dur
-                                return duration_levels_dict[curr_trial_duration_level]
-                            }
+                            data.correct = false; 
                         }
                     }
+                    data.curr_level = curr_trial_duration_level
+                    data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
                 }
-            },
-            response_ends_trial:false,
-            render_on_canvas: false,
-            on_finish: function(data){
-                // first check if they got it correct during the previous transition trial
-                var prev_correct = false
-                if (i != 0) {// if this is the first trial, then there is no previous transition trial
-                    prev_correct = jsPsych.data.get().last(2).values()[0].correct
-                }
-                // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
-                  data.correct = true;
-                } else {
-                  if (prev_correct){// if the transition was correct then it seeps onto the image trial
-                    // unless its a mountain trial, then if they're wrong in image trial they're wrong
-                    if (data.stimulus_type == "no-go") {
-                        data.correct = false;
-                    } else {
-                        data.correct = true;
-                    }
-                  } else {
-                    data.correct = false; 
-                  }
-                }
-                data.curr_level = curr_trial_duration_level
-                data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
-            }
-        };
-
-        // add transition trials
-        var trial_transition = {
-            type: jsPsychImageKeyboardResponse,
-            stimulus: transition_stim,
-            choices: ['enter'],
-            prompt: "<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
-            data: {
-                stimulus_type: transition_stim_type,
-                correct_key: transition_correct_key,
-                curr_level: 1,
-                curr_trial_duration: duration_levels_dict[1],
-                trial_number: i+1,
-                game_type: "gradcpt",
-                practice: "true",
-                cpt_type: "transition"
-            },
-            trial_duration:duration_levels_dict[1],
-            response_ends_trial:false,
-            render_on_canvas: false,
-            on_finish: function(data){
-                // Score the response as correct or incorrect.
-                if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
-                  data.correct = true;
-                } else {
-                  data.correct = false; 
-                }
-            }
-        };
-        trials.push(trial_img)
-        trials.push(trial_transition)
+            };
+            trials.push(trial_img)
+            continue
+        }
     }
+    
+    // add final transition from prev image to white
+    var trial_transition = {
+        type: jsPsychImageKeyboardResponse,
+        stimulus: final_list[num_items],
+        choices: ['enter'],
+        data: {
+            stimulus_type: 'filler',
+            correct_key: 'enter',
+            curr_level: 1,
+            curr_trial_duration: duration_levels_dict[1],
+            trial_number: i / 2,
+            game_type: "gradcpt",
+            practice: "true",
+            cpt_type: "transition"
+        },
+        prompt:"<div style='text-align: center; margin-top: 20px;'>Ending now.</div>",
+        trial_duration:duration_levels_dict[1],
+        response_ends_trial:false,
+        render_on_canvas: false,
+    };
+    trials.push(trial_transition)
 
     // add a feedback trial here
     var cpt_practice_feedback = {
@@ -566,7 +489,8 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
     trials.push(cpt_practice_feedback)
 
     // remove the items you used from the final_list array
-    final_list.splice(num_items)
+    final_list.splice(0,num_items + 1)
+    console.log(final_list)
 
     return trials
 }
@@ -575,6 +499,7 @@ var getTrials_practice_gradcpt = function(num_trials_gradcpt_block){
 //// TIMELINE CREATION
 
 // ORDERED LIST OF STIMULI (length: totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block = max possible number of gradCPT trials in this experiment)
+// the num trials input here doesn't really do anything
 var final_list = random_stimulus_list(totalTrialNum_gradcpt)
 
 // PRACTICE TRIALS
