@@ -59,43 +59,9 @@ if (Math.random() < 0.5) {
 }
 var curr_block = 0
 var nextSwitch = false // update this in the on_finish of the switch_offer_screen
-
-// SWITCH OFFER SCREEN
-//var switch_offer_screen = {
-//    type: jsPsychHtmlSliderResponse,
-//    stimulus: `<div style="width:500px;">
-//        <p>How many points do you want to trade to switch games?</p>
-//        </div>`,
-//    require_movement: true,
-//    labels: ['0 points', '50 points', '100 points'],
-//    on_start: function(switch_offer_screen) {
-//        generated_value =  Math.floor(Math.random() * 101);
-//    },
-//    on_finish: function(data){
-//        var trade_value = jsPsych.data.get().last(1).values()[0].response
-//        data.generated_BDM_value = generated_value
-//        data.blocks_completed = curr_block
-//        data.prevBlockType = currentTask
-//
-//        if (trade_value >= generated_value) {
-//            nextSwitch = true
-//
-//            if (currentTask == "spatial_recall") {
-//                currentTask = "gradcpt"
-//            } else if (currentTask == "gradcpt") {
-//                currentTask = "spatial_recall"
-//            }
-//        } else {
-//            nextSwitch = false
-//        }
-
-//        data.switch_next_block = nextSwitch
-//    }
-//}
-
+var repeat_loop = false
 
 // SWITCH OFFER SCREEN (where participants type in their offer instead of a sliding scale)
-var repeat_loop = false
 var repeat_message = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<p style="font-size:40px;">Sorry, that was not a number between 1 and 100.</p><p style="font-size:40px;">Please press any key to try again.</p>',
