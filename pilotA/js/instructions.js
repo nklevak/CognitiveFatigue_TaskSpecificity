@@ -162,8 +162,8 @@ var final_exp_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great! You are now ready to begin.</p>",
-      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. <br><br>\
-      You will be given points each time you are correct (although you will not see them). <br><br>You will also occasionally be asked \
+      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced.\
+      <br><br>You will also occasionally be asked \
       how many points you would be willing to trade to switch to the other game. \
       <br><br>If your answer is higher than our randomly generated one, you will be switched! \
       If not, you will stay on this game</p>",

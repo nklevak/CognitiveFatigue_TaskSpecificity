@@ -1,34 +1,34 @@
 // important experiment variables
 // SR EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 24
+var sr_trials_per_block = 8
 var sr_practice_trial_num = 6
-var consistent_tile_duration = 400
+var consistent_tile_duration = 325
 var grid_size_constant = 4
 var digits_to_mem = 5
 // CPT EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
 var practice_trials_gradcpt_num = 30
-var num_blocks = 7
-var gradcpt_trials_per_block = 90
+var num_blocks = 8
+var gradcpt_trials_per_block = 40
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
 var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
 var curr_trial_duration_level = 1
 // experiment_looping file
 // important variables to customize
-var dollars_per_correct_bonus = 0.05
+var dollars_per_correct_bonus = 0.01
 
 
 // Initialize jsPsych.
 var jsPsych = initJsPsych({
-    //on_finish: function() {
+    on_finish: function() {
       // Add interactions to the data variable
       // var interaction_data = jsPsych.data.getInteractionData();
       // jsPsych.data.get().addToLast({interactions: interaction_data.json()});
   
       // Display jsPsych data in viewport.
-      // jsPsych.data.displayData();
-    //}
+      jsPsych.data.displayData();
+    }
   });
   
   // spatial recall file
@@ -101,11 +101,11 @@ function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
 // PRACTICE SESSION
 var sr_recall_forwards_practice = {
   timeline: [
-    {
-      type: jsPsychScreenCheck,
-      min_width: 258,
-      min_height: 364
-    },
+    // {
+    //   type: jsPsychScreenCheck,
+    //   min_width: 258,
+    //   min_height: 364
+    // },
     {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: '<p style="font-size: 48px;">+</p>',
@@ -144,11 +144,11 @@ function sr_getBlock() {
   var timeline_sr_block = []
 
   for (i=0; i < sr_trials_per_block; i++){
-    var screenCheck={
-      type: jsPsychScreenCheck,
-      min_width: 258,
-      min_height: 364
-    }
+    // var screenCheck={
+    //   type: jsPsychScreenCheck,
+    //   min_width: 258,
+    //   min_height: 364
+    // }
   
     var response_key = {
       type: jsPsychHtmlKeyboardResponse,
@@ -165,7 +165,6 @@ function sr_getBlock() {
       backwards: false,
       on_start: function(recall_sr) {
         recall_sr.sequence = jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem)
-        console.log(recall_sr.sequence)
       },
       on_finish: function(data){
         data.practice = "false"
@@ -173,7 +172,9 @@ function sr_getBlock() {
       }
     }
 
-    timeline_sr_block.push(screenCheck,response_key,recall_sr)
+    // timeline_sr_block.push(screenCheck,response_key,recall_sr)
+    timeline_sr_block.push(response_key,recall_sr)
+
   }
 
   return timeline_sr_block
@@ -371,6 +372,16 @@ var getTrials_gradcpt = function(num_trials){
 
     // take of num_trials from final_list
     var num_items = num_trials * 2
+    
+    // preload for this block
+    var preload_stim_block = final_list.slice(0,num_items+1)
+    var preload_manual_block = {
+      type: jsPsychPreload,
+      show_detailed_errors: true,
+      images: preload_stim_block,
+      message: 'Please wait while the game loads.',
+    };
+    timeline.push(preload_manual_block)
 
     // add a transition then image for each trial
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
@@ -445,6 +456,10 @@ var getTrials_gradcpt = function(num_trials){
                     // Score the response as correct or incorrect.
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
+                        
+                        if (data.stimulus_type == "no-go"){
+                            data.correct = prev_correct
+                        }
                     } else {
                         if (prev_correct){// if the transition was correct then it seeps onto the image trial
                             // unless its a mountain trial, then if they're wrong in image trial they're wrong
@@ -579,6 +594,10 @@ var getTrials_practice_gradcpt = function(num_trials){
                     // Score the response as correct or incorrect.
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
+                        
+                        if (data.stimulus_type == "no-go"){
+                            data.correct = prev_correct
+                        }
                     } else {
                         if (prev_correct){// if the transition was correct then it seeps onto the image trial
                             // unless its a mountain trial, then if they're wrong in image trial they're wrong
@@ -818,23 +837,23 @@ var BDM_quiz = {
   var BDM_quiz_answers = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<p> The correct answers are: <br><br> 1. The randomly selected bid that your offer will be compared to \
-    will be re-generated every time you get the option to switch. <br><br>\
+    will be re-generated every time you get the option to switch. <br>\
      2. The points you offer when you get the option to switch come from your initial endowment of points.<br><br>\
      3. To get the best results when it comes to switching, you should always be honest about exactly how many points \
-     you would be willing to trade. <br><br> Press any key to continue. </p>',
+     you would be willing to trade. <br> Press any key to continue. </p>',
     choices: "ALL_KEYS",
-    trial_duration: 5000,
+    trial_duration: 10000,
   }
 
 var final_exp_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great! You are now ready to begin.</p>",
-      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. <br><br>\
-      You will be given points each time you are correct (although you will not see them). <br><br>You will also occasionally be asked \
+      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. And will be given a bonus based on accuracy. <br>\
+      You will occasionally be asked \
       how many points you would be willing to trade to switch to the other game. \
-      <br><br>If your answer is higher than our randomly generated one, you will be switched! \
-      If not, you will stay on this game</p>",
+      <br><br><strong>If your answer is larger than our randomly generated one, you will be switched! \
+      If not, you will stay on this game</strong></p>",
       "<p>When you're ready, press Next to begin</p>",
     ],
     key_forward: 'ArrowRight',
@@ -999,7 +1018,6 @@ var switchingGamesNotification = {
         if (curr_block >= num_blocks){
             switchingGamesNotification.stimulus = "Great work! We will now debrief you."
         } else if (nextSwitch == false) {
-            console.log("stay in same game")
             switchingGamesNotification.stimulus = "You will now stay in the same game."
         }
     }

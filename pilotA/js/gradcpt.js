@@ -1,9 +1,9 @@
 //////////////////////////////////////
 // EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
-var practice_trials_gradcpt_num = 6
+var practice_trials_gradcpt_num = 30
 var num_blocks = 4
-var gradcpt_trials_per_block = 6
+var gradcpt_trials_per_block = 30
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
 var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
@@ -201,6 +201,15 @@ var getTrials_gradcpt = function(num_trials){
     // take of num_trials from final_list
     var num_items = num_trials * 2
 
+    var preload_stim_block = final_list.slice(0,num_items+1)
+    var preload_manual_block = {
+      type: jsPsychPreload,
+      show_detailed_errors: true,
+      images: preload_stim_block,
+      message: 'Please wait while the game loads.',
+    };
+    timeline.push(preload_manual_block)
+
     // add a transition then image for each trial
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
         var stim = final_list[i]
@@ -238,6 +247,7 @@ var getTrials_gradcpt = function(num_trials){
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
                     } else {
+                        console.log("key was pressed, incorrect")
                         data.correct = false; 
                     }
                 }
@@ -274,6 +284,10 @@ var getTrials_gradcpt = function(num_trials){
                     // Score the response as correct or incorrect.
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
+                        // if it was a mountain, then being incorrect during the transition is enough to be incorrect now 
+                        if (data.stimulus_type == "no-go"){
+                            data.correct = prev_correct
+                        }
                     } else {
                         if (prev_correct){// if the transition was correct then it seeps onto the image trial
                             // unless its a mountain trial, then if they're wrong in image trial they're wrong
@@ -408,6 +422,10 @@ var getTrials_practice_gradcpt = function(num_trials){
                     // Score the response as correct or incorrect.
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
+
+                        if (data.stimulus_type == "no-go"){
+                            data.correct = prev_correct
+                        }
                     } else {
                         if (prev_correct){// if the transition was correct then it seeps onto the image trial
                             // unless its a mountain trial, then if they're wrong in image trial they're wrong
