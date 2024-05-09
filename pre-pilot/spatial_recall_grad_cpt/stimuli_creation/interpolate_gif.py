@@ -20,8 +20,8 @@ def load_and_resize_images(pathA, pathB):
     imageB = Image.open(B_path).convert('L')
     
     # used to be 100 by 150
-    target_width=200
-    target_height= 200
+    target_width=230
+    target_height= 230
     
     # Resize both images
     resizedA = imageA.resize((target_width, target_height), Image.Resampling.LANCZOS)
@@ -49,7 +49,7 @@ for i in range(1,11):
 image_list.append('white_1') # white background that we can transition from in the first trial and transition to in the last trial
 image_list.append('mountain_1')
 
-save_path = './stimuli/final_gifs_900_e_w/'
+save_path = './stimuli/final_gifs_900_e_w_big/'
 for image_a in image_list:
     image_a_fname = image_a.split('_')
     export_a = save_path

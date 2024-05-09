@@ -1,15 +1,15 @@
 // important experiment variables
 // SR EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 10
-var sr_practice_trial_num = 10
+var sr_trials_per_block = 24
+var sr_practice_trial_num = 6
 var consistent_tile_duration = 400
 var grid_size_constant = 4
 var digits_to_mem = 5
 // CPT EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
 var practice_trials_gradcpt_num = 30
-var num_blocks = 6
-var gradcpt_trials_per_block = 30
+var num_blocks = 7
+var gradcpt_trials_per_block = 90
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
 var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
@@ -21,14 +21,14 @@ var dollars_per_correct_bonus = 0.05
 
 // Initialize jsPsych.
 var jsPsych = initJsPsych({
-    on_finish: function() {
+    //on_finish: function() {
       // Add interactions to the data variable
       // var interaction_data = jsPsych.data.getInteractionData();
       // jsPsych.data.get().addToLast({interactions: interaction_data.json()});
   
       // Display jsPsych data in viewport.
-      jsPsych.data.displayData();
-    }
+      // jsPsych.data.displayData();
+    //}
   });
   
   // spatial recall file

@@ -60,9 +60,9 @@ var cpt_task_instructions = {
       "<p>In this task, an image will appear in the center of the screen.</p><p>\
       If the image is a <strong>city</strong> press enter on the keyboard as fast as you can.</p><p>\
       If the image is a <strong>mountain</strong>, do not press a key.</p>\
-      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman/city_1.jpg'></img>\
+      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman_w_big/city_1.jpg'></img>\
       <p class='small'><strong>Press the enter key</strong></p></div>\
-      <div style='float: right;'><img src='./img900_esterman/mountain_1.jpg'></img>\
+      <div style='float: right;'><img src='./img900_esterman_w_big/mountain_1.jpg'></img>\
       <p class='small'><strong>Do not press a key</strong></p></div>\
       </div>",
     ],
