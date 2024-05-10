@@ -189,6 +189,12 @@ var preload_manual = {
     images: preload_stim,
     message: 'Please wait while the experiment loads. This may take a few minutes.',
 };
+var preload_manual_instr = {
+    type: jsPsychPreload,
+    show_detailed_errors: true,
+    images: [path_to_img + 'mountain_1.jpg',path_to_img + 'city_1.jpg'],
+    message: 'Please wait while the experiment loads. This may take a few minutes.',
+};
 
 // UPDATED GET TRIALS FUNCTION
 // each trial round is the transition and then the following image
@@ -202,13 +208,17 @@ var getTrials_gradcpt = function(num_trials){
     var num_items = num_trials * 2
 
     var preload_stim_block = final_list.slice(0,num_items+1)
+    preload_stim_block.push(path_to_img + 'mountain_1.jpg',path_to_img + 'city_1.jpg')
     var preload_manual_block = {
       type: jsPsychPreload,
       show_detailed_errors: true,
       images: preload_stim_block,
       message: 'Please wait while the game loads.',
+      on_finish: function(){
+        console.log("done!")
+      }
     };
-    timeline.push(preload_manual_block)
+    trials.push(preload_manual_block)
 
     // add a transition then image for each trial
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
@@ -346,6 +356,18 @@ var getTrials_practice_gradcpt = function(num_trials){
 
     // take of num_trials from final_list
     var num_items = num_trials * 2
+    var preload_stim_block = final_list.slice(0,num_items+1)
+    preload_stim_block.push(path_to_img + 'mountain_1.jpg',path_to_img + 'city_1.jpg')
+    var preload_manual_block = {
+      type: jsPsychPreload,
+      show_detailed_errors: true,
+      images: preload_stim_block,
+      message: 'Please wait while the game loads.',
+      on_finish: function(){
+        console.log("done!")
+      }
+    };
+    trials.push(preload_manual_block)
 
     // add a transition then image for each trial
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
