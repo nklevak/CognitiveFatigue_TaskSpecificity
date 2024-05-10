@@ -58,10 +58,10 @@ var cpt_task_instructions = {
     pages: [
       "<p>Welcome to the gradual onset game! Click next for the instructions.</p>",
       "<p>In this task, an image will appear in the center of the screen.</p><p>\
-      If the image is a <strong>city</strong> press enter on the keyboard as fast as you can.</p><p>\
+      If the image is a <strong>city</strong> press Spacebar on the keyboard as fast as you can.</p><p>\
       If the image is a <strong>mountain</strong>, do not press a key.</p>\
       <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman_w_big/city_1.jpg'></img>\
-      <p class='small'><strong>Press the enter key</strong></p></div>\
+      <p class='small'><strong>Press the Space key</strong></p></div>\
       <div style='float: right;'><img src='./img900_esterman_w_big/mountain_1.jpg'></img>\
       <p class='small'><strong>Do not press a key</strong></p></div>\
       </div>",
@@ -80,7 +80,7 @@ var gradcpt_quiz = {
     {
       prompt: "For this game, I should:", 
       name: 'gradcpt_question', 
-      options: ['Press the Space key for a city, and nothing for a mountain', 'Press the Enter key for a city, and nothing for a mountain', 'Press the Enter key for all images'], 
+      options: ['Press the Enter key for a city, and nothing for a mountain', 'Press the Space key for a city, and nothing for a mountain', 'Press the Space key for all images'], 
       required: true
     }
   ],
@@ -88,7 +88,7 @@ var gradcpt_quiz = {
 
 var gradcpt_begin = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: 'The correct answer is to press the Enter key when you see a city, and nothing when you see a mountain. <br><br> When you are ready, press any key to continue to the game.</p>',
+  stimulus: 'The correct answer is to press the Space key when you see a city, and nothing when you see a mountain. <br><br> When you are ready, press any key to continue to the game.</p>',
   choices: "ALL_KEYS"
   //trial_duration: 1200,
 }

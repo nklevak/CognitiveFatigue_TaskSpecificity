@@ -224,7 +224,7 @@ var getTrials_gradcpt = function(num_trials){
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
         var stim = final_list[i]
         var stim_type = "go"
-        var correct_key = "enter"
+        var correct_key = " "
 
         var trial_type = i % 2 == 0 ? 'transition' : 'img'
 
@@ -238,7 +238,7 @@ var getTrials_gradcpt = function(num_trials){
             var trial_transition = {
                 type: jsPsychImageKeyboardResponse,
                 stimulus: stim,
-                choices: ['enter'],
+                choices: [' '],
                 data: {
                     stimulus_type: stim_type,
                     correct_key: correct_key,
@@ -273,7 +273,7 @@ var getTrials_gradcpt = function(num_trials){
             var trial_img = {
                 type: jsPsychImageKeyboardResponse,
                 stimulus: stim,
-                choices: ['enter'],
+                choices: [' '],
                 data: {
                     stimulus_type: stim_type,
                     correct_key: correct_key,
@@ -323,10 +323,10 @@ var getTrials_gradcpt = function(num_trials){
     var trial_transition = {
         type: jsPsychImageKeyboardResponse,
         stimulus: final_list[num_items],
-        choices: ['enter'],
+        choices: [' '],
         data: {
             stimulus_type: 'filler',
-            correct_key: 'enter',
+            correct_key: ' ',
             curr_level: 1,
             curr_trial_duration: duration_levels_dict[1],
             trial_number: i / 2,
@@ -373,7 +373,7 @@ var getTrials_practice_gradcpt = function(num_trials){
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
         var stim = final_list[i]
         var stim_type = "go"
-        var correct_key = "enter"
+        var correct_key = " "//space key
 
         var trial_type = i % 2 == 0 ? 'transition' : 'img'
 
@@ -387,7 +387,7 @@ var getTrials_practice_gradcpt = function(num_trials){
             var trial_transition = {
                 type: jsPsychImageKeyboardResponse,
                 stimulus: stim,
-                choices: ['enter'],
+                choices: [' '],
                 data: {
                     stimulus_type: stim_type,
                     correct_key: correct_key,
@@ -398,7 +398,7 @@ var getTrials_practice_gradcpt = function(num_trials){
                     practice: "true",
                     cpt_type: "transition"
                 },
-                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
+                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Spacebar if it is a city.</div>",
                 trial_duration:duration_levels_dict[1],
                 response_ends_trial:false,
                 render_on_canvas: false,
@@ -422,7 +422,7 @@ var getTrials_practice_gradcpt = function(num_trials){
             var trial_img = {
                 type: jsPsychImageKeyboardResponse,
                 stimulus: stim,
-                choices: ['enter'],
+                choices: [' '],
                 data: {
                     stimulus_type: stim_type,
                     correct_key: correct_key,
@@ -432,7 +432,7 @@ var getTrials_practice_gradcpt = function(num_trials){
                     practice: "true",
                     cpt_type: "img"
                 },
-                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Enter if it is a city.</div>",
+                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Spacebar if it is a city.</div>",
                 // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
                 trial_duration: duration_levels_dict[level_for_all_trials],
                 response_ends_trial:false,
@@ -473,10 +473,10 @@ var getTrials_practice_gradcpt = function(num_trials){
     var trial_transition = {
         type: jsPsychImageKeyboardResponse,
         stimulus: final_list[num_items],
-        choices: ['enter'],
+        choices: [' '],
         data: {
             stimulus_type: 'filler',
-            correct_key: 'enter',
+            correct_key: ' ',
             curr_level: 1,
             curr_trial_duration: duration_levels_dict[1],
             trial_number: i / 2,
