@@ -44,14 +44,21 @@ var sr_task_instructions = {
     allow_keys: true,
     show_clickable_nav: true,
     button_label_previous: 'Prev',
-    button_label_next: 'Next'
+    button_label_next: 'Next',
+    on_finish: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+      jsPsych.setProgressBar(0);
+    }
   }
 
   // TRANSITION BETWEEN GAMES IN PRACTICE SESSION
   var practice_transition = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<p> Great work! You will now have practice for the next game. Press any key to continue. </p>',
-    choices: "ALL_KEYS"
+    choices: "ALL_KEYS",
+    on_start: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+    }
     //trial_duration: 1200,
   }
 
@@ -92,7 +99,11 @@ var gradcpt_quiz = {
 var gradcpt_begin = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: 'The correct answer is to press the Space key when you see a city, and nothing when you see a mountain. <br><br> When you are ready, press any key to continue to the game.</p>',
-  choices: "ALL_KEYS"
+  choices: "ALL_KEYS",
+  on_finish: function(){
+    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+    jsPsych.setProgressBar(0);
+  }
   //trial_duration: 1200,
 }
 
@@ -121,7 +132,10 @@ var main_exp_BDM_instructions = {
     allow_keys: true,
     show_clickable_nav: true,
     button_label_previous: 'Prev',
-    button_label_next: 'Next'
+    button_label_next: 'Next',
+    on_start: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+    }
   }
 
 // BDM QUIZ

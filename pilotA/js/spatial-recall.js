@@ -72,6 +72,7 @@ function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
 }
 
 // PRACTICE SESSION
+var sr_practice_prop_added = 1/sr_practice_trial_num
 var sr_recall_forwards_practice = {
   timeline: [
     {
@@ -106,6 +107,10 @@ var sr_recall_forwards_practice = {
         } else {
           return "<p>Incorrect! Please try to focus on the order in which the squares appear.</p>"; // the parameter value has to be returned from the function
         }
+      },
+      on_start: function(){
+        var update_to = jsPsych.getProgressBarCompleted() + sr_practice_prop_added
+        jsPsych.setProgressBar(update_to);
       }
     }
   ],

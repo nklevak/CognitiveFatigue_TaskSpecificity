@@ -208,6 +208,10 @@ var switchingGamesNotification = {
             console.log("stay in same game")
             switchingGamesNotification.stimulus = "You will now stay in the same game."
         }
+    },
+    on_finish: function(){
+        document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+        jsPsych.setProgressBar(0);
     }
 };
 

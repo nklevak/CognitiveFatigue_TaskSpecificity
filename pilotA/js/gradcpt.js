@@ -359,6 +359,8 @@ var getTrials_practice_gradcpt = function(num_trials){
     // array you return with the timeline objects
     var trials = []
 
+    var proportion_to_update = 1/num_trials
+
     // take of num_trials from final_list
     var num_items = num_trials * 2
     var preload_stim_block = final_list.slice(0,num_items+1)
@@ -467,6 +469,9 @@ var getTrials_practice_gradcpt = function(num_trials){
                     }
                     data.curr_level = curr_trial_duration_level
                     data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
+
+                    var update_to = jsPsych.getProgressBarCompleted() + proportion_to_update
+                    jsPsych.setProgressBar(update_to);
                 }
             };
             trials.push(trial_img)
