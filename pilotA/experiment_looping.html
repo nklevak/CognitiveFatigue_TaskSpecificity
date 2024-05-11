@@ -78,6 +78,7 @@ var switch_offer_screen = {
     button_label: 'Submit bid',
     on_start: function(switch_offer_screen) {
         generated_value =  Math.floor(Math.random() * 101);
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(data){
         var trade_value = jsPsych.data.get().last(1).values()[0].response.bid
@@ -100,6 +101,9 @@ var switch_offer_screen = {
             }
 
             data.switch_next_block = nextSwitch
+
+            document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+            jsPsych.setProgressBar(0);
         } else {
             console.log("not valid")
         }
@@ -182,6 +186,8 @@ var overall_debrief = {
     on_start: function(overall_debrief) {
         var bonus = calculate_bonus()
 
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+
         overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
             effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
           were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
@@ -195,6 +201,7 @@ var switchingGamesNotification = {
     choices: 'NO_KEYS',  // No responses allowed
     trial_duration: 1000,
     on_start: function(switchingGamesNotification) {
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
         if (curr_block >= num_blocks){
             switchingGamesNotification.stimulus = "Great work! We will now debrief you."
         } else if (nextSwitch == false) {

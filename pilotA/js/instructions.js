@@ -25,7 +25,10 @@ var consent_form = {
       required: true,
       horizontal: true
     }, 
-  ]
+  ],
+  on_start: function(){
+    document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+  }
 }
 
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
@@ -174,5 +177,9 @@ var final_exp_instructions = {
     allow_keys: true,
     show_clickable_nav: true,
     button_label_previous: 'Prev',
-    button_label_next: 'Next'
+    button_label_next: 'Next',
+    on_finish: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+      jsPsych.setProgressBar(0);
+    }
 }

@@ -1,9 +1,9 @@
 //////////////////////////////////////
 // EXPERIMENT SET UP VARIABLES
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
-var practice_trials_gradcpt_num = 30
+var practice_trials_gradcpt_num = 10
 var num_blocks = 4
-var gradcpt_trials_per_block = 30
+var gradcpt_trials_per_block = 15
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
 var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
@@ -204,6 +204,8 @@ var getTrials_gradcpt = function(num_trials){
     // array you return with the timeline objects
     var trials = []
 
+    var proportion_per_trial = 1 / num_trials
+
     // take of num_trials from final_list
     var num_items = num_trials * 2
 
@@ -312,6 +314,9 @@ var getTrials_gradcpt = function(num_trials){
                     }
                     data.curr_level = curr_trial_duration_level
                     data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
+
+                    var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
+                    jsPsych.setProgressBar(progressbar_update);
                 }
             };
             trials.push(trial_img)
