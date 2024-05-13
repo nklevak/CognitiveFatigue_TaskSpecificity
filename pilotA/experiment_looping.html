@@ -20,6 +20,7 @@
   <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-animation@1.1.1"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-slider-response@1.1.3"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
 
 
   <!-- Load experiment -->
@@ -41,13 +42,14 @@ var dollars_per_correct_bonus = 0.30
 var timeline = [];
 
 // PRELOADS
-timeline.push(preload_auto, preload_manual)
+// timeline.push(preload_auto, preload_manual)
+timeline.push(preload_manual_instr)
 
 // INTRUCTIONS AND PRACTICE SESSION
-timeline.push(welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,cpt_task_instructions,gradcpt_practice_trials)
+timeline.push(consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,cpt_task_instructions,gradcpt_quiz,gradcpt_begin,gradcpt_practice_trials)
 
 // MAIN EXPERIMENT INSTRUCTIONS
-timeline.push(main_exp_BDM_instructions, BDM_quiz, final_exp_instructions)
+timeline.push(main_exp_BDM_instructions, BDM_quiz, BDM_quiz_answers, final_exp_instructions)
 
 ///////////////////////////////////////////////////////////
 // MAIN EXPERIMENT
@@ -58,37 +60,79 @@ if (Math.random() < 0.5) {
 }
 var curr_block = 0
 var nextSwitch = false // update this in the on_finish of the switch_offer_screen
+var repeat_loop = false
 
-// SWITCH OFFER SCREEN
+// SWITCH OFFER SCREEN (where participants type in their offer instead of a sliding scale)
+var repeat_message = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: '<p style="font-size:40px;">Sorry, that was not a number between 1 and 100.</p><p style="font-size:40px;">Please press any key to try again.</p>',
+    choices: "ALL_KEYS",
+    trial_duration: 2000,
+};
 var switch_offer_screen = {
-    type: jsPsychHtmlSliderResponse,
-    stimulus: `<div style="width:500px;">
-        <p>How many points do you want to trade to switch games?</p>
-        </div>`,
-    require_movement: true,
-    labels: ['0 points', '50 points', '100 points'],
+    type: jsPsychSurveyText,
+    preamble: '<div style="width:500px;"><p>How many points do you want to offer to switch games?</p></div>',
+    questions: [
+        {prompt: 'Enter a number from 1 to 100 here: ', name: 'bid',required: true,}
+    ],
+    button_label: 'Submit bid',
     on_start: function(switch_offer_screen) {
         generated_value =  Math.floor(Math.random() * 101);
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(data){
-        var trade_value = jsPsych.data.get().last(1).values()[0].response
-        data.generated_BDM_value = generated_value
-        data.blocks_completed = curr_block
-        data.prevBlockType = currentTask
+        var trade_value = jsPsych.data.get().last(1).values()[0].response.bid
+        var ans = parseInt(trade_value)
+        if (!(isNaN(ans) | ans < 1 | ans > 100)) {
+            data.generated_BDM_value = generated_value
+            data.blocks_completed = curr_block
+            data.prevBlockType = currentTask
 
-        if (trade_value >= generated_value) {
-            nextSwitch = true
+            if (trade_value >= generated_value) {
+                nextSwitch = true
 
-            if (currentTask == "spatial_recall") {
-                currentTask = "gradcpt"
-            } else if (currentTask == "gradcpt") {
-                currentTask = "spatial_recall"
+                if (currentTask == "spatial_recall") {
+                    currentTask = "gradcpt"
+                } else if (currentTask == "gradcpt") {
+                    currentTask = "spatial_recall"
+                }
+            } else {
+                nextSwitch = false
             }
-        } else {
-            nextSwitch = false
-        }
 
-        data.switch_next_block = nextSwitch
+            data.switch_next_block = nextSwitch
+
+            document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+            jsPsych.setProgressBar(0);
+        } else {
+            console.log("not valid")
+        }
+    }
+}
+var repeat_message_conditional = {
+    timeline: [repeat_message],
+    conditional_function: function() {
+        // get last response
+        var response = jsPsych.data.get().last(1).values()[0].response.bid
+        // convert from text to number
+        var response_num = parseInt(response);
+        if (isNaN(response_num) | response_num < 1 | response_num > 100) {
+            repeat_loop = true
+            // return true to show the repeat_message trial
+            return true;
+        } else {
+            repeat_loop = false
+            // return false to skip the repeat_message trial
+            return false;
+        }
+    }
+}
+var number_loop = {
+    timeline: [switch_offer_screen, repeat_message_conditional],
+    loop_function: function() {
+        // repeat this timeline if 'repeat_loop' is true
+        // don't repeat this timeline if 'repeat_loop' is false
+        return repeat_loop;
     }
 }
 
@@ -142,6 +186,8 @@ var overall_debrief = {
     on_start: function(overall_debrief) {
         var bonus = calculate_bonus()
 
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+
         overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
             effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
           were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
@@ -155,12 +201,17 @@ var switchingGamesNotification = {
     choices: 'NO_KEYS',  // No responses allowed
     trial_duration: 1000,
     on_start: function(switchingGamesNotification) {
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
         if (curr_block >= num_blocks){
             switchingGamesNotification.stimulus = "Great work! We will now debrief you."
         } else if (nextSwitch == false) {
             console.log("stay in same game")
             switchingGamesNotification.stimulus = "You will now stay in the same game."
         }
+    },
+    on_finish: function(){
+        document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+        jsPsych.setProgressBar(0);
     }
 };
 
@@ -179,10 +230,10 @@ var full_sr_block = {
 
 // FIRST BLOCK ADD MANUALLY
 if (curr_block == 0 && currentTask == "spatial_recall") {
-    timeline.push(full_sr_block,switch_offer_screen,switchingGamesNotification)
+    timeline.push(full_sr_block,number_loop,switchingGamesNotification)
     curr_block = curr_block + 1
 } else {
-    timeline.push(full_gradcpt_block,switch_offer_screen,switchingGamesNotification)
+    timeline.push(full_gradcpt_block,number_loop,switchingGamesNotification)
     curr_block = curr_block + 1
 }
 
@@ -225,7 +276,7 @@ var if_debrief_node = {
 
 // add the main experiment
 var main_loop = {
-    timeline: [if_cpt_node,if_sr_node,switch_offer_screen,switchingGamesNotification,if_debrief_node],
+    timeline: [if_cpt_node,if_sr_node,number_loop,switchingGamesNotification,if_debrief_node],
     loop_function: function(data){
         if (curr_block >= num_blocks) {
             return false

@@ -1,9 +1,9 @@
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 2
+var sr_trials_per_block = 5
 var sr_practice_trial_num = 2
-var consistent_tile_duration = 300
-var grid_size_constant = 5
-var digits_to_mem = 5
+var consistent_tile_duration = 350
+var grid_size_constant = 4
+var digits_to_mem = 4
 
 ///////////////////////////////////////////////////////////////
 ////// SET UP GRID DIFFICULTY TO BE MAX_TILE_DURATION & CREATE num_trials TRIALS
@@ -72,6 +72,7 @@ function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
 }
 
 // PRACTICE SESSION
+var sr_practice_prop_added = 1/sr_practice_trial_num
 var sr_recall_forwards_practice = {
   timeline: [
     {
@@ -106,6 +107,10 @@ var sr_recall_forwards_practice = {
         } else {
           return "<p>Incorrect! Please try to focus on the order in which the squares appear.</p>"; // the parameter value has to be returned from the function
         }
+      },
+      on_start: function(){
+        var update_to = jsPsych.getProgressBarCompleted() + sr_practice_prop_added
+        jsPsych.setProgressBar(update_to);
       }
     }
   ],
@@ -115,6 +120,7 @@ var sr_recall_forwards_practice = {
 // MAIN EXPERIMENT GET BLOCK TRIALS FUNCTION
 function sr_getBlock() {
   var timeline_sr_block = []
+  var proportion_per_trial = 1 / sr_trials_per_block
 
   for (i=0; i < sr_trials_per_block; i++){
     var screenCheck={
@@ -143,6 +149,9 @@ function sr_getBlock() {
       on_finish: function(data){
         data.practice = "false"
         data.game_type = "spatial_recall"
+
+        var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
+        jsPsych.setProgressBar(progressbar_update);
       }
     }
 
