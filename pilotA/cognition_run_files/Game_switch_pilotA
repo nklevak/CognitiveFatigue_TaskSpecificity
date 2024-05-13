@@ -18,21 +18,22 @@ var curr_trial_duration_level = 1
 // important variables to customize
 var dollars_per_correct_bonus = 0.01
 
-
+/////////////////////////////
 // Initialize jsPsych.
 var jsPsych = initJsPsych({
+    show_progress_bar: true,
+    auto_update_progress_bar: false,
     on_finish: function() {
       // Add interactions to the data variable
       // var interaction_data = jsPsych.data.getInteractionData();
       // jsPsych.data.get().addToLast({interactions: interaction_data.json()});
-  
       // Display jsPsych data in viewport.
       jsPsych.data.displayData();
     }
   });
   
-  // spatial recall file
-  ///////////////////////////////////////////////////////////////
+// spatial recall file
+///////////////////////////////////////////////////////////////
 ////// SET UP GRID DIFFICULTY TO BE MAX_TILE_DURATION & CREATE num_trials TRIALS
 // this function sets up the timing of each trial. 
 // IF CHANGE_DIFFICULTY = TRUE: It will start with the max duration for the first group of 5. Then for every subsequent group it will sample from prev_group - 100 +/- 50.
@@ -99,13 +100,14 @@ function getGridParams(num_trials,max_tile_duration,change_difficulty=false) {
 }
 
 // PRACTICE SESSION
+var sr_practice_prop_added = 1/sr_practice_trial_num
 var sr_recall_forwards_practice = {
   timeline: [
-    // {
-    //   type: jsPsychScreenCheck,
-    //   min_width: 258,
-    //   min_height: 364
-    // },
+    {
+      type: jsPsychScreenCheck,
+      min_width: 258,
+      min_height: 364
+    },
     {
       type: jsPsychHtmlKeyboardResponse,
       stimulus: '<p style="font-size: 48px;">+</p>',
@@ -133,6 +135,10 @@ var sr_recall_forwards_practice = {
         } else {
           return "<p>Incorrect! Please try to focus on the order in which the squares appear.</p>"; // the parameter value has to be returned from the function
         }
+      },
+      on_start: function(){
+        var update_to = jsPsych.getProgressBarCompleted() + sr_practice_prop_added
+        jsPsych.setProgressBar(update_to);
       }
     }
   ],
@@ -142,13 +148,14 @@ var sr_recall_forwards_practice = {
 // MAIN EXPERIMENT GET BLOCK TRIALS FUNCTION
 function sr_getBlock() {
   var timeline_sr_block = []
+  var proportion_per_trial = 1 / sr_trials_per_block
 
   for (i=0; i < sr_trials_per_block; i++){
-    // var screenCheck={
-    //   type: jsPsychScreenCheck,
-    //   min_width: 258,
-    //   min_height: 364
-    // }
+    var screenCheck={
+      type: jsPsychScreenCheck,
+      min_width: 258,
+      min_height: 364
+    }
   
     var response_key = {
       type: jsPsychHtmlKeyboardResponse,
@@ -165,23 +172,24 @@ function sr_getBlock() {
       backwards: false,
       on_start: function(recall_sr) {
         recall_sr.sequence = jsPsych.randomization.sampleWithoutReplacement([...Array(16).keys()], digits_to_mem)
+        console.log(recall_sr.sequence)
       },
       on_finish: function(data){
         data.practice = "false"
         data.game_type = "spatial_recall"
+
+        var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
+        jsPsych.setProgressBar(progressbar_update);
       }
     }
 
-    // timeline_sr_block.push(screenCheck,response_key,recall_sr)
-    timeline_sr_block.push(response_key,recall_sr)
-
+    timeline_sr_block.push(screenCheck,response_key,recall_sr)
   }
 
   return timeline_sr_block
 }
-
+///////////////////////////////////////////
 // gradcpt file
-//////////////////////////////
 // STIMULI AND DURATION
 var all_stim = ["city_1.jpg","city_2.jpg","city_3.jpg","city_4.jpg", "city_5.jpg","city_6.jpg","mountain_1.jpg",
 "c1_c2.gif","c1_c3.gif","c1_c4.gif","c1_c5.gif","c1_c6.gif","c1_m1.gif","c2_c1.gif","c2_c3.gif","c2_c4.gif","c2_c5.gif","c2_c6.gif",
@@ -337,7 +345,7 @@ var random_stimulus_list = function(num_trials) {
 
     // transform the keys into image files
     for (const key of key_stim_list) {
-        final_stim_list.push("./img900_esterman_w/" + stim_dict[key])
+        final_stim_list.push("./img900_esterman_w_big/" + stim_dict[key])
     }
 
     return final_stim_list;
@@ -345,7 +353,7 @@ var random_stimulus_list = function(num_trials) {
 
 // PRELOADING
 var preload_stim = []
-var path_to_img = "./img900_esterman_w/"
+var path_to_img = "./img900_esterman_w_big/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }
@@ -376,11 +384,13 @@ var getTrials_gradcpt = function(num_trials){
     // array you return with the timeline objects
     var trials = []
 
+    var proportion_per_trial = 1 / num_trials
+
     // take of num_trials from final_list
     var num_items = num_trials * 2
-    
-    // preload for this block
+
     var preload_stim_block = final_list.slice(0,num_items+1)
+    preload_stim_block.push(path_to_img + 'mountain_1.jpg',path_to_img + 'city_1.jpg')
     var preload_manual_block = {
       type: jsPsychPreload,
       show_detailed_errors: true,
@@ -429,6 +439,7 @@ var getTrials_gradcpt = function(num_trials){
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
                     } else {
+                        console.log("key was pressed, incorrect")
                         data.correct = false; 
                     }
                 }
@@ -465,7 +476,7 @@ var getTrials_gradcpt = function(num_trials){
                     // Score the response as correct or incorrect.
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
-                        
+                        // if it was a mountain, then being incorrect during the transition is enough to be incorrect now 
                         if (data.stimulus_type == "no-go"){
                             data.correct = prev_correct
                         }
@@ -483,6 +494,9 @@ var getTrials_gradcpt = function(num_trials){
                     }
                     data.curr_level = curr_trial_duration_level
                     data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
+
+                    var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
+                    jsPsych.setProgressBar(progressbar_update);
                 }
             };
             trials.push(trial_img)
@@ -525,6 +539,8 @@ var getTrials_practice_gradcpt = function(num_trials){
     // array you return with the timeline objects
     var trials = []
 
+    var proportion_to_update = 1/num_trials
+
     // take of num_trials from final_list
     var num_items = num_trials * 2
     var preload_stim_block = final_list.slice(0,num_items+1)
@@ -544,7 +560,7 @@ var getTrials_practice_gradcpt = function(num_trials){
     for (let i = 0; i < num_items; i++){// evens are transitions odds are images
         var stim = final_list[i]
         var stim_type = "go"
-        var correct_key = " "
+        var correct_key = " "//space key
 
         var trial_type = i % 2 == 0 ? 'transition' : 'img'
 
@@ -569,7 +585,7 @@ var getTrials_practice_gradcpt = function(num_trials){
                     practice: "true",
                     cpt_type: "transition"
                 },
-                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Space if it is a city.</div>",
+                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Spacebar if it is a city.</div>",
                 trial_duration:duration_levels_dict[1],
                 response_ends_trial:false,
                 render_on_canvas: false,
@@ -603,7 +619,7 @@ var getTrials_practice_gradcpt = function(num_trials){
                     practice: "true",
                     cpt_type: "img"
                 },
-                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Space if it is a city.</div>",
+                prompt:"<div style='text-align: center; margin-top: 20px;'>Press Spacebar if it is a city.</div>",
                 // fix the step function so that if the transition was correct, it doesn't mean this specific image gets harder
                 trial_duration: duration_levels_dict[level_for_all_trials],
                 response_ends_trial:false,
@@ -615,7 +631,7 @@ var getTrials_practice_gradcpt = function(num_trials){
                     // Score the response as correct or incorrect.
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
-                        
+
                         if (data.stimulus_type == "no-go"){
                             data.correct = prev_correct
                         }
@@ -633,6 +649,9 @@ var getTrials_practice_gradcpt = function(num_trials){
                     }
                     data.curr_level = curr_trial_duration_level
                     data.curr_trial_duration = duration_levels_dict[curr_trial_duration_level]
+
+                    var update_to = jsPsych.getProgressBarCompleted() + proportion_to_update
+                    jsPsych.setProgressBar(update_to);
                 }
             };
             trials.push(trial_img)
@@ -704,7 +723,7 @@ var final_list = random_stimulus_list(totalTrialNum_gradcpt)
 var gradcpt_practice_trials = {
     timeline: getTrials_practice_gradcpt(practice_trials_gradcpt_num)
 }
-
+////////////////////////////////////////////
 // instructions files
 // WELCOME TO EXPERIMENT
 var welcome_practice_instructions = {
@@ -733,7 +752,10 @@ var consent_form = {
       required: true,
       horizontal: true
     }, 
-  ]
+  ],
+  on_start: function(){
+    document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+  }
 }
 
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
@@ -749,14 +771,21 @@ var sr_task_instructions = {
     allow_keys: true,
     show_clickable_nav: true,
     button_label_previous: 'Prev',
-    button_label_next: 'Next'
+    button_label_next: 'Next',
+    on_finish: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+      jsPsych.setProgressBar(0);
+    }
   }
 
   // TRANSITION BETWEEN GAMES IN PRACTICE SESSION
   var practice_transition = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<p> Great work! You will now have practice for the next game. Press any key to continue. </p>',
-    choices: "ALL_KEYS"
+    choices: "ALL_KEYS",
+    on_start: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+    }
     //trial_duration: 1200,
   }
 
@@ -766,11 +795,11 @@ var cpt_task_instructions = {
     pages: [
       "<p>Welcome to the gradual onset game! Click next for the instructions.</p>",
       "<p>In this task, an image will appear in the center of the screen.</p><p>\
-      If the image is a <strong>city</strong> press Space on the keyboard as fast as you can.</p><p>\
+      If the image is a <strong>city</strong> press Spacebar on the keyboard as fast as you can.</p><p>\
       If the image is a <strong>mountain</strong>, do not press a key.</p>\
-      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman/city_1.jpg'></img>\
+      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman_w_big/city_1.jpg'></img>\
       <p class='small'><strong>Press the Space key</strong></p></div>\
-      <div style='float: right;'><img src='./img900_esterman/mountain_1.jpg'></img>\
+      <div style='float: right;'><img src='./img900_esterman_w_big/mountain_1.jpg'></img>\
       <p class='small'><strong>Do not press a key</strong></p></div>\
       </div>",
     ],
@@ -797,7 +826,11 @@ var gradcpt_quiz = {
 var gradcpt_begin = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: 'The correct answer is to press the Space key when you see a city, and nothing when you see a mountain. <br><br> When you are ready, press any key to continue to the game.</p>',
-  choices: "ALL_KEYS"
+  choices: "ALL_KEYS",
+  on_finish: function(){
+    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+    jsPsych.setProgressBar(0);
+  }
   //trial_duration: 1200,
 }
 
@@ -826,7 +859,10 @@ var main_exp_BDM_instructions = {
     allow_keys: true,
     show_clickable_nav: true,
     button_label_previous: 'Prev',
-    button_label_next: 'Next'
+    button_label_next: 'Next',
+    on_start: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+    }
   }
 
 // BDM QUIZ
@@ -858,23 +894,23 @@ var BDM_quiz = {
   var BDM_quiz_answers = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: '<p> The correct answers are: <br><br> 1. The randomly selected bid that your offer will be compared to \
-    will be re-generated every time you get the option to switch. <br>\
+    will be re-generated every time you get the option to switch. <br><br>\
      2. The points you offer when you get the option to switch come from your initial endowment of points.<br><br>\
      3. To get the best results when it comes to switching, you should always be honest about exactly how many points \
-     you would be willing to trade. <br> Press any key to continue. </p>',
+     you would be willing to trade. <br><br> Press any key to continue. </p>',
     choices: "ALL_KEYS",
-    trial_duration: 10000,
+    trial_duration: 5000,
   }
 
 var final_exp_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great! You are now ready to begin.</p>",
-      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced. And will be given a bonus based on accuracy. <br>\
-      You will occasionally be asked \
+      "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced.\
+      <br><br>You will also occasionally be asked \
       how many points you would be willing to trade to switch to the other game. \
-      <br><br><strong>If your answer is larger than our randomly generated one, you will be switched! \
-      If not, you will stay on this game</strong></p>",
+      <br><br>If your answer is higher than our randomly generated one, you will be switched! \
+      If not, you will stay on this game</p>",
       "<p>When you're ready, press Next to begin</p>",
     ],
     key_forward: 'ArrowRight',
@@ -882,18 +918,22 @@ var final_exp_instructions = {
     allow_keys: true,
     show_clickable_nav: true,
     button_label_previous: 'Prev',
-    button_label_next: 'Next'
+    button_label_next: 'Next',
+    on_finish: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+      jsPsych.setProgressBar(0);
+    }
 }
 
-// main experiment file (html)
+/////////////////////////////
+/// main experiment file
 
 // INITIALIZE TIMELINE
 var timeline = [];
 
 // PRELOADS
 // timeline.push(preload_auto, preload_manual)
-// timeline.push(preload_auto)
-timeline.push(preload_manual_instr)// mountain and city image for cpt intructi
+timeline.push(preload_manual_instr)
 
 // INTRUCTIONS AND PRACTICE SESSION
 timeline.push(consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,cpt_task_instructions,gradcpt_quiz,gradcpt_begin,gradcpt_practice_trials)
@@ -928,6 +968,7 @@ var switch_offer_screen = {
     button_label: 'Submit bid',
     on_start: function(switch_offer_screen) {
         generated_value =  Math.floor(Math.random() * 101);
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(data){
         var trade_value = jsPsych.data.get().last(1).values()[0].response.bid
@@ -950,6 +991,9 @@ var switch_offer_screen = {
             }
 
             data.switch_next_block = nextSwitch
+
+            document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+            jsPsych.setProgressBar(0);
         } else {
             console.log("not valid")
         }
@@ -1005,10 +1049,17 @@ var calculate_bonus = function(){
         }
     }
 
-    // for now let's say 10 cents per correct answer
+    // for now let's say 35 cents per correct answer
     var total_trials = sr_len + gradcpt_len
     var accuracy_calc = total_trials > 0 ? (accuracy_count / total_trials) : 0;    
     var final_bonus = (accuracy_count * dollars_per_correct_bonus).toFixed(2)
+
+    console.log(gradcpt_len)
+    console.log(sr_len)
+    console.log(accuracy_calc)
+    console.log(accuracy_count)
+    console.log(total_trials)
+    console.log(final_bonus)
 
     // add the final accuracy and bonus to data
     jsPsych.data.get().addToLast({bonus: final_bonus,overall_accuracy: accuracy_calc});
@@ -1025,6 +1076,8 @@ var overall_debrief = {
     on_start: function(overall_debrief) {
         var bonus = calculate_bonus()
 
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+
         overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
             effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
           were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
@@ -1038,11 +1091,17 @@ var switchingGamesNotification = {
     choices: 'NO_KEYS',  // No responses allowed
     trial_duration: 1000,
     on_start: function(switchingGamesNotification) {
+        document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
         if (curr_block >= num_blocks){
             switchingGamesNotification.stimulus = "Great work! We will now debrief you."
         } else if (nextSwitch == false) {
+            console.log("stay in same game")
             switchingGamesNotification.stimulus = "You will now stay in the same game."
         }
+    },
+    on_finish: function(){
+        document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+        jsPsych.setProgressBar(0);
     }
 };
 
