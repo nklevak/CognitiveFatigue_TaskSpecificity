@@ -1,0 +1,139 @@
+---
+title: "pilotA_analysis"
+output: html_document
+date: "2024-05-15"
+---
+This is the analysis on the preliminary pilot A data (from friends), before the addition of a progress bar and when the spatial recall task was 5 digits to mem instead of 4. 
+
+The setup was:
+6 spatial recall practice
+30 gradcpt practice
+8 blocks
+- 40 gradcpt per block
+- 6 spatial recall per block
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+##library(jsonlite)
+
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+**reading in the data**
+``` {r data_wrangling}
+setwd("../../data/pilotA/")
+
+csv_files <- list.files(pattern = "\\.csv$")
+
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+
+# Read each CSV file, ensuring all data is read as character, and combine them
+combined_df <- bind_rows(lapply(csv_files, read_csv_as_character))
+
+head(combined_df)
+
+```
+
+**pre-processing the data**
+First I will anonymize the data and remove unneccesary columns:
+```{r pre_process_anon}
+# take out ip info etc
+anonymized_data_full <- combined_df %>%
+  select(-recorded_at,-ip,-user_agent,-referer,-sequence_length,
+         -accept_language,-device,-internal_node_id,-view_history)
+
+# take out browser info (maybe bring this back in later if I want to look at
+# different browser impact)
+# also take out source code version (they are all the same but can add 
+# verification later)
+# also take out screen information
+anonymized_data_full <- anonymized_data_full %>%
+  select(-source_code_version, -contains("browser"),-contains("platform"),
+         -contains("screen"),-contains("width"),-contains("height"),
+         -contains("failed"),-condition,-success,-timeout)
+```
+
+Next I will remove all rows other than spatial recall or gradcpt (either practice or real), and also make a gradcpt and spatial recall 
+dataframe
+
+```{r pre_process}
+sr_practice_num <- 6
+sr_per_block <- 6
+gradcpt_practice_num <- 30
+gradcpt_per_block <- 40
+num_blocks <- 8
+
+
+# add task_type labels (either "sr" or gng")
+# remove instruction trials and other filler trials
+relevant_full <- anonymized_data_full %>%
+  filter(trial_type != "instructions", trial_type != "preload", trial_type != "survey-multi-choice", trial_type != "html-keyboard-response",!grepl("screen", trial_type, ignore.case = TRUE)) %>%
+  select(-event_history)
+
+# make a df for the practice trials
+practice_full <- relevant_full %>%
+  filter(practice == "true")
+
+# remove practice trials from relevant_full df
+relevant_full <- relevant_full %>%
+  filter(practice != "true")
+
+# parse bid values
+full_with_bid <- relevant_full %>%
+  mutate(bid_value = as.integer(gsub("[^0-9]+", "", response))) 
+
+# make a column for the bid preceding each block
+# spatial recall
+full_with_bid <- full_with_bid %>%
+  mutate(condition_met = (prevBlockType == "spatial_recall" & switch_next_block == "false") |
+                    (prevBlockType == "gradcpt" & switch_next_block == "true")) %>%
+  group_by(group = cumsum(condition_met)) %>%
+  mutate(fill_flag = if_else(row_number() <= (sr_per_block + 1) & condition_met, TRUE, FALSE)) %>%
+  mutate(bid_value = if(any(fill_flag)) first(bid_value[fill_flag]) else bid_value, blocks_completed = if (any(fill_flag)) first(blocks_completed[fill_flag]) else blocks_completed) %>%
+  ungroup() %>%
+  select(-group, -fill_flag,-condition_met)
+# gradcpt
+full_with_bid <- full_with_bid %>%
+  mutate(condition_met = (prevBlockType == "gradcpt" & switch_next_block == "false") |
+                    (prevBlockType == "spatial_recall" & switch_next_block == "true")) %>%
+  group_by(group = cumsum(condition_met)) %>%
+  mutate(fill_flag = if_else(row_number() <= (gradcpt_per_block + 1) & condition_met, TRUE, FALSE)) %>%
+  mutate(bid_value = if(any(fill_flag)) first(bid_value[fill_flag]) else bid_value, blocks_completed = if (any(fill_flag)) first(blocks_completed[fill_flag]) else blocks_completed) %>%
+  ungroup() %>%
+  select(-group, -fill_flag)
+
+## change everything in full_with_bid to be the right datatype
+full_with_bid <- full_with_bid %>%
+  mutate(subj_id = as.numeric(run_id), blocks_completed = as.numeric(blocks_completed,na.RM = TRUE)) %>%
+  select(-run_id,-bonus,-overall_accuracy,-generated_BDM_value,-cpt_practice_accuracy,-question_order)
+
+# get average bids per participant
+avg_subj_bids <- full_with_bid %>%
+  filter(trial_type == "survey-text") %>%
+  group_by(subj_id) %>%
+  summarise(avg_bids = mean(bid_value,na.rm = TRUE),stdev_bids = sd(bid_value, na.rm = TRUE)) %>%
+  ungroup()
+full_with_bid <- full_with_bid %>%
+  left_join(avg_subj_bids, by = "subj_id")
+
+# make a column that represents how different (in stdev) the amount they want to switch is from their mean
+full_with_bid <- full_with_bid %>%
+  mutate(bid_z_score = if_else(stdev_bids == 0, 0, (bid_value - avg_bids) / stdev_bids))
+
+# make a column that says which block it currently is
+full_with_bid <- full_with_bid %>%
+  mutate(curr_block_num = ifelse(is.na(blocks_completed), 1, blocks_completed + 1)) %>%
+  select(-blocks_completed, -sequence, -backwards, -responses, -score_pc, -score_ls)
+```

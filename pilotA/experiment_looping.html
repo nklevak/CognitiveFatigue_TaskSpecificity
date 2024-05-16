@@ -81,8 +81,8 @@ var switch_offer_screen = {
         document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(data){
-        var trade_value = jsPsych.data.get().last(1).values()[0].response.bid
-        var ans = parseInt(trade_value)
+        var trade_value = jsPsych.data.get().last(1).values()[0].response.bid;
+        var ans = parseInt(trade_value);
         if (!(isNaN(ans) | ans < 1 | ans > 100)) {
             data.generated_BDM_value = generated_value
             data.blocks_completed = curr_block

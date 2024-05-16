@@ -1,5 +1,5 @@
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 5
+var sr_trials_per_block = 2
 var sr_practice_trial_num = 2
 var consistent_tile_duration = 350
 var grid_size_constant = 4

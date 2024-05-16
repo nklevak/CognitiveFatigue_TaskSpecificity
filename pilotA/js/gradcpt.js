@@ -177,18 +177,18 @@ var path_to_img = "./img900_esterman_w_big/"
 for (let i = 0; i < all_stim.length; i++) {
     preload_stim.push(path_to_img + all_stim[i]);
 }
-var preload_auto = {
-    type: jsPsychPreload,
-    show_detailed_errors: true,
-    auto_preload: true,
-    message: 'Please wait while the experiment loads. This may take a few minutes.',
-};
-var preload_manual = {
-    type: jsPsychPreload,
-    show_detailed_errors: true,
-    images: preload_stim,
-    message: 'Please wait while the experiment loads. This may take a few minutes.',
-};
+// var preload_auto = {
+//     type: jsPsychPreload,
+//     show_detailed_errors: true,
+//     auto_preload: true,
+//     message: 'Please wait while the experiment loads. This may take a few minutes.',
+// };
+// var preload_manual = {
+//     type: jsPsychPreload,
+//     show_detailed_errors: true,
+//     images: preload_stim,
+//     message: 'Please wait while the experiment loads. This may take a few minutes.',
+// };
 var preload_manual_instr = {
     type: jsPsychPreload,
     show_detailed_errors: true,
@@ -210,7 +210,6 @@ var getTrials_gradcpt = function(num_trials){
     var num_items = num_trials * 2
 
     var preload_stim_block = final_list.slice(0,num_items+1)
-    preload_stim_block.push(path_to_img + 'mountain_1.jpg',path_to_img + 'city_1.jpg')
     var preload_manual_block = {
       type: jsPsychPreload,
       show_detailed_errors: true,
@@ -364,7 +363,6 @@ var getTrials_practice_gradcpt = function(num_trials){
     // take of num_trials from final_list
     var num_items = num_trials * 2
     var preload_stim_block = final_list.slice(0,num_items+1)
-    preload_stim_block.push(path_to_img + 'mountain_1.jpg',path_to_img + 'city_1.jpg')
     var preload_manual_block = {
       type: jsPsychPreload,
       show_detailed_errors: true,

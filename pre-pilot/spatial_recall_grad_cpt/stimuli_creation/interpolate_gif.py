@@ -20,15 +20,15 @@ def load_and_resize_images(pathA, pathB):
     imageB = Image.open(B_path).convert('L')
     
     # used to be 100 by 150
-    target_width=230
-    target_height= 230
+    target_width=275
+    target_height= 275
     
     # Resize both images
     resizedA = imageA.resize((target_width, target_height), Image.Resampling.LANCZOS)
     resizedB = imageB.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
     # Save the resized images
-    save_path = "./stimuli/initial_esterman_w/resized/"
+    save_path = "./stimuli/initial_esterman_w/resized_275/"
     resizedA.save(save_path + pathA)
     resizedB.save(save_path + pathB)
     
