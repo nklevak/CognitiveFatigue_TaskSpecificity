@@ -17,6 +17,8 @@ var curr_trial_duration_level = 1
 // experiment_looping file
 // important variables to customize
 var dollars_per_correct_bonus = 0.01
+var cpt_ran = false
+var curr_block = 0
 
 /////////////////////////////
 // Initialize jsPsych.
@@ -948,7 +950,6 @@ var currentTask = "spatial_recall" //(50% chance of either task being the first 
 if (Math.random() < 0.5) {
     currentTask = "gradcpt"
 }
-var curr_block = 0
 var nextSwitch = false // update this in the on_finish of the switch_offer_screen
 var repeat_loop = false
 
@@ -971,6 +972,7 @@ var switch_offer_screen = {
         document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(data){
+        cpt_ran = false
         var trade_value = jsPsych.data.get().last(1).values()[0].response.bid
         var ans = parseInt(trade_value)
         if (!(isNaN(ans) | ans < 1 | ans > 100)) {
@@ -1100,19 +1102,26 @@ var switchingGamesNotification = {
         }
     },
     on_finish: function(){
+        cpt_ran = false
         document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
         jsPsych.setProgressBar(0);
     }
 };
 
-var gradcpt_block_trials = {
-    timeline: getTrials_gradcpt(gradcpt_trials_per_block)
+// prepare each potential block
+var cpt_blocks = []
+for (let i = 0; i < num_blocks; i++){
+    var temp_block = {
+        timeline: getTrials_gradcpt(gradcpt_trials_per_block),
+    }
+    cpt_blocks.push(temp_block)
 }
+
 var sr_block_trials = {
     timeline: sr_getBlock()
 }
 var full_gradcpt_block = {
-    timeline: [gradcpt_block_trials]
+    timeline: cpt_blocks[0]
 }
 var full_sr_block = {
     timeline: [sr_block_trials]
@@ -1123,26 +1132,50 @@ if (curr_block == 0 && currentTask == "spatial_recall") {
     timeline.push(full_sr_block,number_loop,switchingGamesNotification)
     curr_block = curr_block + 1
 } else {
-    timeline.push(full_gradcpt_block,number_loop,switchingGamesNotification)
+    timeline.push(cpt_blocks[0],number_loop,switchingGamesNotification)
     curr_block = curr_block + 1
+    cpt_ran = true
 }
 
 // IF NODES FOR REST OF THE BLOCKS
+// make an if node per cpt block
+cpt_if_nodes = []
+for (let i = 0; i < num_blocks; i++){
+    var temp_if = {
+        timeline: [cpt_blocks[i]],
+        conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
+            // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
+            if (curr_block != i || (cpt_ran == true)){
+                cpt_ran = false
+                return false
+            } else {
+                //curr_block = curr_block + 1
+                cpt_ran = true
+                return true
+            } 
+        }
+    }
+    cpt_if_nodes.push(temp_if)
+}
+
 var if_cpt_node = {
-    timeline: [full_gradcpt_block],
-    conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
-        // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
-        if (curr_block == num_blocks || currentTask == "spatial_recall"){
+    timeline: cpt_if_nodes,
+    conditional_function: function(){
+        if (curr_block == num_blocks || currentTask == "spatial_recall" || (cpt_ran==true)){
             return false
         } else {
-            curr_block = curr_block + 1
+            cpt_ran = false
             return true
-        } 
+        }
+    },
+    on_finish: function(){
+        curr_block = curr_block + 1
     }
 }
 var if_sr_node = {
     timeline: [full_sr_block],
     conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
+        cpt_ran = false
         // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
         if (curr_block == num_blocks || currentTask == "gradcpt"){
             return false
