@@ -3,7 +3,7 @@
 // max number of totalTrialNum_gradcpt = practice trials + num_blocks * gradcpt_trials_per_block
 var practice_trials_gradcpt_num = 10
 var num_blocks = 4
-var gradcpt_trials_per_block = 15
+var gradcpt_trials_per_block = 10
 // we will generate a stimuli list for the MAX amount of trials the gradcpt might have (depending on switches, some of these will not be used)
 var totalTrialNum_gradcpt = practice_trials_gradcpt_num + num_blocks*gradcpt_trials_per_block
 var level_for_all_trials = 1 // this is all that matters in this version since adjust_duration below is false
@@ -258,7 +258,6 @@ var getTrials_gradcpt = function(num_trials){
                     if(jsPsych.pluginAPI.compareKeys(data.response, data.correct_key)){
                         data.correct = true;
                     } else {
-                        console.log("key was pressed, incorrect")
                         data.correct = false; 
                     }
                 }

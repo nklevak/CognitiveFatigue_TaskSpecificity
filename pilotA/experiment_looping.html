@@ -59,6 +59,7 @@ if (Math.random() < 0.5) {
     currentTask = "gradcpt"
 }
 var curr_block = 0
+var cpt_ran = false
 var nextSwitch = false // update this in the on_finish of the switch_offer_screen
 var repeat_loop = false
 
@@ -81,6 +82,7 @@ var switch_offer_screen = {
         document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(data){
+        cpt_ran = false
         var trade_value = jsPsych.data.get().last(1).values()[0].response.bid;
         var ans = parseInt(trade_value);
         if (!(isNaN(ans) | ans < 1 | ans > 100)) {
@@ -164,13 +166,6 @@ var calculate_bonus = function(){
     var accuracy_calc = total_trials > 0 ? (accuracy_count / total_trials) : 0;    
     var final_bonus = (accuracy_count * dollars_per_correct_bonus).toFixed(2)
 
-    console.log(gradcpt_len)
-    console.log(sr_len)
-    console.log(accuracy_calc)
-    console.log(accuracy_count)
-    console.log(total_trials)
-    console.log(final_bonus)
-
     // add the final accuracy and bonus to data
     jsPsych.data.get().addToLast({bonus: final_bonus,overall_accuracy: accuracy_calc});
 
@@ -205,24 +200,30 @@ var switchingGamesNotification = {
         if (curr_block >= num_blocks){
             switchingGamesNotification.stimulus = "Great work! We will now debrief you."
         } else if (nextSwitch == false) {
-            console.log("stay in same game")
             switchingGamesNotification.stimulus = "You will now stay in the same game."
         }
     },
     on_finish: function(){
+        cpt_ran = false
         document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
         jsPsych.setProgressBar(0);
     }
 };
 
-var gradcpt_block_trials = {
-    timeline: getTrials_gradcpt(gradcpt_trials_per_block)
+// prepare each potential block
+var cpt_blocks = []
+for (let i = 0; i < num_blocks; i++){
+    var temp_block = {
+        timeline: getTrials_gradcpt(gradcpt_trials_per_block),
+    }
+    cpt_blocks.push(temp_block)
 }
+
 var sr_block_trials = {
     timeline: sr_getBlock()
 }
 var full_gradcpt_block = {
-    timeline: [gradcpt_block_trials]
+    timeline: cpt_blocks[0]
 }
 var full_sr_block = {
     timeline: [sr_block_trials]
@@ -233,26 +234,50 @@ if (curr_block == 0 && currentTask == "spatial_recall") {
     timeline.push(full_sr_block,number_loop,switchingGamesNotification)
     curr_block = curr_block + 1
 } else {
-    timeline.push(full_gradcpt_block,number_loop,switchingGamesNotification)
+    timeline.push(cpt_blocks[0],number_loop,switchingGamesNotification)
     curr_block = curr_block + 1
+    cpt_ran = true
 }
 
 // IF NODES FOR REST OF THE BLOCKS
+// make an if node per cpt block
+cpt_if_nodes = []
+for (let i = 0; i < num_blocks; i++){
+    var temp_if = {
+        timeline: [cpt_blocks[i]],
+        conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
+            // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
+            if (curr_block != i || (cpt_ran == true)){
+                cpt_ran = false
+                return false
+            } else {
+                //curr_block = curr_block + 1
+                cpt_ran = true
+                return true
+            } 
+        }
+    }
+    cpt_if_nodes.push(temp_if)
+}
+
 var if_cpt_node = {
-    timeline: [full_gradcpt_block],
-    conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
-        // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
-        if (curr_block == num_blocks || currentTask == "spatial_recall"){
+    timeline: cpt_if_nodes,
+    conditional_function: function(){
+        if (curr_block == num_blocks || currentTask == "spatial_recall" || (cpt_ran==true)){
             return false
         } else {
-            curr_block = curr_block + 1
+            cpt_ran = false
             return true
-        } 
+        }
+    },
+    on_finish: function(){
+        curr_block = curr_block + 1
     }
 }
 var if_sr_node = {
     timeline: [full_sr_block],
     conditional_function: function(){// if return true, this timeline gets run if not it gets skipped
+        cpt_ran = false
         // currentTask will get updated in the switch_offer_screen on finish, so don't need to worry about switch or no switch here
         if (curr_block == num_blocks || currentTask == "gradcpt"){
             return false
@@ -276,7 +301,7 @@ var if_debrief_node = {
 
 // add the main experiment
 var main_loop = {
-    timeline: [if_cpt_node,if_sr_node,number_loop,switchingGamesNotification,if_debrief_node],
+    timeline: [if_cpt_node, if_sr_node, number_loop,switchingGamesNotification,if_debrief_node],
     loop_function: function(data){
         if (curr_block >= num_blocks) {
             return false

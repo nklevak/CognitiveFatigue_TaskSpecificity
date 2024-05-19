@@ -99,20 +99,20 @@ full_with_bid <- relevant_full %>%
 full_with_bid <- full_with_bid %>%
   mutate(condition_met = (prevBlockType == "spatial_recall" & switch_next_block == "false") |
                     (prevBlockType == "gradcpt" & switch_next_block == "true")) %>%
-  group_by(group = cumsum(condition_met)) %>%
+  group_by(run_id,group = cumsum(condition_met)) %>%
   mutate(fill_flag = if_else(row_number() <= (sr_per_block + 1) & condition_met, TRUE, FALSE)) %>%
-  mutate(bid_value = if(any(fill_flag)) first(bid_value[fill_flag]) else bid_value, blocks_completed = if (any(fill_flag)) first(blocks_completed[fill_flag]) else blocks_completed) %>%
+  mutate(bid_value = if(any(fill_flag)) first(bid_value[fill_flag]) else bid_value, blocks_completed = if (any(fill_flag)) first(blocks_completed[fill_flag]) else blocks_completed, prevBlockType = if(any(fill_flag)) first(prevBlockType[fill_flag]) else prevBlockType,task_switched = if(any(fill_flag)) first(switch_next_block[fill_flag]) else switch_next_block) %>%
   ungroup() %>%
   select(-group, -fill_flag,-condition_met)
 # gradcpt
 full_with_bid <- full_with_bid %>%
   mutate(condition_met = (prevBlockType == "gradcpt" & switch_next_block == "false") |
                     (prevBlockType == "spatial_recall" & switch_next_block == "true")) %>%
-  group_by(group = cumsum(condition_met)) %>%
+  group_by(run_id,group = cumsum(condition_met)) %>%
   mutate(fill_flag = if_else(row_number() <= (gradcpt_per_block + 1) & condition_met, TRUE, FALSE)) %>%
-  mutate(bid_value = if(any(fill_flag)) first(bid_value[fill_flag]) else bid_value, blocks_completed = if (any(fill_flag)) first(blocks_completed[fill_flag]) else blocks_completed) %>%
+  mutate(bid_value = if(any(fill_flag)) first(bid_value[fill_flag]) else bid_value, blocks_completed = if (any(fill_flag)) first(blocks_completed[fill_flag]) else blocks_completed,prevBlockType = if(any(fill_flag)) first(prevBlockType[fill_flag]) else prevBlockType,task_switched = if(any(fill_flag)) first(switch_next_block[fill_flag]) else switch_next_block) %>%
   ungroup() %>%
-  select(-group, -fill_flag)
+  select(-group, -fill_flag,-switch_next_block)
 
 ## change everything in full_with_bid to be the right datatype
 full_with_bid <- full_with_bid %>%
@@ -135,5 +135,19 @@ full_with_bid <- full_with_bid %>%
 # make a column that says which block it currently is
 full_with_bid <- full_with_bid %>%
   mutate(curr_block_num = ifelse(is.na(blocks_completed), 1, blocks_completed + 1)) %>%
-  select(-blocks_completed, -sequence, -backwards, -responses, -score_pc, -score_ls)
+  mutate(bid_z_score = if_else(curr_block_num == 1, 0, bid_z_score)) %>%
+  select(-blocks_completed, -sequence, -backwards, -responses, -score_pc, -score_ls,-avg_bids,-stdev_bids,-condition_met) %>%
+  filter(trial_type != "survey-text")
+full_with_bid <- full_with_bid %>%
+  filter(cpt_type != "transition")
+
+# calculate average accuracy per block
+conversion <- c("true" = 1, "false" = 0)
+avg_per_block <- full_with_bid %>%
+  filter(cpt_type != "transition") %>%
+  group_by(subj_id,curr_block_num) %>%
+  summarise (avg_accuracy = ifelse(game_type == "spatial_recall",mean(as.numeric(score_an)),mean(conversion[correct])))
+full_with_bid <- full_with_bid %>%
+  filter(cpt_type != "transition") %>%
+  left_join(avg_per_block, by = "subj_id")
 ```
