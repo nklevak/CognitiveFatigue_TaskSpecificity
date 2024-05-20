@@ -76,7 +76,6 @@ gradcpt_per_block <- 40
 num_blocks <- 8
 
 
-# add task_type labels (either "sr" or gng")
 # remove instruction trials and other filler trials
 relevant_full <- anonymized_data_full %>%
   filter(trial_type != "instructions", trial_type != "preload", trial_type != "survey-multi-choice", trial_type != "html-keyboard-response",!grepl("screen", trial_type, ignore.case = TRUE)) %>%
@@ -117,7 +116,7 @@ full_with_bid <- full_with_bid %>%
 ## change everything in full_with_bid to be the right datatype
 full_with_bid <- full_with_bid %>%
   mutate(subj_id = as.numeric(run_id), blocks_completed = as.numeric(blocks_completed,na.RM = TRUE)) %>%
-  select(-run_id,-bonus,-overall_accuracy,-generated_BDM_value,-cpt_practice_accuracy,-question_order)
+  select(-run_id,-bonus,-overall_accuracy,-generated_BDM_value,-cpt_practice_accuracy,-question_order,-condition_met)
 
 # get average bids per participant
 avg_subj_bids <- full_with_bid %>%
@@ -136,18 +135,22 @@ full_with_bid <- full_with_bid %>%
 full_with_bid <- full_with_bid %>%
   mutate(curr_block_num = ifelse(is.na(blocks_completed), 1, blocks_completed + 1)) %>%
   mutate(bid_z_score = if_else(curr_block_num == 1, 0, bid_z_score)) %>%
-  select(-blocks_completed, -sequence, -backwards, -responses, -score_pc, -score_ls,-avg_bids,-stdev_bids,-condition_met) %>%
+  select(-blocks_completed, -sequence, -backwards, -responses, -score_pc, -score_ls,-avg_bids,-stdev_bids) %>%
   filter(trial_type != "survey-text")
 full_with_bid <- full_with_bid %>%
   filter(cpt_type != "transition")
 
 # calculate average accuracy per block
 conversion <- c("true" = 1, "false" = 0)
-avg_per_block <- full_with_bid %>%
-  filter(cpt_type != "transition") %>%
-  group_by(subj_id,curr_block_num) %>%
-  summarise (avg_accuracy = ifelse(game_type == "spatial_recall",mean(as.numeric(score_an)),mean(conversion[correct])))
-full_with_bid <- full_with_bid %>%
-  filter(cpt_type != "transition") %>%
-  left_join(avg_per_block, by = "subj_id")
+
+avg_spatial_recall <- full_with_bid %>%
+  filter(game_type == "spatial_recall") %>%
+  group_by(subj_id, curr_block_num,game_type,bid_z_score,avg_bids,stdev_bids) %>%
+  summarise(avg_accuracy = mean(as.numeric(score_an), na.rm = TRUE),stdev_accuracy = sd(as.numeric(score_an),na.rm = TRUE))
+avg_cpt <- full_with_bid %>%
+  filter(game_type == "gradcpt") %>%
+  group_by(subj_id, curr_block_num,game_type,bid_z_score,avg_bids,stdev_bids) %>%
+  summarise(avg_accuracy = mean(conversion[correct], na.rm = TRUE),stdev_accuracy = sd(conversion[correct],na.rm=TRUE))
+avg_per_block <- bind_rows(avg_spatial_recall, avg_cpt) %>%
+  arrange(subj_id, curr_block_num)
 ```

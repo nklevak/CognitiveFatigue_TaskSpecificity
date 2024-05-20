@@ -1,0 +1,124 @@
+---
+title: "pilotA_analysis_16to22"
+output: html_document
+date: "2024-05-20"
+---
+This is the analysis on the preliminary pilot A data (from friends), before the addition of a progress bar and when the spatial recall task was 5 digits to mem instead of 4. 
+
+The setup was:
+6 spatial recall practice
+30 gradcpt practice
+8 blocks
+- 40 gradcpt per block
+- 6 spatial recall per block
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+##library(jsonlite)
+
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+**reading in the data**
+``` {r data_wrangling}
+setwd("../../data/pilotA/")
+
+csv_files <- list.files(pattern = "\\.csv$")
+
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+
+# Will wrangle each participant's data independently to see details of their runs
+df_13 <- bind_rows(lapply(csv_files[1],read_csv_as_character))
+df_15 <- bind_rows(lapply(csv_files[2],read_csv_as_character))
+df_16 <- bind_rows(lapply(csv_files[3],read_csv_as_character))
+df_18 <- bind_rows(lapply(csv_files[4],read_csv_as_character))
+df_19 <- bind_rows(lapply(csv_files[5],read_csv_as_character))
+df_21 <- bind_rows(lapply(csv_files[6],read_csv_as_character))
+df_22 <- bind_rows(lapply(csv_files[7],read_csv_as_character))
+```
+**pre-processing the data**
+First I will anonymize the data and remove unneccesary columns:
+``` {r data_wrangling}
+anonymize_clean <- function(df) {
+  df <- df %>%
+    select(-recorded_at,-ip,-user_agent,-referer,-sequence_length,
+         -accept_language,-device,-internal_node_id,-view_history,
+         -source_code_version, -contains("browser"),-contains("platform"),
+         -contains("screen"),-contains("width"),-contains("height"),
+         -contains("failed"),-condition,-success,-timeout,-event_history)
+  return(df)
+}
+# df_list <-  list(df_13,df_15,df_16,df_18,df_19,df_21,df_22)
+# df_list <- lapply(df_list, anonymize_clean)
+df_13 <- anonymize_clean(df_13)
+df_15 <- anonymize_clean(df_15)
+df_16 <- anonymize_clean(df_16)
+df_18 <- anonymize_clean(df_18)
+df_19 <- anonymize_clean(df_19)
+df_21 <- anonymize_clean(df_21)
+df_22 <- anonymize_clean(df_22)
+```
+
+Now I will take out the practice trials and save them to a different df, I will also remove practice and all other trial types (other than sr or gradcpt) from my dataframe
+``` {r data_wrangling}
+save_practice <- function(df1, df2, df3, df4, df5, df6, df7) {
+  practice_list <- list(df1, df2, df3, df4, df5, df6, df7)
+  
+  for (i in seq_along(practice_list)) {
+    practice_list[[i]] <- practice_list[[i]] %>%
+      filter(practice == "true")
+  }
+  
+  return(practice_list)
+}
+
+practice_runs_df <- save_practice(df_13, df_15,df_16,df_18,df_19,df_21,df_22)
+
+
+# remove irrelevant rows from main analysis dfs
+# parse bid values
+remove_non_game <- function(df) {
+  df <- df %>%
+    filter(trial_type != "instructions", trial_type != "preload", 
+           trial_type != "survey-multi-choice", 
+           trial_type != "html-keyboard-response",
+           !grepl("screen", trial_type, ignore.case = TRUE)) %>%
+    filter(practice != "true") %>%
+    mutate(bid_value = as.integer(gsub("[^0-9]+", "", response))) 
+  
+  return(df)
+}
+
+df_13_sub <- remove_non_game(df_13)
+df_15_sub <- remove_non_game(df_15)
+df_16_sub <- remove_non_game(df_16)
+df_18_sub <- remove_non_game(df_18)
+df_19_sub <- remove_non_game(df_19)
+df_21_sub <- remove_non_game(df_21)
+df_22_sub <- remove_non_game(df_22)
+```
+
+
+Now I'm going to distribute the bid value to its corresponding block for each df. I will also record which block each group of trials is, remove unneccary columns, and change the datatypes of necessary columns (i.e. subject id).
+``` {r data_wrangling}
+# assign block numbers
+
+
+```
+
+
+``` {r data_wrangling}
+
+```
