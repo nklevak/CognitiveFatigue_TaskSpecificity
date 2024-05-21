@@ -110,14 +110,237 @@ df_21_sub <- remove_non_game(df_21)
 df_22_sub <- remove_non_game(df_22)
 ```
 
+this is a test, can ignore:
+``` {r data_wrangling}
+
+df_22_test <- df_22_sub
+
+sr_practice_num <- 6
+sr_per_block <- 8
+gradcpt_practice_num <- 30
+gradcpt_per_block <- 40
+num_blocks <- 8
+
+new_first_row <- data.frame(
+  bid_value = NA,
+  switch_next_block = NA,  # Replace with your initial switch_next_block if needed
+  blocks_completed = '0',  # Replace with your initial blocks_completed
+  prevBlockType = NA,  # Replace with an appropriate value if needed
+  game_type = NA,  # Replace with an appropriate value if needed
+  trial_type = "survey-text",
+  trial_index = NA,
+  time_elapsed = NA
+)
+
+# spatial recall!
+df_22_test_res_sr <- df_22_test %>%
+  filter(cpt_type != "transition") %>%
+  filter((prevBlockType == "spatial_recall" & 
+                              switch_next_block == "false") |
+                    (prevBlockType == "gradcpt" & switch_next_block == "true")
+       | (game_type == "spatial_recall"))
+
+if (nrow(df_22_test_res_sr) > 0 && df_22_test_res_sr$trial_type[1] != "survey-text"){
+  print("added now")
+  df_22_test_res_sr <- df_22_test_res_sr %>% add_row(blocks_completed = '0', trial_type = 'survey-text', .before = 0)
+}
+
+df_22_test_res_sr <- df_22_test_res_sr %>%
+  mutate(switch_next_block = ifelse(switch_next_block == "", NA, switch_next_block),group = rep(1:(n() %/% (sr_per_block + 1) + 1), each = (sr_per_block + 1), length.out = n())) %>%
+  group_by(group) %>%
+  mutate(switch_next_block = as.character(switch_next_block)) %>%
+  fill(bid_value, switch_next_block,blocks_completed, .direction = "down") %>%
+  ungroup() %>%
+  select(-group,-bonus,-overall_accuracy,-cpt_practice_accuracy,-score_pc,-score_ls)
+
+# gradcpt
+df_22_test_res_cpt <- df_22_test %>%
+  filter(cpt_type != "transition") %>%
+  filter((prevBlockType == "gradcpt" & 
+                                switch_next_block == "false") |
+                      (prevBlockType == "spatial_recall" & switch_next_block == "true")
+         | (game_type == "gradcpt")) 
+
+if (nrow(df_22_test_res_cpt) > 0 && df_22_test_res_cpt$trial_type[1] != "survey-text"){
+  df_22_test_res_cpt <- df_22_test_res_cpt %>% add_row(blocks_completed = '0', trial_type = 'survey-text', .before = 0)
+}
+
+df_22_test_res_cpt <- df_22_test_res_cpt %>%
+  mutate(switch_next_block = ifelse(switch_next_block == "", NA, switch_next_block),group = rep(1:(n() %/% (gradcpt_per_block + 1) + 1), each = (gradcpt_per_block + 1), length.out = n())) %>%
+  group_by(group) %>%
+  mutate(switch_next_block = as.character(switch_next_block)) %>%
+  fill(bid_value, switch_next_block,blocks_completed, .direction = "down")%>%
+  ungroup() %>%
+  select(-group,-bonus,-overall_accuracy,-cpt_practice_accuracy,-score_pc,-score_ls)
+
+new_fin <- bind_rows(df_22_test_res_sr,df_22_test_res_cpt) %>%
+  arrange(blocks_completed)
+```
+
 
 Now I'm going to distribute the bid value to its corresponding block for each df. I will also record which block each group of trials is, remove unneccary columns, and change the datatypes of necessary columns (i.e. subject id).
 ``` {r data_wrangling}
-# assign block numbers
+# spread bid and blocks completed value onto the entire block
+# this new column will be how much the participant bid 
+bid_val_dev <- function(df) {
+  sr_practice_num <- 6
+  sr_per_block <- 8
+  gradcpt_practice_num <- 30
+  gradcpt_per_block <- 40
+  num_blocks <- 8
+  
+  df_test <- df
+  
+  # get run id of current df
+  run_id = df$run_id[[1]]
+  
+  # spatial recall
+  sr <- df_test %>%
+    filter(cpt_type != "transition") %>%
+    filter((prevBlockType == "spatial_recall" & 
+                                switch_next_block == "false") |
+                      (prevBlockType == "gradcpt" & switch_next_block == "true")
+         | (game_type == "spatial_recall"))
 
+  if (nrow(sr) > 0 && sr$trial_type[1] != "survey-text"){
+    print("adding sr row")
+    sr <- sr %>% add_row(blocks_completed = '0', trial_type = 'survey-text',run_id = as.character(run_id), .before = 0)
+  }
+  
+  sr <- sr %>%
+    mutate(switch_next_block = ifelse(switch_next_block == "", NA, switch_next_block),group = rep(1:(n() %/% (sr_per_block + 1) + 1), each = (sr_per_block + 1), length.out = n())) %>%
+    group_by(group) %>%
+    mutate(switch_next_block = as.character(switch_next_block)) %>%
+    fill(bid_value, switch_next_block,blocks_completed, .direction = "down") %>%
+    ungroup() %>%
+    select(-group,-bonus,-overall_accuracy,-cpt_practice_accuracy,-score_pc,-score_ls)
+  
+  # gradcpt
+  cpt <- df_test %>%
+    filter(cpt_type != "transition") %>%
+    filter((prevBlockType == "gradcpt" & 
+                                  switch_next_block == "false") |
+                        (prevBlockType == "spatial_recall" & switch_next_block == "true")
+           | (game_type == "gradcpt")) 
+
+  if (nrow(cpt) > 0 && cpt$trial_type[1] != "survey-text"){
+    print("adding cpt row")
+    cpt <- cpt %>% add_row(blocks_completed = '0', trial_type = 'survey-text', run_id = as.character(run_id),.before = 0)
+  }
+
+  cpt <- cpt %>%
+    mutate(switch_next_block = ifelse(switch_next_block == "", NA, switch_next_block),group = rep(1:(n() %/% (gradcpt_per_block + 1) + 1), each = (gradcpt_per_block + 1), length.out = n())) %>%
+    group_by(group) %>%
+    mutate(switch_next_block = as.character(switch_next_block)) %>%
+    fill(bid_value, switch_next_block,blocks_completed, .direction = "down")%>%
+    ungroup() %>%
+    select(-group,-bonus,-overall_accuracy,-cpt_practice_accuracy,-score_pc,-score_ls)
+  
+  final_df <- bind_rows(sr,cpt)
+  
+  return(final_df)
+}
+df_13_sub <- bid_val_dev(df_13_sub)
+df_15_sub <- bid_val_dev(df_15_sub)
+df_16_sub <- bid_val_dev(df_16_sub)
+df_18_sub <- bid_val_dev(df_18_sub)
+df_19_sub <- bid_val_dev(df_19_sub)
+df_21_sub <- bid_val_dev(df_21_sub)
+df_22_sub <- bid_val_dev(df_22_sub)
 
 ```
 
+``` {r data_wrangling}
+# assign block numbers
+block_num_parse_vals <- function(df) {
+  df <- df %>%
+    mutate(subj_id = as.numeric(run_id), blocks_completed = as.numeric(blocks_completed,na.RM = TRUE)) %>%
+    select(-run_id,-generated_BDM_value,-question_order) %>%
+    mutate(curr_block_num = blocks_completed + 1) 
+  
+  return(df)
+}
+df_13_sub <- block_num_parse_vals(df_13_sub)
+df_15_sub <- block_num_parse_vals(df_15_sub)
+df_16_sub <- block_num_parse_vals(df_16_sub)
+df_18_sub <- block_num_parse_vals(df_18_sub)
+df_19_sub <- block_num_parse_vals(df_19_sub)
+df_21_sub <- block_num_parse_vals(df_21_sub)
+df_22_sub <- block_num_parse_vals(df_22_sub)
+```
+
+Now I will combine all of the participants cleaned data into one df, and will calculate average accuracy per block, average bid offer, stdev of bid offers,
+z-score per bid offer. I also wanted to make a column for following_bid (the bid that followed a block)
+``` {r data_wrangling}
+total_data <- bind_rows(df_13_sub,df_15_sub,df_16_sub,df_18_sub,df_19_sub,df_21_sub,df_22_sub) %>%
+  # filter(trial_type != "survey-text") %>%
+  arrange(subj_id, curr_block_num) %>%
+  rename(preceding_bid = bid_value)
+
+bid_vals <- total_data %>%
+  filter(trial_type == "survey-text") %>%
+  group_by(subj_id) %>%
+  arrange(subj_id,blocks_completed) %>%
+  mutate(following_bid = lead(preceding_bid))
+
+total_data <- total_data %>%
+  left_join(bid_vals %>% select(subj_id, curr_block_num, following_bid),
+            by = c("subj_id","curr_block_num"))
+```
+
+``` {r data_wrangling}
+# get average bids per participant
+avg_subj_bids <- total_data %>%
+  filter(trial_type == "survey-text") %>%
+  group_by(subj_id) %>%
+  summarise(avg_bids = mean(preceding_bid,na.rm = TRUE),stdev_bids = sd(preceding_bid, na.rm = TRUE)) %>%
+  ungroup()
+total_data <- total_data %>%
+  left_join(avg_subj_bids, by = "subj_id")
+
+# make a column that represents how different (in stdev) the amount they want to switch is from their mean
+total_data <- total_data %>%
+  mutate(preceding_bid_z_score = if_else(stdev_bids == 0, 0, 
+                                         ifelse(is.na(preceding_bid),0,
+                                                ((preceding_bid - avg_bids) / 
+                                                   stdev_bids))),
+         following_bid_z_score = if_else(stdev_bids == 0, 0, 
+                                         ifelse(is.na(following_bid),0,
+                                                ((following_bid - avg_bids) / stdev_bids)))) %>%
+  filter(trial_type != "survey-text") %>%
+  select(-time_elapsed,-response,-sequence,-backwards,-responses,-practice,
+         -correct_key,-curr_level,-curr_trial_duration,-cpt_type,-prevBlockType,
+         -preceding_bid,-following_bid,-avg_bids,-stdev_bids) %>%
+  rename(block_switched=switch_next_block)
+```
+
+Now I will calculate average accuracy per block.
+``` {r data_wrangling}
+# conversion dict for gradcpt
+conversion <- c("true" = 1, "false" = 0)
+
+avg_spatial_recall <- total_data %>%
+  filter(game_type == "spatial_recall") %>%
+  group_by(subj_id, curr_block_num) %>%
+  summarise(avg_accuracy = mean(as.numeric(score_an), na.rm = TRUE),stdev_accuracy = sd(as.numeric(score_an),na.rm = TRUE))%>%
+  arrange(subj_id,curr_block_num)
+
+avg_cpt <- total_data %>%
+  filter(game_type == "gradcpt") %>%
+  group_by(subj_id, curr_block_num) %>%
+  summarise(avg_accuracy = mean(conversion[correct], na.rm = TRUE),stdev_accuracy = sd(conversion[correct],na.rm=TRUE))
+
+avg_per_block <- bind_rows(avg_spatial_recall, avg_cpt) %>%
+  arrange(subj_id, curr_block_num)
+```
+
+Now I will join these values into my total dataset.
+``` {r data_wrangling}
+total_data <- total_data %>%
+  left_join(avg_per_block, by = c("subj_id","curr_block_num"))
+```
+
+**analyzing and plotting the data**
 
 ``` {r data_wrangling}
 
