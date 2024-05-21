@@ -3,7 +3,7 @@ title: "pilotA_analysis_16to22"
 output: html_document
 date: "2024-05-20"
 ---
-This is the analysis on the preliminary pilot A data (from friends), before the addition of a progress bar and when the spatial recall task was 5 digits to mem instead of 4. 
+This is the analysis on the preliminary pilot A data (from friends), before the addition of a progress bar and when the spatial recall task was 5 digits to mem instead of 4. Also this gradcpt had a glitch in it (the same order of images repeated every block)
 
 The setup was:
 6 spatial recall practice
@@ -20,7 +20,10 @@ knitr::opts_chunk$set(echo = TRUE)
 library("knitr") # for knitting things
 library("tidyverse") # for all things tidyverse
 ##library(jsonlite)
-
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
 
 # set the default ggplot theme 
 theme_set(theme_classic())
@@ -342,6 +345,71 @@ total_data <- total_data %>%
 
 **analyzing and plotting the data**
 
+Plotting bids over time:
 ``` {r data_wrangling}
+bid_block_total <- total_data %>%
+  select(subj_id,curr_block_num,blocks_completed,following_bid_z_score,
+         preceding_bid_z_score,avg_accuracy,stdev_accuracy) %>%
+  group_by(subj_id,curr_block_num,blocks_completed,avg_accuracy,stdev_accuracy) %>%
+  summarise(avg_following_bid_z = mean(following_bid_z_score),
+            avg_preceding_bid_z = mean(preceding_bid_z_score))
+
+# faceted by subject
+bid_block_total %>%
+  mutate(subj_id = as.factor(subj_id)) %>%
+  ggplot(mapping = aes(x=curr_block_num,y=avg_following_bid_z,fill=subj_id,color=subj_id)) +
+  geom_point(alpha = 0.3,
+             position = position_jitter(height = 0, width = 0.1)) +
+  facet_wrap(~subj_id) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Block number", 
+       y = "Z-scored bid offer (relative to each subject's avg and sd)", 
+       title = "Bid offers following each block, by subject")
+
+# not faceted by subject
+bid_block_total %>%
+  mutate(subj_id = as.factor(subj_id)) %>%
+  group_by(curr_block_num) %>%
+  ggplot(mapping = aes(x=curr_block_num,y=avg_following_bid_z,fill=subj_id,color=subj_id)) +
+  geom_point(alpha = 0.3,
+             position = position_jitter(height = 0, width = 0.1)) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Block number", 
+       y = "Z-scored bid offer (relative to each subject's avg and sd)", 
+       title = "Bid offers following each block, by subject")
+
+# averaged across all participants
+bid_block_total %>%
+  group_by(curr_block_num) %>%
+  ggplot(mapping = aes(x=curr_block_num,y=avg_following_bid_z)) +
+  geom_point(alpha = 0.3,
+             position = position_jitter(height = 0, width = 0.1)) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Block number", 
+       y = "Z-scored bid offer (relative to each subject's avg and sd)", 
+       title = "Bid offers following each block, by subject")
+```
+
+Plotting preceding bid by avg accuracy in following block:
+``` {r data_wrangling}
+
+
+```
+Plotting following bid by avg accuracy in a block:
+
+``` {r data_wrangling}
+
+
+```
+Plotting avg accuracies in spatial recall vs gradcpt:
+
+``` {r data_wrangling}
+
+
+```
+
+Facet by switch or not
+``` {r data_wrangling}
+
 
 ```
