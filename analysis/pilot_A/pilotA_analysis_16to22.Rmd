@@ -608,6 +608,42 @@ bid_block_total_details %>%
 ```
 Do mixed effects models/more plots to test and look at:
 - does bid offer predict future accuracy
+- if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
 - does successful switching predict future accuracy
 - does accuracy predict bid offer
 - how does all of this differ by game_type
+``` {r data_wrangling}
+# to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('more than 2 sd below', '0 to 1 sd below', '0 to 1 sd above', 'more than 1 sd above')
+
+bid_block_total_details_binned <- bid_block_total_details %>%
+  mutate(bid_bin_preceding = cut(avg_preceding_bid_z, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(avg_following_bid_z, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(subj_id = as.factor(subj_id),block_switched = ifelse(is.na(block_switched),"block did not switch", ifelse(block_switched == 0,"switch","no switch"))) %>%
+  mutate(subj_id = as.factor(subj_id))
+
+bid_block_total_details_binned %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_accuracy,color=subj_id)) +
+  facet_wrap(~bid_bin_preceding,ncol=4) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.5,position = position_jitter(width=0.2,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average accuracy in this block")+
+  ggtitle("Relationship between bid offer, switch status and following average accuracy")
+```
+
+``` {r data_wrangling}
+bid_block_total_details_binned %>%
+  group_by(block_switched) %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=avg_preceding_bid_z,y=avg_accuracy, color = block_switched)) +
+  geom_point(alpha = 0.5)+
+  geom_smooth(method="lm",se=TRUE)
+```
