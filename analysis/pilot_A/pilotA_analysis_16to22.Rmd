@@ -392,24 +392,222 @@ bid_block_total %>%
 
 Plotting preceding bid by avg accuracy in following block:
 ``` {r data_wrangling}
+# including all subjects
+bid_block_total %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x = avg_preceding_bid_z, y = avg_accuracy)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 3) +  # Points colored by block number
+  labs(x = "Preeding Bid Z-Score",
+       y = "Average Accuracy in Next Block",
+       color = "Block Number") +
+  ggtitle("Bid Z-Score by Following Average Accuracy for Each Block, across subjects")
 
-
+# faceted by subjects
+bid_block_total %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x = avg_preceding_bid_z, y = avg_accuracy)) +
+  facet_wrap(~subj_id) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 3) +  # Points colored by block number
+  labs(x = "Preceding Bid Z-Score",
+       y = "Average Accuracy",
+       color = "Block Number") +
+  ggtitle("Bid Z-Score by Following Average Accuracy for Each Block, across subjects")
 ```
 Plotting following bid by avg accuracy in a block:
 
 ``` {r data_wrangling}
+# including all subjects
+bid_block_total %>%
+  ggplot(mapping = aes(x = avg_following_bid_z, y = avg_accuracy)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 3) +  # Points colored by block number
+  labs(x = "Following Bid Z-Score",
+       y = "Average Accuracy",
+       color = "Block Number") +
+  ggtitle("Average Accuracy by Following Bid Z-Score for Each Block, across subjects")
 
+# faceted by subjects
+bid_block_total %>%
+  ggplot(mapping = aes(x = avg_following_bid_z, y = avg_accuracy)) +
+  facet_wrap(~subj_id) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 3) +  # Points colored by block number
+  labs(x = "Following Bid Z-Score",
+       y = "Average Accuracy",
+       color = "Block Number") +
+  ggtitle("Average Accuracy by Following Bid Z-Score for Each Block, by subject")
 
 ```
 Plotting avg accuracies in spatial recall vs gradcpt:
 
 ``` {r data_wrangling}
-
-
+conversion_switch <- c("true" = 1, "false" = 0)
+bid_block_total_details <- total_data %>%
+  select(subj_id,curr_block_num,blocks_completed,following_bid_z_score,
+         preceding_bid_z_score,avg_accuracy,stdev_accuracy,game_type,block_switched) %>%
+  group_by(subj_id,curr_block_num,blocks_completed,avg_accuracy,stdev_accuracy,block_switched,game_type) %>%
+  summarise(avg_following_bid_z = mean(following_bid_z_score),
+            avg_preceding_bid_z = mean(preceding_bid_z_score)) %>%
+  mutate(block_switched = ifelse(is.na(block_switched),0,conversion_switch[block_switched])) %>%
+  arrange(subj_id, curr_block_num)
 ```
-
-Facet by switch or not
 ``` {r data_wrangling}
+total_data %>%
+  filter(game_type == "spatial_recall") %>%
+  mutate(subj_id = as.factor(subj_id),score_an = as.numeric(score_an)) %>%
+  arrange(trial_index) %>%
+  ggplot(mapping = aes(x = curr_block_num,y=score_an,fill=subj_id,color=subj_id)) +
+  facet_wrap(~subj_id,ncol=2) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(alpha = 0.4,
+             position = position_jitter(width = 0.3,
+                                        height = 0),
+             size = 2) +
+  labs(x = "Block number (arranged by trial_index)",
+       y = "Accuracy per trial") +
+  ggtitle("Spatial Recall: Accuracy over trials, by subject")
 
+total_data %>%
+  filter(game_type == "gradcpt") %>%
+  mutate(subj_id = as.factor(subj_id),correct = conversion_switch[correct]) %>%
+  arrange(trial_index) %>%
+  ggplot(mapping = aes(x = curr_block_num,y=correct,fill=subj_id,color=subj_id)) +
+  facet_wrap(~subj_id,ncol=2) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(alpha = 0.4,
+             position = position_jitter(width = 0.3,
+                                        height = 0),
+             size = 2) +
+  labs(x = "Block number (arranged by trial_index)",
+       y = "Accuracy per trial") +
+  ggtitle("Gradcpt: Accuracy over trials, by subject")
 
 ```
+``` {r data_wrangling}
+bid_block_total_details %>%
+  filter(game_type == "gradcpt") %>%
+  mutate(subj_id = as.factor(subj_id)) %>%
+  group_by(curr_block_num) %>%
+  ggplot(mapping = aes(x = curr_block_num, y = avg_accuracy)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = subj_id), size = 3) +  # Points colored by block number
+  labs(x = "Block number",
+       y = "Average Accuracy") +
+  ggtitle("GradCPT: Average Accuracy for Each Block, across subjects")
+
+bid_block_total_details %>%
+  filter(game_type == "spatial_recall") %>%
+  mutate(subj_id = as.factor(subj_id)) %>%
+  group_by(curr_block_num) %>%
+  ggplot(mapping = aes(x = curr_block_num, y = avg_accuracy)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = subj_id), size = 3) +  # Points colored by block number
+  labs(x = "Block number",
+       y = "Average Accuracy") +
+  ggtitle("Spatial Recall: Average Accuracy for Each Block, across subjects")
+```
+
+By subject:
+
+``` {r data_wrangling}
+bid_block_total_details %>%
+  filter(game_type == "gradcpt") %>%
+  mutate(subj_id = as.factor(subj_id)) %>%
+  group_by(curr_block_num) %>%
+  ggplot(mapping = aes(x = curr_block_num, y = avg_accuracy)) +
+  facet_wrap(~subj_id) + 
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = subj_id), size = 3) +  # Points colored by block number
+  labs(x = "Block number",
+       y = "Average Accuracy") +
+  ggtitle("GradCPT: Average Accuracy for Each Block, by subjects")
+
+bid_block_total_details %>%
+  filter(game_type == "spatial_recall") %>%
+  mutate(subj_id = as.factor(subj_id)) %>%
+  group_by(curr_block_num) %>%
+  ggplot(mapping = aes(x = curr_block_num, y = avg_accuracy)) +
+  facet_wrap(~subj_id) + 
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = subj_id), size = 3) +  # Points colored by block number
+  labs(x = "Block number",
+       y = "Average Accuracy") +
+  ggtitle("Spatial Recall: Average Accuracy for Each Block, by subjects")
+```
+
+Looking at overall average accuracy in spatial recall vs in gradcpt, by subject
+``` {r data_wrangling}
+total_data %>%
+  mutate(subj_id = as.factor(subj_id),score_an = as.numeric(score_an),
+         correct = conversion_switch[correct]) %>%
+  mutate(correct_total = ifelse(game_type == "spatial_recall",score_an,correct),
+         block_switched = ifelse(is.na(block_switched),"block did not switch", ifelse(block_switched == 0,"block did not switch","block switched"))) %>%
+  group_by(subj_id) %>%
+  ggplot(mapping = aes(x=game_type,y=correct_total)) +
+  facet_wrap(~block_switched) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.4,
+                                        height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1) +
+  labs(x="task type",y="accuracy per trial per subject")+
+  ggtitle("Trial accuracy by task type")
+
+bid_block_total_details %>%
+  mutate(subj_id = as.factor(subj_id),block_switched = ifelse(is.na(block_switched),"block did not switch", ifelse(block_switched == 0,"block did not switch","block switched"))) %>%
+  ggplot(mapping = aes(x=game_type,y=avg_accuracy,color=subj_id)) +
+  facet_wrap(~block_switched) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.4,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1) +
+  labs(x="task type",y="average accuracy per block per subject")+
+  ggtitle("Block accuracy by task type, across subjects")
+
+bid_block_total_details %>%
+  mutate(subj_id = as.factor(subj_id),block_switched = ifelse(is.na(block_switched),"block did not switch", ifelse(block_switched == 0,"block did not switch","block switched"))) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_accuracy,color=subj_id)) +
+  facet_wrap(~game_type) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.4,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1) +
+  labs(x="Is this a switched task",y="average accuracy per block per subject")+
+  ggtitle("Block accuracy by task type, across subjects")
+```
+Bid offers by switch or not
+``` {r data_wrangling}
+bid_block_total_details %>%
+  mutate(subj_id = as.factor(subj_id),block_switched = ifelse(is.na(block_switched),"block did not switch", ifelse(block_switched == 0,"block did not switch","block switched"))) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_following_bid_z,color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  facet_wrap(~game_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  labs(x="Did the task switch this block?",y="Average bid by participant/block after this block")+
+  ggtitle("Relationship between switch status and following bid offer")
+
+```
+Do mixed effects models/more plots to test and look at:
+- does bid offer predict future accuracy
+- does successful switching predict future accuracy
+- does accuracy predict bid offer
+- how does all of this differ by game_type
