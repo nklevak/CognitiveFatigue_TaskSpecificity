@@ -1,6 +1,6 @@
 // constants that are necessary
-var visual_search_trials_practice = 10 // called practiceLen in og code
-var visual_search_trials_block = 10 // called numTrialsPerBlock in og code
+var visual_search_trials_practice = 4 // called practiceLen in og code
+var visual_search_trials_block = 4 // called numTrialsPerBlock in og code
 const fixationDuration = 500;
 const stimStimulusDuration = 1500;
 const stimTrialDuration = 2000;
@@ -113,7 +113,7 @@ var possibleResponses;
 
 ///////////////////////
 
-  // uses generateHTML() function to create each stimuli html for each one in a block
+// uses generateHTML() function to create each stimuli html for each one in a block
 function getStims(blockStimNums,blockStimTargets,blockStimConditions,length) {
     const containerWidth = window.innerWidth * 0.7;
     const containerHeight = window.innerHeight * 0.7;
@@ -159,7 +159,6 @@ function getStim() {
     return stim.html;
 }
 
-// don't know if i need this
 const getCurrBlockNum = () => getExpStage() === "practice" ? practiceCount : testCount;
 
 // parses the html to understand the id of a single stim 
@@ -710,30 +709,11 @@ for (let i = 0; i < visual_search_trials_block; i++) {
 
 var testNode = {
     timeline: [feedbackBlock].concat(testTrials),
-    on_finish: function (data) {
+    on_finish: function() {
       testCount += 1;
-      var sumRT = 0;
-      var sumResponses = 0;
-      var correct = 0;
-      var totalTrials = 0;
-  
-      for (var i = 0; i < data.trials.length; i++) {
-        if (
-          data.trials[i].trial_id == "test_trial" &&
-          data.trials[i].block_num == getCurrBlockNum() - 1
-        ) {
-          totalTrials += 1;
-          if (data.trials[i].rt != null) {
-            sumRT += data.trials[i].rt;
-            sumResponses += 1;
-            if (data.trials[i].correct_trial == 1) {
-              correct += 1;
-            }
-          }
-        }
-      }
-    
+
       if (testCount != numTestBlocks) {
+        console.log("updating the stims in testNode")
         const { blockStimConditions, blockStimNums, blockStimTargets } =
           createStimArrays(visual_search_trials_block);
         blockStims = getStims(
@@ -754,7 +734,6 @@ var testNode = {
 //     // so use them, and then on_finish() update them again
     
 //   }
-
 
 var fullscreen = {
     type: jsPsychFullscreen,
