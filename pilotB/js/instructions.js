@@ -62,52 +62,6 @@ var sr_task_instructions = {
     //trial_duration: 1200,
   }
 
-// GRADCPT TASK INSTRUCTIONS (before each gradcpt block)
-var cpt_task_instructions = {
-    type: jsPsychInstructions,
-    pages: [
-      "<p>Welcome to the gradual onset game! Click next for the instructions.</p>",
-      "<p>In this task, an image will appear in the center of the screen.</p><p>\
-      If the image is a <strong>city</strong> press Spacebar on the keyboard as fast as you can.</p><p>\
-      If the image is a <strong>mountain</strong>, do not press a key.</p>\
-      <div style='width: 700px;'><div style='float: left;'><img src='./img900_esterman_w_big/city_1.jpg'></img>\
-      <p class='small'><strong>Press the Space key</strong></p></div>\
-      <div style='float: right;'><img src='./img900_esterman_w_big/mountain_1.jpg'></img>\
-      <p class='small'><strong>Do not press a key</strong></p></div>\
-      </div>",
-    ],
-    key_forward: 'ArrowRight',
-    key_backward: 'ArrowLeft',
-    allow_keys: true,
-    show_clickable_nav: true,
-    button_label_previous: 'Prev',
-    button_label_next: 'Next'
-  }
-
-var gradcpt_quiz = {
-  type: jsPsychSurveyMultiChoice,
-  questions: [
-    {
-      prompt: "For this game, I should:", 
-      name: 'gradcpt_question', 
-      options: ['Press the Enter key for a city, and nothing for a mountain', 'Press the Space key for a city, and nothing for a mountain', 'Press the Space key for all images'], 
-      required: true
-    }
-  ],
-};
-
-var gradcpt_begin = {
-  type: jsPsychHtmlKeyboardResponse,
-  stimulus: 'The correct answer is to press the Space key when you see a city, and nothing when you see a mountain. <br><br> When you are ready, press any key to continue to the game.</p>',
-  choices: "ALL_KEYS",
-  on_finish: function(){
-    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-    jsPsych.setProgressBar(0);
-  }
-  //trial_duration: 1200,
-}
-
-
 // MAIN EXPERIMENT INSTRUCTIONS + BDM
 var main_exp_BDM_instructions = {
     type: jsPsychInstructions,

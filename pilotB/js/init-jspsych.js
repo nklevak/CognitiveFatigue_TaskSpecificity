@@ -9,5 +9,8 @@ var jsPsych = initJsPsych({
   
       // Display jsPsych data in viewport.
       jsPsych.data.displayData();
+    },
+    on_start: function(){
+      document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     }
   });
