@@ -67,19 +67,20 @@ var main_exp_BDM_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>We will now go into instructions for the main experiment.</p>",
-      "<p>You will be given a monetary bonus based on your accuracy in this experiment.\
+      "<p><strong>You will be given a monetary bonus based on your accuracy in this experiment.</strong>\
       You will not be shown the bonus until the end.</p><p>",
-      "<p>You will be also be given an endowment of <strong>1000</strong> points which you can use throughout the game </p>",
+      "<p>You will be also be given an <strong>endowment of free points</strong> which you can use throughout the game </p>",
       "<p>In this experiment, you will be switching between the two games you practiced earlier. You will occasionally be asked how many points \
-      (from 1 to 100) you are willing to offer in order to switch to the other game (these points will come from your endowment).</p>",
+      (from 1 to 100) you are willing to offer in order to switch to the other game (these points will come from your endowment, not from your bonus at the end).</p>",
       "<p>Think of this like an <strong>auction</strong>. <br><br>\
-      We will randomly select a value from 1 to 100 each time you are given the option to switch. Let's call this <strong> our bid </strong> <br><br> \
-      <strong> If the number of points you offer </strong> is \
-      <strong> larger </strong> than our bid, <strong> you will get to switch games</strong>, and <strong>you will only pay our bid value </strong>\
+      We will <strong>randomly select</strong> a value from 1 to 100 each time you are given the option to switch. Let's call this <strong> our bid </strong> <br><br> </p>",
+      "<p><strong> If the number of points you offer </strong> is \
+      <strong> greater than </strong> than our bid, <strong> you will get to switch games</strong>, and <strong>you will only pay the number of points we randomly selected</strong>\
       (even if your offer was significantly higher).<br><br>\
-      <strong>If the value you offer </strong> is <strong>lower</strong> than our bid value, <strong>you will continue playing \
-      your current game</strong>. Because of this,<strong> it is to your benefit to be honest in how much you are willing to pay</strong>.</p>",
-      "<p>You will now be asked to answer a few questions about this, so feel free to re-read the instructions before you click Next </p>"
+      <strong>If the value you offer </strong> is <strong>less</strong> than our bid value, <strong>you will continue playing \
+      your current game</strong>.</p>",
+      "<p>Because of this,<strong> it is to your benefit to be honest about how many points you are willing to trade</strong>.</p>",
+      "<p>You will now be asked to answer a few questions about this, so, if necessary, please re-read the instructions before you click Next </p>"
     ],
     key_forward: 'ArrowRight',
     key_backward: 'ArrowLeft',
@@ -93,7 +94,7 @@ var main_exp_BDM_instructions = {
   }
 
 // BDM QUIZ
-var BDM_quiz = {
+var BDM_quiz_1 = {
     type: jsPsychSurveyMultiChoice,
     questions: [
       {
@@ -101,13 +102,25 @@ var BDM_quiz = {
         name: 'BDM_gen', 
         options: ['This randomly selected bid is the same throughout the experiment.','This randomly selected bid gets re-generated every time I am given the option to switch.','This randomly selected bid will always be larger than mine.'], 
         required: true
-      },
+      }
+    ],
+    randomize_question_order: false,
+  };
+var BDM_quiz_2 = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [
       {
         prompt: "When I get the option to switch, the points I'm offering come from:", 
         name: 'BDM_points', 
         options: ['My initial endowment of points.','The points I have gained from being accurate in the experiment so far.','They come from nowhere. I have an infinite amount of points to give.'], 
         required: true
-      },
+      }
+    ],
+    randomize_question_order: false,
+  };
+var BDM_quiz_3 = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [
       {
         prompt: "To get the best result when it comes to switching, I should:", 
         name: 'BDM_should', 
@@ -119,15 +132,21 @@ var BDM_quiz = {
   };
 
   var BDM_quiz_answers = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: '<p> The correct answers are: <br><br> 1. The randomly selected bid that your offer will be compared to \
-    will be re-generated every time you get the option to switch. <br><br>\
-     2. The points you offer when you get the option to switch come from your initial endowment of points.<br><br>\
-     3. To get the best results when it comes to switching, you should always be honest about exactly how many points \
-     you would be willing to trade. <br><br> Press any key to continue. </p>',
-    choices: "ALL_KEYS",
-    trial_duration: 5000,
-  }
+    type: jsPsychInstructions,
+    pages: [
+      "<p> The correct answers are: <br><br> 1. The randomly selected bid that your offer will be compared to \
+      will be re-generated every time you get the option to switch. <br><br></p>",
+       "<p> 2. The points you offer when you get the option to switch come from your initial endowment of points.<br><br></p>",
+       "<p>3. To get the best results when it comes to switching, you should always be honest about exactly how many points \
+       you would be willing to trade. <br><br> Press any key to continue. </p>"
+    ],
+    key_forward: 'ArrowRight',
+    key_backward: 'ArrowLeft',
+    allow_keys: true,
+    show_clickable_nav: true,
+    button_label_previous: 'Prev',
+    button_label_next: 'Next'
+}
 
 var final_exp_instructions = {
     type: jsPsychInstructions,
