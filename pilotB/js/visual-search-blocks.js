@@ -740,7 +740,8 @@ function vs_getBlock(){
             game_type: "vs",
             target_present: jsPsych.timelineVariable('target_present'),
             condition: jsPsych.timelineVariable('condition'),
-            numberStim: jsPsych.timelineVariable('numberStim')
+            numberStim: jsPsych.timelineVariable('numberStim'),
+            practice: "false"
           };
         },
         on_finish: function (data) {

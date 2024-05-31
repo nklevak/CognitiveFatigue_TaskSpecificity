@@ -143,30 +143,25 @@ var number_loop = {
 
 // final debrief 
 var calculate_bonus = function(){
-    // get grad cpt trials which are NOT practice and which are img trials (these have updated correctness info)
-    // can try doing .select('correct')
-
-    // do this for visual search later TODO
-    //var gradcpt_img_trials = jsPsych.data.get().filter({game_type:"gradcpt",practice:"false",cpt_type: "img"}).values();
+    // get vs trials which are NOT practice
+    var vs_trials = jsPsych.data.get().filter({game_type:"vs",practice:"false",trial_id:"test_trial"}).values();
 
     // get sr trials which are NOT practice
-    // can try doing .select("score_an")
     var sr_trials = jsPsych.data.get().filter({game_type:"spatial_recall",practice:"false"}).values();
 
     // get their accuracies
     var accuracy_count = 0
     var sr_len = sr_trials.length
-    //var gradcpt_len = gradcpt_img_trials.length
+    var vs_len = vs_trials.length
+
     for (let i = 0; i < sr_len;i++) {
         accuracy_count = accuracy_count + sr_trials[i].score_an
     }
-    //for (let i = 0; i < gradcpt_len; i++){
-    //    if(gradcpt_img_trials[i].correct){
-    //        accuracy_count += 1
-    //    }
-    //}
+    for (let i = 0; i < vs_len; i++){
+        accuracy_count = accuracy_count + vs_trials[i].correct_response
+    }
 
-    var total_trials = sr_len
+    var total_trials = sr_len + vs_len
     var accuracy_calc = total_trials > 0 ? (accuracy_count / total_trials) : 0;    
     var final_bonus = (accuracy_count * dollars_per_correct_bonus).toFixed(2)
 
