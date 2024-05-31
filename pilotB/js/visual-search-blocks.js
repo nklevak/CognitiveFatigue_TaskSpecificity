@@ -781,7 +781,9 @@ function vs_getBlock(){
                 }
               }
             } else {
-              data["correct_trial"] = null;
+              // used to say = null, but I changed it to be = 0 (false)
+              data["correct_trial"] = 0;
+              data["missed_response"] = 1;
             }
         
             let stimProperties = getStimProperties(data.stimulus);

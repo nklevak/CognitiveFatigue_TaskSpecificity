@@ -33,7 +33,7 @@ var meanITI = 0.5;
 
 // main experiment FILE
 // important variables to customize
-var dollars_per_correct_bonus = 0.30
+var dollars_per_correct_bonus = 0.04
 var num_blocks = numTestBlocks
 
 /////////////////////////////////////
@@ -794,6 +794,7 @@ var practiceTrial = {
           }
         }
       } else {
+        // used to say = null, but I changed it to be = 0 (false)
         data["correct_trial"] = null;
       }
   
@@ -1109,7 +1110,9 @@ function vs_getBlock(){
                 }
               }
             } else {
-              data["correct_trial"] = null;
+              // used to say = null, but I changed it to be = 0 (false)
+              data["correct_trial"] = 0;
+              data["missed_response"] = 1;
             }
         
             let stimProperties = getStimProperties(data.stimulus);
