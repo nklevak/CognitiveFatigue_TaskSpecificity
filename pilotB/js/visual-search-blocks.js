@@ -1,12 +1,12 @@
 // constants that are necessary
-var visual_search_trials_practice = 4 // called practiceLen in og code
-var visual_search_trials_block = 4 // called numTrialsPerBlock in og code
+const visual_search_trials_practice = 2 // called practiceLen in og code
+const visual_search_trials_block = 2 // called numTrialsPerBlock in og code
 const fixationDuration = 500;
 const stimStimulusDuration = 1500;
 const stimTrialDuration = 2000;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
-var numTestBlocks = 8 // number of blocks of the main experiment
+var numTestBlocks = 3 // number of blocks of the main experiment
 // const accuracyThresh = 0.8; // threshhold for block-level feedback
 const practiceAccuracyThresh = 0.75; //threshold to proceed to test blocks, 3 out of 4 trials for .75
 const rtThresh = 1250;
@@ -14,7 +14,7 @@ const missedResponseThresh = 0.1;
 var expStage = "practice";// starts off here
 var practiceCount = 0;
 var testCount = 0;
-var practiceThresh = 2;//this is how  many times they can redo practice
+var practiceThresh = 1;//this is how  many times they can redo practice
 
 // PARAMETERS FOR DECAYING EXPONENTIAL FUNCTION
 var meanITI = 0.5;
@@ -43,7 +43,6 @@ function sampleFromDecayingExponential() {
   } while (sample < minValue || sample > maxValue);
   return sample;
 }
-
 // this creates the stimuli for blockLen number of trials
 // should I make all of mine high load and conjunction?
 // conjunction is harder, and means the distractors have the same features as target
@@ -52,34 +51,60 @@ function sampleFromDecayingExponential() {
 // blockStimTargets = 1 or 0 (if target is present or not)
 // each block rn is half feature half conjunction, and half of each of those is present/nonpresent and 8/16
 function createStimArrays(blockLen) {
-    let blockStimConditions = [];
-    let blockStimNums = [];
-    let blockStimTargets = [];
+    console.log("called")
+    let blockStimConditions_t = [];
+    let blockStimNums_t = [];
+    let blockStimTargets_t = [];
   
     const halfLen = blockLen / 2;
     const quarterLen = blockLen / 4;
   
     for (let i = 0; i < blockLen; i++) {
       // Alternate between "feature" and "conjunction"
-      blockStimConditions.push(i < halfLen ? "feature" : "conjunction");
+      blockStimConditions_t.push(i < halfLen ? "feature" : "conjunction");
   
       // For each condition, half "8" and half "24"
       if (i % quarterLen < quarterLen / 2) {
-        blockStimNums.push(8);
+        blockStimNums_t.push(8);
       } else {
-        blockStimNums.push(24);
+        blockStimNums_t.push(24);
       }
   
       // For each condition, half "1" and half "0"
       if (i % (quarterLen / 2) < quarterLen / 4) {
-        blockStimTargets.push(1);
+        blockStimTargets_t.push(1);
       } else {
-        blockStimTargets.push(0);
+        blockStimTargets_t.push(0);
       }
     }
+    console.log(blockStimConditions_t)
   
-    return { blockStimConditions, blockStimNums, blockStimTargets };
+    return [blockStimConditions_t, blockStimNums_t, blockStimTargets_t];
   }
+
+// variables
+// not sure if I actually need these for this
+var trialTargetPresent;
+var condition;
+var numberStim;
+// more necessary variables
+function getExpStage() {
+    return expStage
+};
+function getCurrCondition(){
+    return condition
+};
+function getInstructFeedback(){
+    return   `<div class="centerbox"><p class="center-block-text">${feedbackInstructText}</p></div>`;
+}
+
+function getFeedback(){
+  return `<div class="bigbox"><div class="picture_box"><p class="block-text">${feedbackText}</p></div></div>`
+};
+// right now I don't assign group index (which counterbalances , and .) so my group index is always 1
+var group_index =
+  typeof window.efVars !== "undefined" ? window.efVars.group_index : 1;
+var possibleResponses;
 
 function shuffleArray(array) {
     // Create a copy of the original array
@@ -94,27 +119,13 @@ function shuffleArray(array) {
     return shuffledArray;
 }
 
-// variables
-// not sure if I actually need these for this
-var trialTargetPresent;
-var condition;
-var numberStim;
-// more necessary variables
-const getExpStage = () => expStage;
-const getCurrCondition = () => condition;
-const getInstructFeedback = () =>
-  `<div class="centerbox"><p class="center-block-text">${feedbackInstructText}</p></div>`;
-const getFeedback = () =>
-  `<div class="bigbox"><div class="picture_box"><p class="block-text">${feedbackText}</p></div></div>`;
-// right now I don't assign group index (which counterbalances , and .) so my group index is always 1
-var group_index =
-  typeof window.efVars !== "undefined" ? window.efVars.group_index : 1;
-var possibleResponses;
-
-///////////////////////
-
 // uses generateHTML() function to create each stimuli html for each one in a block
-function getStims(blockStimNums,blockStimTargets,blockStimConditions,length) {
+function getStims(blockStimNums_t,blockStimTargets_t,blockStimConditions_t,length) {
+    console.log(blockStimNums_t.length)
+    console.log(blockStimTargets_t.length)
+    console.log(blockStimConditions_t.length)
+    console.log(length)
+
     const containerWidth = window.innerWidth * 0.7;
     const containerHeight = window.innerHeight * 0.7;
     const boxWidth = 40;
@@ -122,9 +133,9 @@ function getStims(blockStimNums,blockStimTargets,blockStimConditions,length) {
     var stims = [];
   
     for (var i = 0; i < length; i++) {
-      const targetPresent = blockStimTargets.shift();
-      const stimCondition = blockStimConditions.shift();
-      const stimNum = blockStimNums.shift();
+      const targetPresent = blockStimTargets_t.shift();
+      const stimCondition = blockStimConditions_t.shift();
+      const stimNum = blockStimNums_t.shift();
       const targetIndex = Math.floor(Math.random() * stimNum);
       const html = generateHTML(
         containerWidth,
@@ -146,11 +157,21 @@ function getStims(blockStimNums,blockStimTargets,blockStimConditions,length) {
   
       stims.push(obj);
     }
+    stims = shuffleArray(stims)
   
     return stims;
 }
 
 // gets an individual stim's html
+// for practice runs
+function getStim_practice() {
+    stim = blockStims_p.shift();
+    trialTargetPresent = stim.targetPresent;
+    condition = stim.condition;
+    numberStim = stim.stimNum;
+    return stim.html;
+}
+// for test runs
 function getStim() {
     stim = blockStims.shift();
     trialTargetPresent = stim.targetPresent;
@@ -158,8 +179,13 @@ function getStim() {
     numberStim = stim.stimNum;
     return stim.html;
 }
+function getStim_withData(){
+    return blockStims.shift();
+}
 
-const getCurrBlockNum = () => getExpStage() === "practice" ? practiceCount : testCount;
+function getCurrBlockNum() {
+    return getExpStage() === "practice" ? practiceCount : testCount
+}
 
 // parses the html to understand the id of a single stim 
 function getStimProperties(htmlString) {
@@ -380,29 +406,34 @@ var blockStimNums = [];
 var blockStimTargets = [];
 var blockStimConditions = [];
 
+var blockStims_p = [];
+var blockStimNums_p = [];
+var blockStimTargets_p = [];
+var blockStimConditions_p = [];
+
 /* ************************************ */
 /* Set up jsPsych blocks */
 /* ************************************ */
-
-// one trial of a block
-var testTrial = {
+var practiceTrial = {
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: getStim,
+    stimulus: getStim_practice,
     choices: choices,
     stimulus_duration: stimStimulusDuration, // 1500,
     trial_duration: stimTrialDuration, // 1500
     response_ends_trial: false,
     prompt: function () {
-      return getExpStage() === "practice" ? promptText : "";
+      return promptText;
     },
     data: function () {
-      const stage = getExpStage(); 
+      const stage = "practice"; 
       return {
         trial_id: `${stage}_trial`, 
         choices: choices, 
         trial_duration: stimTrialDuration,
         stimulus_duration: stimStimulusDuration,
-        block_num: stage === "practice" ? practiceCount : testCount,
+        block_num: practiceCount,
+        game_type: "vs",
+        practice: "true"
       };
     },
     on_finish: function (data) {
@@ -444,7 +475,7 @@ var testTrial = {
 var instructionsBlock = {
     type: jsPsychInstructions,
     pages: pageInstruct,
-    allow_keys: false,
+    allow_keys: true,
     data: {
       trial_id: "instructions",
       trial_duration: null,
@@ -452,33 +483,13 @@ var instructionsBlock = {
     },
     show_clickable_nav: true,
   };
+
 var vs_instructionNode = {
     timeline: [instructionsBlock],
-    loop_function: function (data) {
-      for (i = 0; i < data.trials.length; i++) {
-        if (
-          data.trials[i].trial_id == "instructions" &&
-          data.trials[i].rt != null
-        ) {
-          rt = data.trials[i].rt;
-          sumInstructTime += rt;
-        }
-      }
-      if (sumInstructTime <= instructTimeThresh * 1000) {
-        feedbackInstructText =
-          "<p class=block-text>Read through instructions too quickly. Please take your time and make sure you understand the instructions.</p><p class=block-text>Press <i>enter</i> to continue.</p>";
-        return true;
-      } else if (sumInstructTime > instructTimeThresh * 1000) {
-        feedbackInstructText =
-          "<p class=block-text>Done with instructions. Press <i>enter</i> to continue.</p>";
-        return false;
-      }
-    },
   };
 
 var feedbackText =
   "<div class = centerbox><p class = center-block-text>Press <i>enter</i> to begin practice.</p></div>";
-// presemts the feedback text (is this only when practice repeats??)
 var feedbackBlock = {
     type: jsPsychHtmlKeyboardResponse,
     data: function () {
@@ -574,7 +585,6 @@ var ITIBlock = {
       data["stimulus_duration"] = ITIms * 1000;
     },
   };
-
 // correct or incorrect for practice trials
 var practiceFeedbackBlock = {
     type: jsPsychHtmlKeyboardResponse,
@@ -611,11 +621,12 @@ var practiceTrials = [];
 for (let i = 0; i < visual_search_trials_practice; i++) {
   practiceTrials.push(
     fixationBlock,
-    testTrial,
+    practiceTrial,
     practiceFeedbackBlock,
     ITIBlock
   );
 }
+
 var vs_practiceNode = {
     timeline: [feedbackBlock].concat(practiceTrials),
     loop_function: function (data) {
@@ -650,20 +661,8 @@ var vs_practiceNode = {
       if (accuracy >= practiceAccuracyThresh || practiceCount == practiceThresh) {
         feedbackText = `
         <div class="centerbox">
-          <p class="center-block-text">We will now continue onto the rest of the experiment.</p>
+          <p class="center-block-text">We will now continue onto the rest of the experiment. Press any key.</p>
         </div>`;
-  
-        const { blockStimConditions, blockStimNums, blockStimTargets } =
-          createStimArrays(visual_search_trials_block);
-  
-        blockStims = getStims(
-          blockStimNums,
-          blockStimTargets,
-          blockStimConditions,
-          visual_search_trials_block
-        );
-  
-        blockStims = jsPsych.randomization.repeat(blockStims, 1);
   
         expStage = "test";
         return false;
@@ -685,55 +684,11 @@ var vs_practiceNode = {
         feedbackText +=
           `<p class="block-text">We are now going to repeat the practice round.</p>` +
           `<p class="block-text">Press <i>enter</i> to begin.</p></div>`;
-  
-        const { blockStimConditions, blockStimNums, blockStimTargets } =
-          createStimArrays(visual_search_trials_practice);
-  
-        blockStims = getStims(
-          blockStimNums,
-          blockStimTargets,
-          blockStimConditions,
-          visual_search_trials_practice
-        );
-  
-        blockStims = jsPsych.randomization.repeat(blockStims, 1);
+          
         return true;
       }
     },
   };
-
-var testTrials = [];
-for (let i = 0; i < visual_search_trials_block; i++) {
-    testTrials.push(fixationBlock, testTrial, ITIBlock);
-}
-
-var testNode = {
-    timeline: [feedbackBlock].concat(testTrials),
-    on_finish: function() {
-      testCount += 1;
-
-      if (testCount != numTestBlocks) {
-        console.log("updating the stims in testNode")
-        const { blockStimConditions, blockStimNums, blockStimTargets } =
-          createStimArrays(visual_search_trials_block);
-        blockStims = getStims(
-          blockStimNums,
-          blockStimTargets,
-          blockStimConditions,
-          visual_search_trials_block
-        );
-  
-        blockStims = jsPsych.randomization.repeat(blockStims, 1);
-      }
-    },
-  };
-
-// // returns a block of test stims at a time
-// function vs_getBlock() {
-//     // current  blockStimConditions, blockStimNums, blockStimTargets should be updated for next block
-//     // so use them, and then on_finish() update them again
-    
-//   }
 
 var fullscreen = {
     type: jsPsychFullscreen,
@@ -744,12 +699,128 @@ var exitFullscreen = {
     fullscreen_mode: false,
 };
 
-// make the practice array variables
-var {blockStimConditions, blockStimNums, blockStimTargets} = createStimArrays(visual_search_trials_practice);
-blockStims = getStims(
-  blockStimNums,
-  blockStimTargets,
-  blockStimConditions,
-  visual_search_trials_practice
-);
-blockStims = jsPsych.randomization.repeat(blockStims, 1);
+function vs_getBlock_timelineVals_all(){
+    var timeline_vals = []
+    var length_blockStims = blockStims.length
+    for (let i = 0; i < (length_blockStims); i++){
+        var temp_stim = getStim_withData()
+        trialTargetPresent = temp_stim.targetPresent;
+        condition = temp_stim.condition;
+        numberStim = temp_stim.stimNum;
+
+        // add it to timeline vals so you can add it to data
+        timeline_vals.push({
+            stimulus: temp_stim.html,
+            target_present: trialTargetPresent,
+            condition: condition,
+            numberStim: numberStim
+        });
+    }
+    return timeline_vals
+}
+
+var trialCounter = 0
+function vs_getBlock(){
+    var trial_t = {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: jsPsych.timelineVariable('stimulus'),
+        choices: choices,
+        stimulus_duration: stimStimulusDuration, // 1500,
+        trial_duration: stimTrialDuration, // 1500
+        response_ends_trial: false,
+        prompt: "",
+        data: function () {
+          const stage = "test"; 
+          return {
+            trial_id: `${stage}_trial`, 
+            choices: choices, 
+            trial_duration: stimTrialDuration,
+            stimulus_duration: stimStimulusDuration,
+            block_num: testCount,
+            game_type: "vs",
+            target_present: jsPsych.timelineVariable('target_present'),
+            condition: jsPsych.timelineVariable('condition'),
+            numberStim: jsPsych.timelineVariable('numberStim')
+          };
+        },
+        on_finish: function (data) {
+            // data["target_present"] = trialTargetPresent ? 1 : 0;
+            // data["num_stimuli"] = numberStim;
+            // data["condition"] = condition;
+            data["exp_stage"] = "test";
+            data["correct_response"] = data["target_present"]
+              ? possibleResponses[0][1]
+              : possibleResponses[1][1];
+        
+            if (data.response !== null) {
+              if (data["target_present"] == 1) {
+                if (data.response == possibleResponses[0][1]) {
+                  data["correct_trial"] = 1;
+                } else {
+                  data["correct_trial"] = 0;
+                }
+              } else {
+                if (data.response == possibleResponses[0][1]) {
+                  data["correct_trial"] = 0;
+                } else {
+                  data["correct_trial"] = 1;
+                }
+              }
+            } else {
+              data["correct_trial"] = null;
+            }
+        
+            let stimProperties = getStimProperties(data.stimulus);
+            data["order_and_color_of_rectangles"] = stimProperties;
+            data["target_rectangle_location"] = trialTargetPresent
+              ? getTargetLocation(stimProperties)
+              : null;
+            
+            trialCounter += 1
+            if (trialCounter >= visual_search_trials_block){
+                trialCounter=0
+                testCount += 1
+            }
+        }
+    }
+
+    var block_timeline_vals = vs_getBlock_timelineVals_all()
+    var full_timeline_return = {
+        timeline: [fixationBlock,trial_t,ITIBlock],
+        timeline_variables: block_timeline_vals,
+        sample: {
+            type: 'custom',
+            fn: function(t){
+                let starting_val = testCount * visual_search_trials_block
+                return t.slice(starting_val, starting_val + visual_search_trials_block);
+            }
+        }
+    }
+
+    return full_timeline_return;
+}
+
+
+
+///////////////////////////////////////////////////////////////
+function doInitialAssignment(){
+    // for practice runs
+    [blockStimConditions_p, blockStimNums_p, blockStimTargets_p] = createStimArrays(visual_search_trials_practice * practiceThresh)
+    blockStims_p = getStims(
+          blockStimNums_p,
+          blockStimTargets_p,
+          blockStimConditions_p,
+          visual_search_trials_practice*practiceThresh
+    );
+
+    // for actual runs
+    [blockStimConditions, blockStimNums, blockStimTargets] = createStimArrays(visual_search_trials_block * numTestBlocks)
+    blockStims = getStims(
+          blockStimNums,
+          blockStimTargets,
+          blockStimConditions,
+          visual_search_trials_block*numTestBlocks
+        );
+}
+
+doInitialAssignment()
