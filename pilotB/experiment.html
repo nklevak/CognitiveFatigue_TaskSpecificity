@@ -49,7 +49,7 @@ var timeline = [];
 // timeline.push(preload_manual_instr)
 
 // INTRUCTIONS AND PRACTICE SESSION
-timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
+//timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
 
 // MAIN EXPERIMENT INSTRUCTIONS
 timeline.push(main_exp_BDM_instructions, BDM_quiz, BDM_quiz_answers, final_exp_instructions)
@@ -238,11 +238,9 @@ var if_vs_node = {
     timeline: [full_vs_block],
     conditional_function: function(){
         if (curr_block == num_blocks || currentTask == "spatial_recall"){
-            console.log("vs is skipped, but test count is: ")
             console.log(testCount)
             return false
         } else {
-            console.log("vs is active rn")
             console.log(testCount)
             curr_block = curr_block + 1
             return true
