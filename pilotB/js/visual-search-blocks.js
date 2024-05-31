@@ -1,6 +1,6 @@
 // constants that are necessary
 const visual_search_trials_practice = 2 // called practiceLen in og code
-const visual_search_trials_block = 2 // called numTrialsPerBlock in og code
+const visual_search_trials_block = 4 // called numTrialsPerBlock in og code
 const fixationDuration = 500;
 const stimStimulusDuration = 1500;
 const stimTrialDuration = 2000;
@@ -15,6 +15,9 @@ var expStage = "practice";// starts off here
 var practiceCount = 0;
 var testCount = 0;
 var practiceThresh = 1;//this is how  many times they can redo practice
+// for updating the progress bar:
+var vs_practice_prop_added = 1/visual_search_trials_practice
+var vs_test_prop_added = 1/visual_search_trials_block
 
 // PARAMETERS FOR DECAYING EXPONENTIAL FUNCTION
 var meanITI = 0.5;
@@ -63,13 +66,16 @@ function createStimArrays(blockLen) {
       // Alternate between "feature" and "conjunction"
       blockStimConditions_t.push(i < halfLen ? "feature" : "conjunction");
   
-      // For each condition, half "8" and half "24"
-      if (i % quarterLen < quarterLen / 2) {
-        blockStimNums_t.push(8);
-      } else {
-        blockStimNums_t.push(24);
-      }
-  
+      // OLD: For each condition, half "8" and half "24"
+      // NEW: For each condition, all 24
+
+      // if (i % quarterLen < quarterLen / 2) {
+      //   blockStimNums_t.push(8);
+      // } else {
+      //   blockStimNums_t.push(24);
+      // }
+      blockStimNums_t.push(24);
+
       // For each condition, half "1" and half "0"
       if (i % (quarterLen / 2) < quarterLen / 4) {
         blockStimTargets_t.push(1);
@@ -469,6 +475,10 @@ var practiceTrial = {
         ? getTargetLocation(stimProperties)
         : null;
     },
+    on_start: function(){
+      var update_to = jsPsych.getProgressBarCompleted() + vs_practice_prop_added
+      jsPsych.setProgressBar(update_to);
+    }
   };
 
 // instructions before task
@@ -782,6 +792,9 @@ function vs_getBlock(){
                 trialCounter=0
                 testCount += 1
             }
+
+            var progressbar_update = jsPsych.getProgressBarCompleted() + vs_test_prop_added
+            jsPsych.setProgressBar(progressbar_update);
         }
     }
 
