@@ -63,18 +63,18 @@ function createStimArrays(blockLen) {
     const quarterLen = blockLen / 4;
   
     for (let i = 0; i < blockLen; i++) {
-      // Alternate between "feature" and "conjunction"
-      blockStimConditions_t.push(i < halfLen ? "feature" : "conjunction");
-  
-      // OLD: For each condition, half "8" and half "24"
-      // NEW: For each condition, all 24
+      // OLD: Alternate between "feature" and "conjunction"
+      // blockStimConditions_t.push(i < halfLen ? "feature" : "conjunction");
+      // NEW: to make it harder, make them all conjunctoin
+      blockStimConditions_t.push("conjunction");
 
-      // if (i % quarterLen < quarterLen / 2) {
-      //   blockStimNums_t.push(8);
-      // } else {
-      //   blockStimNums_t.push(24);
-      // }
-      blockStimNums_t.push(24);
+      // OLD: For each condition, half "8" and half "24"
+      // can change this distribution later
+      if (i % quarterLen < quarterLen / 2) {
+        blockStimNums_t.push(8);
+      } else {
+        blockStimNums_t.push(24);
+      }
 
       // For each condition, half "1" and half "0"
       if (i % (quarterLen / 2) < quarterLen / 4) {
