@@ -167,7 +167,40 @@ var BDM_quiz_1 = {
       }
     ],
     randomize_question_order: false,
+    on_finish: function(data) {
+        var BDM_gen = data.response.BDM_gen; 
+          if(BDM_gen == 'This randomly selected bid gets re-generated every time I am given the option to switch.') {
+            data.correct = true
+          } else {
+            data.correct = false
+          }
+       }
   };
+  var BDM_q1_feedback = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function(){
+      var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
+      if (last_resp_correct) {
+      return "<p>CORRECT: The randomly selected bid that your offer will be compared to \
+      will be re-generated every time you get the option to switch. </p>"
+    } else {
+      return "<p>INCORRECT: The randomly selected bid that your offer will be compared to \
+      will be re-generated every time you get the option to switch. </p>" 
+    }},
+    choices: ['Next']
+  };
+
+  var BDM_q1_loop = {
+    timeline: [BDM_quiz_1, BDM_q1_feedback], 
+    loop_function: function(data){ 
+      if (data.values()[0].correct == true) { 
+        return false; 
+        } else { 
+        return true;
+        }
+    }
+  };
+
 var BDM_quiz_2 = {
     type: jsPsychSurveyMultiChoice,
     questions: [
@@ -179,7 +212,38 @@ var BDM_quiz_2 = {
       }
     ],
     randomize_question_order: false,
+    on_finish: function(data) {
+        var BDM_points = data.response.BDM_points; 
+          if(BDM_points == 'My initial endowment of points.') {
+            data.correct = true
+          } else {
+            data.correct = false
+          }
+       }
   };
+  var BDM_q2_feedback = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function(){
+      var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
+      if (last_resp_correct) {
+      return "<p>CORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>"
+    } else {
+      return "<p>INCORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>" 
+    }},
+    choices: ['Next']
+  };
+
+  var BDM_q2_loop = {
+    timeline: [BDM_quiz_2, BDM_q2_feedback], 
+    loop_function: function(data){ 
+      if (data.values()[0].correct == true) { 
+        return false; 
+        } else { 
+        return true;
+        }
+    }
+  };
+
 var BDM_quiz_3 = {
     type: jsPsychSurveyMultiChoice,
     questions: [
@@ -191,6 +255,38 @@ var BDM_quiz_3 = {
       },
     ],
     randomize_question_order: false,
+    on_finish: function(data) {
+        var BDM_should = data.response.BDM_should; 
+          if(BDM_should == 'Always be honest about exactly how many points I would be willing to trade.') {
+            data.correct = true
+          } else {
+            data.correct = false
+          }
+       }
+  };
+  var BDM_q3_feedback = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: function(){
+      var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
+      if (last_resp_correct) {
+      return "<p>CORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
+      you would be willing to trade.</p>"
+    } else {
+      return "<p>INCORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
+      you would be willing to trade. </p>" 
+    }},
+    choices: ['Next']
+  };
+
+  var BDM_q3_loop = {
+    timeline: [BDM_quiz_3, BDM_q3_feedback], 
+    loop_function: function(data){ 
+      if (data.values()[0].correct == true) { 
+        return false; 
+        } else { 
+        return true;
+        }
+    }
   };
   
   var BDM_quiz_answers = {
@@ -1190,7 +1286,7 @@ var timeline = [];
 timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
 
 // MAIN EXPERIMENT INSTRUCTIONS
-timeline.push(main_exp_BDM_instructions, BDM_quiz_1, BDM_quiz_2, BDM_quiz_3, BDM_quiz_answers, final_exp_instructions)
+timeline.push(main_exp_BDM_instructions, BDM_q1_loop, BDM_q2_loop, BDM_q3_loop, final_exp_instructions)
 
 ///////////////////////////////////////////////////////////
 // MAIN EXPERIMENT

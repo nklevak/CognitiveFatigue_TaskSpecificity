@@ -95,58 +95,138 @@ var main_exp_BDM_instructions = {
 
 // BDM QUIZ
 var BDM_quiz_1 = {
-    type: jsPsychSurveyMultiChoice,
-    questions: [
-      {
-        prompt: "Every time I get the option to switch, my offer will be compared to a randomly selected bid. Which of the following is true:", 
-        name: 'BDM_gen', 
-        options: ['This randomly selected bid is the same throughout the experiment.','This randomly selected bid gets re-generated every time I am given the option to switch.','This randomly selected bid will always be larger than mine.'], 
-        required: true
-      }
-    ],
-    randomize_question_order: false,
-  };
-var BDM_quiz_2 = {
-    type: jsPsychSurveyMultiChoice,
-    questions: [
-      {
-        prompt: "When I get the option to switch, the points I'm offering come from:", 
-        name: 'BDM_points', 
-        options: ['My initial endowment of points.','The points I have gained from being accurate in the experiment so far.','They come from nowhere. I have an infinite amount of points to give.'], 
-        required: true
-      }
-    ],
-    randomize_question_order: false,
-  };
-var BDM_quiz_3 = {
-    type: jsPsychSurveyMultiChoice,
-    questions: [
-      {
-        prompt: "To get the best result when it comes to switching, I should:", 
-        name: 'BDM_should', 
-        options: ['Always offer a higher number of points than I would really want to trade to switch.', 'Always offer a lower number of points than I would really want to trade to switch.', 'Always be honest about exactly how many points I would be willing to trade.'], 
-        required: true
-      },
-    ],
-    randomize_question_order: false,
-  };
+  type: jsPsychSurveyMultiChoice,
+  questions: [
+    {
+      prompt: "Every time I get the option to switch, my offer will be compared to a randomly selected bid. Which of the following is true:", 
+      name: 'BDM_gen', 
+      options: ['This randomly selected bid is the same throughout the experiment.','This randomly selected bid gets re-generated every time I am given the option to switch.','This randomly selected bid will always be larger than mine.'], 
+      required: true
+    }
+  ],
+  randomize_question_order: false,
+  on_finish: function(data) {
+      var BDM_gen = data.response.BDM_gen; 
+        if(BDM_gen == 'This randomly selected bid gets re-generated every time I am given the option to switch.') {
+          data.correct = true
+        } else {
+          data.correct = false
+        }
+     }
+};
+var BDM_q1_feedback = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: function(){
+    var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
+    if (last_resp_correct) {
+    return "<p>CORRECT: The randomly selected bid that your offer will be compared to \
+    will be re-generated every time you get the option to switch. </p>"
+  } else {
+    return "<p>INCORRECT: The randomly selected bid that your offer will be compared to \
+    will be re-generated every time you get the option to switch. </p>" 
+  }},
+  choices: ['Next']
+};
 
-  var BDM_quiz_answers = {
-    type: jsPsychInstructions,
-    pages: [
-      "<p> The correct answers are: <br><br> 1. The randomly selected bid that your offer will be compared to \
-      will be re-generated every time you get the option to switch. <br><br></p>",
-       "<p> 2. The points you offer when you get the option to switch come from your initial endowment of points.<br><br></p>",
-       "<p>3. To get the best results when it comes to switching, you should always be honest about exactly how many points \
-       you would be willing to trade. <br><br> Press any key to continue. </p>"
-    ],
-    key_forward: 'ArrowRight',
-    key_backward: 'ArrowLeft',
-    allow_keys: true,
-    show_clickable_nav: true,
-    button_label_previous: 'Prev',
-    button_label_next: 'Next'
-}
+var BDM_q1_loop = {
+  timeline: [BDM_quiz_1, BDM_q1_feedback], 
+  loop_function: function(data){ 
+    if (data.values()[0].correct == true) {
+        return false; 
+      } else { 
+        return true;
+      }
+  }
+};
+
+var BDM_quiz_2 = {
+  type: jsPsychSurveyMultiChoice,
+  questions: [
+    {
+      prompt: "When I get the option to switch, the points I'm offering come from:", 
+      name: 'BDM_points', 
+      options: ['My initial endowment of points.','The points I have gained from being accurate in the experiment so far.','They come from nowhere. I have an infinite amount of points to give.'], 
+      required: true
+    }
+  ],
+  randomize_question_order: false,
+  on_finish: function(data) {
+      var BDM_points = data.response.BDM_points; 
+        if(BDM_points == 'My initial endowment of points.') {
+          data.correct = true
+        } else {
+          data.correct = false
+        }
+     }
+};
+var BDM_q2_feedback = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: function(){
+    var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
+    if (last_resp_correct) {
+    return "<p>CORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>"
+  } else {
+    return "<p>INCORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>" 
+  }},
+  choices: ['Next']
+};
+
+var BDM_q2_loop = {
+  timeline: [BDM_quiz_2, BDM_q2_feedback], 
+  loop_function: function(data){ 
+    if (data.values()[0].correct == true) { 
+      return false; 
+      } else { 
+      return true;
+      }
+  }
+};
+
+var BDM_quiz_3 = {
+  type: jsPsychSurveyMultiChoice,
+  questions: [
+    {
+      prompt: "To get the best result when it comes to switching, I should:", 
+      name: 'BDM_should', 
+      options: ['Always offer a higher number of points than I would really want to trade to switch.', 'Always offer a lower number of points than I would really want to trade to switch.', 'Always be honest about exactly how many points I would be willing to trade.'], 
+      required: true
+    },
+  ],
+  randomize_question_order: false,
+  on_finish: function(data) {
+      var BDM_should = data.response.BDM_should; 
+        if(BDM_should == 'Always be honest about exactly how many points I would be willing to trade.') {
+          data.correct = true
+        } else {
+          data.correct = false
+        }
+     }
+};
+var BDM_q3_feedback = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: function(){
+    var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
+    if (last_resp_correct) {
+    return "<p>CORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
+    you would be willing to trade.</p>"
+  } else {
+    return "<p>INCORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
+    you would be willing to trade. </p>" 
+  }},
+  choices: ['Next']
+};
+
+var BDM_q3_loop = {
+  timeline: [BDM_quiz_3, BDM_q3_feedback], 
+  loop_function: function(data){ 
+    if (data.values()[0].correct == true) { 
+      return false; 
+      } else { 
+      return true;
+      }
+  }
+};
+
 
 var final_exp_instructions = {
     type: jsPsychInstructions,
