@@ -550,7 +550,7 @@ Do mixed effects models/more plots to test and look at:
 ``` {r data_wrangling}
 # to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
 breaks <- c(-Inf, -1, 0, 1, Inf)
-labels <- c('more than 2 sd below', '0 to 1 sd below', '0 to 1 sd above', 'more than 1 sd above')
+labels <- c('more than 1 sd below', '0 to 1 sd below', '0 to 1 sd above', 'more than 1 sd above')
 
 bid_block_total_details_binned <- bid_block_total_details %>%
   mutate(bid_bin_preceding = cut(avg_preceding_bid_z, breaks = breaks, labels = labels, right = FALSE),

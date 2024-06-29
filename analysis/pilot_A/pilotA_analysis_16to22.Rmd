@@ -647,3 +647,25 @@ bid_block_total_details_binned %>%
   geom_point(alpha = 0.5)+
   geom_smooth(method="lm",se=TRUE)
 ```
+
+``` {r data_wrangling}
+all_avgs <- total_data %>%
+  mutate(correct_val = ifelse(game_type == "gradcpt",conversion[correct],as.numeric(score_an))) %>%
+  select(subj_id,game_type, correct_val) %>%
+  group_by(subj_id,game_type) %>%
+  summarize(overall_game_avg = mean(correct_val))
+
+all_avgs %>%
+  ggplot(mapping = aes(x=game_type, y=overall_game_avg)) +
+  geom_point(aes(x=game_type, y=overall_game_avg)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials of this game, per subject")+
+  ggtitle("Average of subject mean performance on each game")
+
+```
