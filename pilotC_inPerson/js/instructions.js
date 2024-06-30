@@ -2,7 +2,7 @@
 var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>Welcome to this experiment! In this experiment, you will be doing two tasks. Before we begin the actual experiment, let\'s do some practice trials.</p><br>\
+      "<p>Welcome to this experiment! In this experiment, you will be playing two games. Before we begin the actual experiment, let\'s do some practice rounds.</p><br>\
       We will begin with the first game."
     ],
     key_forward: 'ArrowRight',
@@ -13,29 +13,29 @@ var welcome_practice_instructions = {
     button_label_next: 'Next'
   }
 
-// #TODO CONSENT FORM
-var consent_form = {
-  type: jsPsychSurveyMultiChoice,
-  preamble: '<p>Welcome! Thank you for agreeing to take part in the pilot version of this study. If you consent to participating, please click the option below. If not, please exit out of the experiment.</p>',
-  questions: [
-    {
-      prompt: "Are you willing to take part in this study?", 
-      name: 'Consent_response', 
-      options: ['I agree to take part in this study.'], 
-      required: true,
-      horizontal: true
-    }, 
-  ],
-  on_start: function(){
-    document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
-  }
-}
+// // consent form (the full one will have been signed already before they began)
+// var consent_form = {
+//   type: jsPsychSurveyMultiChoice,
+//   preamble: '<p>Welcome! Thank you for agreeing to take part in this study. If you consent to participating, please click the option below. If not, please exit out of the experiment.</p>',
+//   questions: [
+//     {
+//       prompt: "Are you willing to take part in this study?", 
+//       name: 'Consent_response', 
+//       options: ['I agree to take part in this study.','I do not agree.'], 
+//       required: true,
+//       horizontal: true
+//     }, 
+//   ],
+//   on_start: function(){
+//     document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+//   }
+// }
 
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
 var sr_task_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>Welcome to the spatial recall game! Click next for the instructions.</p>",
+      "<p>We will now practice the spatial recall game! Click next for the instructions.</p>",
       "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
       `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the "Clear" button to erase your entries.</p><p>When you're ready, click "Next" to get started.</p>`
     ],
@@ -54,32 +54,33 @@ var sr_task_instructions = {
   // TRANSITION BETWEEN GAMES IN PRACTICE SESSION
   var practice_transition = {
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: '<p> Great work! You will now have practice for the next game. Press any key to continue. </p>',
+    stimulus: '<p> Great work! You will now practice for the next game. Press any key to continue. </p>',
     choices: "ALL_KEYS",
     on_start: function(){
       document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
-    }
-    //trial_duration: 1200,
+    },
+    trial_duration: 5000,
   }
 
 // MAIN EXPERIMENT INSTRUCTIONS + BDM
 var main_exp_BDM_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>We will now go into instructions for the main experiment.</p>",
-      "<p><strong>You will be given a monetary bonus based on your accuracy in this experiment.</strong>\
-      You will not be shown the bonus until the end.</p><p>",
-      "<p>You will be also be given an <strong>endowment of free points</strong> which you can use throughout the game </p>",
-      "<p>In this experiment, you will be switching between the two games you practiced earlier. You will occasionally be asked how many points \
-      (from 1 to 100) you are willing to offer in order to switch to the other game (these points will come from your endowment, not from your bonus at the end).</p>",
-      "<p>Think of this like an <strong>auction</strong>. <br><br>\
-      We will <strong>randomly select</strong> a value from 1 to 100 each time you are given the option to switch. Let's call this <strong> our bid </strong> <br><br> </p>",
-      "<p><strong> If the number of points you offer </strong> is \
-      <strong> greater than </strong> than our bid, <strong> you will get to switch games</strong>, and <strong>you will only pay the number of points we randomly selected</strong>\
-      (even if your offer was significantly higher).<br><br>\
-      <strong>If the value you offer </strong> is <strong>less</strong> than our bid value, <strong>you will continue playing \
+      "<p>Great work on completing the practice! We will now go into instructions for the main experiment.</p>",
+      "<p>Please do your best to understand the tasks and experiment, as <strong>you will be given a monetary bonus based on your performance in this experiment.</strong>\
+      You will not be shown this bonus until the end.</p>",
+      "<p>You will also get an endowment of 500 points to begin with, which you can use as currency in this experiment.\
+       These points are separate from your bonus and your performance, but what is leftover may become a supplementary bonus at the end. You will not be shown your points throughout the game.</p>",
+      "<p>In this experiment, you will be playing the two games you practiced earlier. You will occasionally be asked how many points \
+      (from 1 to 100) you would pay to switch to the other game (these points will come from your endowment).</p>",
+      "<p>Think of this like an <strong>auction</strong> for the chance to switch games. <br><br>\
+      Each time the auction occurs, we will <strong>randomly generate</strong> a value from 1 to 100. Let's call this <strong> our random price </strong> <br><br>\
+      <strong> If the number of points you offer </strong> is\
+      <strong> greater than </strong> our random price, <strong> you will get to switch games</strong>, and <strong>you will only pay the random price</strong>\
+      (even if your offer was larger).<br><br>\
+      <strong>If the value you offer </strong> is <strong>less than</strong> our random price, <strong>you will continue playing \
       your current game</strong>.</p>",
-      "<p>Because of this,<strong> it is to your benefit to be honest about how many points you are willing to trade</strong>.</p>",
+      "<p><strong> Your optimal strategy is to be honest about how many points you want to trade to switch to the other game</strong></p>",
       "<p>You will now be asked to answer a few questions about this, so, if necessary, please re-read the instructions before you click Next </p>"
     ],
     key_forward: 'ArrowRight',
@@ -188,14 +189,14 @@ var BDM_quiz_3 = {
     {
       prompt: "To get the best result when it comes to switching, I should:", 
       name: 'BDM_should', 
-      options: ['Always offer a higher number of points than I would really want to trade to switch.', 'Always offer a lower number of points than I would really want to trade to switch.', 'Always be honest about exactly how many points I would be willing to trade.'], 
+      options: ['Always offer a higher number of points than I would really want to trade to switch.', 'Always offer a lower number of points than I would really want to trade to switch.', 'Always be honest about exactly how many points I want to trade.'], 
       required: true
     },
   ],
   randomize_question_order: false,
   on_finish: function(data) {
       var BDM_should = data.response.BDM_should; 
-        if(BDM_should == 'Always be honest about exactly how many points I would be willing to trade.') {
+        if(BDM_should == 'Always be honest about exactly how many points I want to trade.') {
           data.correct = true
         } else {
           data.correct = false
@@ -234,8 +235,8 @@ var final_exp_instructions = {
       "<p>Great! You are now ready to begin.</p>",
       "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced.\
       <br><br>You will also occasionally be asked \
-      how many points you would be willing to trade to switch to the other game. \
-      <br><br>If your answer is higher than our randomly generated one, you will be switched! \
+      how many points you want to trade to switch to the other game. \
+      <br><br>If your answer is higher than our random price, you will be switched! \
       If not, you will stay on this game</p>",
       "<p>When you're ready, press Next to begin</p>",
     ],

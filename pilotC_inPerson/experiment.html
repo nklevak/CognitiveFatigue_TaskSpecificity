@@ -50,7 +50,8 @@ var timeline = [];
 // timeline.push(preload_manual_instr)
 
 // INTRUCTIONS AND PRACTICE SESSION
-timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
+//timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
+timeline.push(fullscreen,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
 
 // MAIN EXPERIMENT INSTRUCTIONS
 timeline.push(main_exp_BDM_instructions, BDM_q1_loop, BDM_q2_loop, BDM_q3_loop, final_exp_instructions)
@@ -76,9 +77,11 @@ var repeat_message = {
 };
 var switch_offer_screen = {
     type: jsPsychSurveyText,
-    preamble: '<div style="width:500px;"><p>How many points do you want to offer to switch games?</p></div>',
+    preamble: '<div style="width:500px;"><p>How many points would you pay to switch to the other game?</p></div>',
     questions: [
-        {prompt: 'Enter a number from 1 to 100 here: ', name: 'bid',required: true,}
+        {prompt: 'Enter a number from 1 to 100 here: ', 
+        name: 'bid',
+        required: true,}
     ],
     button_label: 'Submit bid',
     on_start: function(switch_offer_screen) {
@@ -213,7 +216,7 @@ var vs_filler_Notification = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: vs_instruct_reminder_text,
     choices: "NO_KEYS",
-    trial_duration: 4000,
+    trial_duration: 6000,
 }
 
 var vs_block_trials = vs_getBlock()

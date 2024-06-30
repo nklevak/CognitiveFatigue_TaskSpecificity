@@ -341,16 +341,28 @@ function generateDistractorElement(left, top, width, height, stimCondition) {
 // this means right now . == target is present, , == target is absent
 function getKeyMappingForTask(group_index) {
     if (group_index % 2 === 0) {
+      // // Assuming even group_index uses ",", odd group_index uses "."
+      // possibleResponses = [
+      //   ["index finger", ",", "comma key (,)"],
+      //   ["middle finger", ".", "period key (.)"],
+      // ];
+      
       // Assuming even group_index uses ",", odd group_index uses "."
       possibleResponses = [
-        ["index finger", ",", "comma key (,)"],
-        ["middle finger", ".", "period key (.)"],
+        ["left", "q", "q key"],
+        ["right", "p", "p key"],
       ];
     } else {
+      // // Assuming even group_index uses ",", odd group_index uses "."
+      // possibleResponses = [
+      //   ["middle finger", ".", "period key (.)"],
+      //   ["index finger", ",", "comma key (,)"],
+      // ];
+
       // Assuming even group_index uses ",", odd group_index uses "."
       possibleResponses = [
-        ["middle finger", ".", "period key (.)"],
-        ["index finger", ",", "comma key (,)"],
+        ["right", "p", "p key"],
+        ["left", "q", "q key"],
       ];
     }
   }
@@ -359,19 +371,20 @@ const choices = [possibleResponses[0][1], possibleResponses[1][1]];
 
 // I got rid of endText, feedbackInstructText
 const vs_instruct_reminder_text = `<div class="centerbox">
-<p class="block-text">Place your <b>index finger</b> on the <b>comma key (,)</b> and your <b>middle finger</b> on the <b>period key (.)</b></p>
-<p class="block-text">If you determine a target is <b>${
-  possibleResponses[0][0] == "index finger" ? "present" : "absent"
-}</b>, press your <b>index finger</b>, and if you determine a target is <b>${
-  possibleResponses[0][0] == "index finger" ? "absent" : "present"
-}</b>, press your <b>middle finger</b>.</p>
+<p class="block-text">Place your left hand on the <b>q key</b> and your right hand on the <b>p key</b></p>
+<p class="block-text">If you determine the vertical white rectangle is <b>${
+  possibleResponses[0][0] == "right" ? "present" : "absent"
+}</b>, press <b>p</b>, and if you determine a target is <b>${
+  possibleResponses[0][0] == "right" ? "absent" : "present"
+}</b>, press <b>q</b></p>
 `
 
 var speedReminder =
   "<p class = block-text>Try to respond as quickly and accurately as possible.</p>";
 const pageInstruct = [
     `<div class="centerbox">
-      <p class="block-text">Place your <b>index finger</b> on the <b>comma key (,)</b> and your <b>middle finger</b> on the <b>period key (.)</b></p>
+      <p class="block-text">We will now practice the visual search game!</p>
+      <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>
       <p class="block-text">During this task, on each trial rectangles will appear on the screen. The rectangles can be either black or white in color.</p>
       <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical white rectangle</b>. We will call this rectangle the 'target'.</p>
       <div style="display: flex; align-items: center; justify-content: center; padding-top: 80px; padding-bottom: 80px;">
@@ -384,37 +397,37 @@ const pageInstruct = [
       `,
     `
     <div class="centerbox">
-      <p class="block-text">Your task is to determine whether a target is ${
-        possibleResponses[0][0] == "index finger" ? "present" : "absent"
+      <p class="block-text">Your task is to determine whether the vertical white rectangle is ${
+        possibleResponses[0][0] == "right" ? "present" : "absent"
       } or ${
-        possibleResponses[0][0] == "index finger" ? "absent" : "present"
+        possibleResponses[0][0] == "right" ? "absent" : "present"
       } on each trial.</p>
-      <p class="block-text">If you determine a target is <b>${
-        possibleResponses[0][0] == "index finger" ? "present" : "absent"
-      }</b>, press your <b>index finger</b>, and if you determine a target is <b>${
-        possibleResponses[0][0] == "index finger" ? "absent" : "present"
-      }</b>, press your <b>middle finger</b>.</p>
-      <p class="block-text">We'll start with a practice round. During practice, you will receive feedback and a reminder of the rules. These will be taken out for the test, so make sure you understand the instructions before moving on.</p>
+      <p class="block-text">If you determine the vertical white rectangle (the target) is <b>${
+        possibleResponses[0][0] == "right" ? "on the screen (present)" : "not on the screen (absent)"
+      }</b>, press <b>p</b>, and if you determine a target is <b>${
+        possibleResponses[0][0] == "right" ? "not on the screen (absent)" : "on the screen (present)"
+      }</b>, press <b>q</b>.</p>
+      <p class="block-text">We'll start with a practice round. During practice, you will receive feedback and a reminder of the rules. These will be taken out for the main game, so make sure you understand the instructions before moving on.</p>
       ${speedReminder}
     </div>`,
   ];
 const promptText = `
 <div class="prompt_box">
 <p class="center-block-text" style="font-size: 16px; line-height: 80%;">Target ${
-    possibleResponses[0][0] == "index finger" ? "target is present" : "target is absent"
-}: comma key (,)</p>
+    possibleResponses[0][0] == "right" ? "target is present" : "target is absent"
+}: p</p>
 <p class="center-block-text" style="font-size: 16px; line-height: 80%;">Target ${
-    possibleResponses[0][0] == "index finger" ? "target is absent" : "target is present"
-}: period key (.)</p>
+    possibleResponses[0][0] == "right" ? "target is absent" : "target is present"
+}: q</p>
 </div>`;
 const promptTextList = `
 <ul style="text-align: left; font-size: 24px;">
 <li>Target ${
-    possibleResponses[0][0] == "index finger" ? "present" : "absent"
-}: comma key (,)</li>
+    possibleResponses[0][0] == "right" ? "present" : "absent"
+}: p</li>
 <li>Target ${
-    possibleResponses[0][0] == "index finger" ? "absent" : "present"
-}: period key (.)</li>
+    possibleResponses[0][0] == "right" ? "absent" : "present"
+}: q</li>
 </ul>`;
 
 // setting first value for feature/conjunction condition
