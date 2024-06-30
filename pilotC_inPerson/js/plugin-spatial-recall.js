@@ -217,6 +217,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
           border: 1px solid grey;
           border-radius: 50%;
           box-sizing: border-box;
+          background: #FFFFFF;
           -moz-box-sizing: border-box;
           -webkit-box-sizing: border-box;
   
@@ -224,7 +225,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
   
         /* Highlight entry after response given */
         .spatial-entry-bar .entry[status='fill'] {
-          background: #0198E180;
+          background: #00C2F0;
         }
   
         .spatial-button-bar {
