@@ -70,11 +70,14 @@ function createStimArrays(blockLen) {
 
       // OLD: For each condition, half "8" and half "24"
       // can change this distribution later
-      if (i % quarterLen < quarterLen / 2) {
-        blockStimNums_t.push(8);
-      } else {
-        blockStimNums_t.push(24);
-      }
+      // NEW: make all of them 24
+
+      // if (i % quarterLen < quarterLen / 2) {
+      //   blockStimNums_t.push(8);
+      // } else {
+      //   blockStimNums_t.push(24);
+      // }
+      blockStimNums_t.push(24);
 
       // For each condition, half "1" and half "0"
       if (i % (quarterLen / 2) < quarterLen / 4) {
