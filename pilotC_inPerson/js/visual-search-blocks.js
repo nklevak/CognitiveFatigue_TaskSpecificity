@@ -1,5 +1,5 @@
 // constants that are necessary
-const visual_search_trials_practice = 2 // called practiceLen in og code
+const visual_search_trials_practice = 1 // called practiceLen in og code
 const visual_search_trials_block = 4 // called numTrialsPerBlock in og code
 const fixationDuration = 500;
 const stimStimulusDuration = 1500;
@@ -355,6 +355,15 @@ getKeyMappingForTask(group_index);
 const choices = [possibleResponses[0][1], possibleResponses[1][1]];
 
 // I got rid of endText, feedbackInstructText
+const vs_instruct_reminder_text = `<div class="centerbox">
+<p class="block-text">Place your <b>index finger</b> on the <b>comma key (,)</b> and your <b>middle finger</b> on the <b>period key (.)</b></p>
+<p class="block-text">If you determine a target is <b>${
+  possibleResponses[0][0] == "index finger" ? "present" : "absent"
+}</b>, press your <b>index finger</b>, and if you determine a target is <b>${
+  possibleResponses[0][0] == "index finger" ? "absent" : "present"
+}</b>, press your <b>middle finger</b>.</p>
+`
+
 var speedReminder =
   "<p class = block-text>Try to respond as quickly and accurately as possible.</p>";
 const pageInstruct = [

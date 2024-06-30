@@ -209,12 +209,19 @@ var switchingGamesNotification = {
     }
 };
 
+var vs_filler_Notification = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: vs_instruct_reminder_text,
+    choices: "NO_KEYS",
+    trial_duration: 4000,
+}
+
 var vs_block_trials = vs_getBlock()
 var sr_block_trials = {
     timeline: sr_getBlock()
 }
 var full_vs_block = {
-    timeline: [vs_block_trials]
+    timeline: [vs_filler_Notification,vs_block_trials]
 }
 var full_sr_block = {
     timeline: [sr_block_trials]
