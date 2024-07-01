@@ -52,7 +52,7 @@ var welcome_practice_instructions = {
 var sr_task_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>We will now practice the spatial recall game! Click next for the instructions.</p>",
+      "<p>We will now practice the memory game! Click next for the instructions.</p>",
       "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
       `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the "Clear" button to erase your entries.</p><p>When you're ready, click "Next" to get started.</p>`
     ],
@@ -71,7 +71,7 @@ var sr_task_instructions = {
   // TRANSITION BETWEEN GAMES IN PRACTICE SESSION
   var practice_transition = {
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: '<p> Great work! You will now practice for the next game. Press any key to continue. </p>',
+    stimulus: '<p> Great work! You will now practice for the search game. Press any key to continue. </p>',
     choices: "ALL_KEYS",
     on_start: function(){
       document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
@@ -87,17 +87,19 @@ var main_exp_BDM_instructions = {
       "<p>Please do your best to understand the tasks and experiment, as <strong>you will be given a monetary bonus based on your performance in this experiment.</strong>\
       You will not be shown this bonus until the end.</p>",
       "<p>You will also get an endowment of 500 points to begin with, which you can use as currency in this experiment.\
-       These points are separate from your bonus and your performance, but what is leftover may become a supplementary bonus at the end. You will not be shown your points throughout the game.</p>",
-      "<p>In this experiment, you will be playing the two games you practiced earlier. You will occasionally be asked how many points \
-      (from 1 to 100) you would pay to switch to the other game (these points will come from your endowment).</p>",
-      "<p>Think of this like an <strong>auction</strong> for the chance to switch games. <br><br>\
-      Each time the auction occurs, we will <strong>randomly generate</strong> a value from 1 to 100. Let's call this <strong> our random price </strong> <br><br>\
-      <strong> If the number of points you offer </strong> is\
-      <strong> greater than </strong> our random price, <strong> you will get to switch games</strong>, and <strong>you will only pay the random price</strong>\
-      (even if your offer was larger).<br><br>\
-      <strong>If the value you offer </strong> is <strong>less than</strong> our random price, <strong>you will continue playing \
-      your current game</strong>.</p>",
-      "<p><strong> Your optimal strategy is to be honest about how many points you want to trade to switch to the other game</strong></p>",
+      These points are valuable, and they represent your ability to make choices during the experiment. \
+      However, do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</p>",
+      "<p> You will start off playing one of the games. At certain points in the experiment, you will be given the option to switch to the other game.\
+       To do this, you will place a bid in points from 1 to 100. These points will come from your endowment, and this bid represents how much you value switching to the new game.</p>",
+      "<p>After you place your bid, a random number will be generated. If your bid is higher than this random number, you will get to switch to the other game, and it will only use the random number of points (even if your bid was higher). \
+      If your bid is lower, you will stay in the current game, and no points will be used.</p>",
+      "<p>It is important to bid the true value of how much you want to switch games. This ensures that your choices reflect your true preferences. Your optimal strategy is to be honest about how many points you want to trade to switch to the other game</p>",
+      "<h2>Example</h2>\
+      <p><strong>Scenario</strong>: You are currently playing Game A, and you see an option to switch to Game B.</p>\
+      <p><strong>Placing Your Bid</strong>: You decide how many points you are willing to spend to switch to Game B. Let us say you bid 55 points.</p>\
+      <p><strong>Random Number</strong>: A random number between 1 and 100 is generated. If this number is 50, you will switch to Game B because your bid (55) is higher and it will only use 50 points. \
+      If the number is 72, you will stay in Game A because your bid is lower, and no points will be used.</p><br><br><p>\
+      Remember, the points are here to help you express your preferences, so use them wisely to make the most out of your experience.</p>",
       "<p>You will now be asked to answer a few questions about this, so, if necessary, please re-read the instructions before you click Next </p>"
     ],
     key_forward: 'ArrowRight',
@@ -116,16 +118,16 @@ var BDM_quiz_1 = {
   type: jsPsychSurveyMultiChoice,
   questions: [
     {
-      prompt: "Every time I get the option to switch, my offer will be compared to a randomly selected bid. Which of the following is true:", 
+      prompt: "Every time I get the option to switch, my offer will be compared to a randomly generated value. Which of the following is true:", 
       name: 'BDM_gen', 
-      options: ['This randomly selected bid is the same throughout the experiment.','This randomly selected bid gets re-generated every time I am given the option to switch.','This randomly selected bid will always be larger than mine.'], 
+      options: ['This randomly selected value is the same throughout the experiment.','This randomly selected value gets re-generated every time I am given the option to switch.','This randomly selected value will always be larger than mine.'], 
       required: true
     }
   ],
   randomize_question_order: false,
   on_finish: function(data) {
       var BDM_gen = data.response.BDM_gen; 
-        if(BDM_gen == 'This randomly selected bid gets re-generated every time I am given the option to switch.') {
+        if(BDM_gen == 'This randomly selected value gets re-generated every time I am given the option to switch.') {
           data.correct = true
         } else {
           data.correct = false
@@ -137,10 +139,10 @@ var BDM_q1_feedback = {
   stimulus: function(){
     var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
     if (last_resp_correct) {
-    return "<p>CORRECT: The randomly selected bid that your offer will be compared to \
+    return "<p>CORRECT: The randomly selected value that your offer will be compared to \
     will be re-generated every time you get the option to switch. </p>"
   } else {
-    return "<p>INCORRECT: The randomly selected bid that your offer will be compared to \
+    return "<p>INCORRECT: The randomly selected value that your offer will be compared to \
     will be re-generated every time you get the option to switch. </p>" 
   }},
   choices: ['Next']
@@ -253,8 +255,8 @@ var final_exp_instructions = {
       "<p>As a reminder, in this experiment you will start off with playing one of the two games you previously practiced.\
       <br><br>You will also occasionally be asked \
       how many points you want to trade to switch to the other game. \
-      <br><br>If your answer is higher than our random price, you will be switched! \
-      If not, you will stay on this game</p>",
+      <br><br>If your answer is higher than our random value, you will be switched! \
+      If not, you will stay in the same game</p>",
       "<p>When you're ready, press Next to begin</p>",
     ],
     key_forward: 'ArrowRight',
@@ -772,7 +774,7 @@ var speedReminder =
   "<p class = block-text>Try to respond as quickly and accurately as possible.</p>";
 const pageInstruct = [
     `<div class="centerbox">
-      <p class="block-text">We will now practice the visual search game!</p>
+      <p class="block-text">We will now practice the search game!</p>
       <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>
       <p class="block-text">During this task, on each trial rectangles will appear on the screen. The rectangles can be either black or white in color.</p>
       <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical white rectangle</b>. We will call this rectangle the 'target'.</p>
@@ -801,14 +803,12 @@ const pageInstruct = [
     </div>`,
   ];
 const promptText = `
-<div class="prompt_box">
-<p class="center-block-text" style="font-size: 16px; line-height: 80%;">Target ${
-    possibleResponses[0][0] == "right" ? "target is present" : "target is absent"
-}: p</p>
-<p class="center-block-text" style="font-size: 16px; line-height: 80%;">Target ${
-    possibleResponses[0][0] == "right" ? "target is absent" : "target is present"
-}: q</p>
-</div>`;
+<p class="bottom-right" style="font-size: 16px; line-height: 80%;">Target ${
+    possibleResponses[0][0] == "right" ? "is present" : "is absent"
+}: p</p></div>
+<p class="bottom-left" style="font-size: 16px; line-height: 80%;">Target ${
+    possibleResponses[0][0] == "right" ? "is absent" : "is present"
+}: q</p>`;
 const promptTextList = `
 <ul style="text-align: left; font-size: 24px;">
 <li>Target ${
@@ -1536,7 +1536,7 @@ var task_debrief = {
 
 var sr_debrief = {
     type: jsPsychSurveyText,
-    preamble: `<p>One of the games you played was the spatial recall game, where you had to memorize the squares on a grid in order of appearance.</p>`,
+    preamble: `<p>One of the games you played was the memory game, where you had to memorize the squares on a grid in order of appearance.</p>`,
     questions: [
         {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find this game? 100 is very boring, 1 is not boring at all.',name: 'sr_boring'},
         {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find this game? 100 is very difficult, 1 is not difficult at all', name: 'sr_difficult'}
@@ -1545,7 +1545,7 @@ var sr_debrief = {
 
 var vs_debrief = {
     type: jsPsychSurveyText,
-    preamble: `<p>One of the games you played was the visual search game, where you had to press a button if a vertical white rectangle was on the screen.</p>`,
+    preamble: `<p>One of the games you played was the search game, where you had to press a button if a vertical white rectangle was on the screen.</p>`,
     questions: [
         {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find this game? 100 is very boring, 1 is not boring at all.',name: 'vs_boring'},
         {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find this game? 100 is very difficult, 1 is not difficult at all', name: 'vs_difficult'}

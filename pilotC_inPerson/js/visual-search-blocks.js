@@ -383,7 +383,7 @@ var speedReminder =
   "<p class = block-text>Try to respond as quickly and accurately as possible.</p>";
 const pageInstruct = [
     `<div class="centerbox">
-      <p class="block-text">We will now practice the visual search game!</p>
+      <p class="block-text">We will now practice the search game!</p>
       <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>
       <p class="block-text">During this task, on each trial rectangles will appear on the screen. The rectangles can be either black or white in color.</p>
       <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical white rectangle</b>. We will call this rectangle the 'target'.</p>
@@ -412,14 +412,12 @@ const pageInstruct = [
     </div>`,
   ];
 const promptText = `
-<div class="prompt_box">
-<p class="center-block-text" style="font-size: 16px; line-height: 80%;">Target ${
-    possibleResponses[0][0] == "right" ? "target is present" : "target is absent"
-}: p</p>
-<p class="center-block-text" style="font-size: 16px; line-height: 80%;">Target ${
-    possibleResponses[0][0] == "right" ? "target is absent" : "target is present"
-}: q</p>
-</div>`;
+<p class="bottom-right" style="font-size: 16px; line-height: 80%;">Target ${
+    possibleResponses[0][0] == "right" ? "is present" : "is absent"
+}: p</p></div>
+<p class="bottom-left" style="font-size: 16px; line-height: 80%;">Target ${
+    possibleResponses[0][0] == "right" ? "is absent" : "is present"
+}: q</p>`;
 const promptTextList = `
 <ul style="text-align: left; font-size: 24px;">
 <li>Target ${
