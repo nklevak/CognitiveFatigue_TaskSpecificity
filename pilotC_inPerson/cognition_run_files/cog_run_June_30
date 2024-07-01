@@ -1,6 +1,6 @@
 // ALL IMPORTANT VARIABLES FROM ALL FILES
 //SR EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 8
+var sr_trials_per_block = 10
 var sr_practice_trial_num = 8
 var consistent_tile_duration = 350
 var grid_size_constant = 4
@@ -15,7 +15,7 @@ const stimStimulusDuration = 1500;
 const stimTrialDuration = 2000;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
-var numTestBlocks = 10 // number of blocks of the main experiment
+var numTestBlocks = 13 // number of blocks of the main experiment
 // const accuracyThresh = 0.8; // threshhold for block-level feedback
 const practiceAccuracyThresh = 0.75; //threshold to proceed to test blocks, 3 out of 4 trials for .75
 const rtThresh = 1250;
@@ -33,7 +33,7 @@ var meanITI = 0.5;
 
 // main experiment FILE
 // important variables to customize
-var dollars_per_correct_bonus = 0.01
+var dollars_per_correct_bonus = 0.02
 var num_blocks = numTestBlocks
 
 /////////////////////////////////////

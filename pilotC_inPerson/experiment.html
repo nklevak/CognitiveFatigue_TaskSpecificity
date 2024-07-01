@@ -23,6 +23,8 @@
   <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.1"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.1"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
+
 
 
   <!-- Load experiment -->
@@ -39,7 +41,7 @@
 <script>
 
 // important variables to customize
-var dollars_per_correct_bonus = 0.30
+var dollars_per_correct_bonus = 0.02
 var num_blocks = numTestBlocks
 
 // INITIALIZE TIMELINE
@@ -153,20 +155,33 @@ var calculate_bonus = function(){
     var accuracy_count = 0
     var sr_len = sr_trials.length
     var vs_len = vs_trials.length
+    var sr_correct = 0
+    var vs_correct = 0
 
     for (let i = 0; i < sr_len;i++) {
-        accuracy_count = accuracy_count + sr_trials[i].score_an
+        sr_correct = sr_correct + sr_trials[i].score_an
     }
+    accuracy_count = accuracy_count + sr_correct
+
     for (let i = 0; i < vs_len; i++){
-        accuracy_count = accuracy_count + vs_trials[i].correct_trial
+        vs_correct = vs_correct + vs_trials[i].correct_trial
     }
+    accuracy_count = accuracy_count + vs_correct
 
     var total_trials = sr_len + vs_len
     var accuracy_calc = total_trials > 0 ? (accuracy_count / total_trials) : 0;    
     var final_bonus = (accuracy_count * dollars_per_correct_bonus).toFixed(2)
 
+    var sr_accuracy_count = sr_len > 0 ? (sr_correct / sr_len) : 0;    
+    var vs_accuracy_count = vs_len > 0 ? (vs_correct / vs_len) : 0;    
+
     // add the final accuracy and bonus to data
-    jsPsych.data.get().addToLast({bonus: final_bonus,overall_accuracy: accuracy_calc});
+    jsPsych.data.get().addToLast({
+        bonus: final_bonus,
+        overall_accuracy: accuracy_calc,
+        sr_accuracy: sr_accuracy_count,
+        vs_accuracy: vs_accuracy_count
+    });
 
     return final_bonus
 }
@@ -262,8 +277,47 @@ var if_sr_node = {
     }
 }
 
+// make the final survey here 
+var bidding_debrief = {
+    type: jsPsychSurveyText,
+    preamble: `<p>In this experiment you were asked to bid on how many points you'd trade to switch games.</p>`,
+    questions: [
+      {prompt: 'How did you decide how many points to bid?', rows: 5,name: 'bid_decision'},
+      {prompt: 'Did your strategy change over time?', rows: 5,name: 'bid_strategy'},
+      {prompt: 'Were you trying to conserve points?', rows: 5,name: 'bid_conserve'}
+    ]
+  }
+
+var task_debrief = {
+    type: jsPsychSurveyText,
+    preamble: `<p>In this experiment you played two games.</p>`,
+    questions: [
+      {prompt: 'Did you prefer one over the other? Why?', rows: 5,name: 'game_description'},
+    ]
+  }
+
+var sr_debrief = {
+    type: jsPsychSurveyText,
+    preamble: `<p>One of the games you played was the spatial recall game, where you had to memorize the squares on a grid in order of appearance.</p>`,
+    questions: [
+        {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find this game? 100 is very boring, 1 is not boring at all.',name: 'sr_boring'},
+        {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find this game? 100 is very difficult, 1 is not difficult at all', name: 'sr_difficult'}
+    ]
+}
+
+var vs_debrief = {
+    type: jsPsychSurveyText,
+    preamble: `<p>One of the games you played was the visual search game, where you had to press a button if a vertical white rectangle was on the screen.</p>`,
+    questions: [
+        {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find this game? 100 is very boring, 1 is not boring at all.',name: 'vs_boring'},
+        {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find this game? 100 is very difficult, 1 is not difficult at all', name: 'vs_difficult'}
+    ]
+}
+
+var debrief_timeline = [bidding_debrief, task_debrief, sr_debrief, vs_debrief, overall_debrief]
+
 var if_debrief_node = {
-    timeline: [overall_debrief],
+    timeline: debrief_timeline,
     conditional_function: function() {
         if (curr_block == num_blocks){
             return true
