@@ -24,7 +24,7 @@
   <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.1"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.1"></script>
   <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
-
+  <script src="https://unpkg.com/@jspsych/plugin-external-html@1.1.3"></script>
 
 
   <!-- Load experiment -->
@@ -49,7 +49,7 @@ var timeline = [];
 
 // INTRUCTIONS AND PRACTICE SESSION
 //timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
-timeline.push(fullscreen,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
+timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
 
 // MAIN EXPERIMENT INSTRUCTIONS
 timeline.push(main_exp_BDM_instructions, BDM_q1_loop, BDM_q2_loop, BDM_q3_loop, final_exp_instructions)

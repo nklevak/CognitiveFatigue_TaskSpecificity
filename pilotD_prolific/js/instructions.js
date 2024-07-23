@@ -1,8 +1,18 @@
+// consent form
+// declare the block.
+var consent_form = {
+type: jsPsychExternalHtml,
+url: "./js/poldrack_consent_form.html",
+cont_btn: "start"
+};
+
 // WELCOME TO EXPERIMENT
 var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>Welcome to this experiment! In this experiment, you will be playing two games. Before we begin the actual experiment, let\'s do some practice rounds.</p><br>\
+      "<p>Welcome to this experiment! In this experiment, you will be playing two games. <br>\
+      You will be paid 8 dollars / hour, plus a completion bonus of 4 dollars.<br>\
+      Before we begin the actual experiment, let\'s do some practice of the games.</p><br>\
       We will begin with the first game."
     ],
     key_forward: 'ArrowRight',
@@ -13,31 +23,17 @@ var welcome_practice_instructions = {
     button_label_next: 'Next'
   }
 
-// // consent form (the full one will have been signed already before they began)
-// var consent_form = {
-//   type: jsPsychSurveyMultiChoice,
-//   preamble: '<p>Welcome! Thank you for agreeing to take part in this study. If you consent to participating, please click the option below. If not, please exit out of the experiment.</p>',
-//   questions: [
-//     {
-//       prompt: "Are you willing to take part in this study?", 
-//       name: 'Consent_response', 
-//       options: ['I agree to take part in this study.','I do not agree.'], 
-//       required: true,
-//       horizontal: true
-//     }, 
-//   ],
-//   on_start: function(){
-//     document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
-//   }
-// }
-
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
 var sr_task_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>We will now practice the memory game! Click next for the instructions.</p>",
-      "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
-      `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the "Clear" button to erase your entries.</p><p>When you're ready, click "Next" to get started.</p>`
+      "<p>In this game you will see a grid of squares that will flash blue one at a time.</p>\
+      <p>Your goal is to remember the order in which the squares flashed blue.</p>\
+      <p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
+      `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p>\
+      <p>If you make a mistake, click the "Clear" button to erase your entries.</p>\
+      <p>When you're ready, click "Next" to get started.</p>`
     ],
     key_forward: 'ArrowRight',
     key_backward: 'ArrowLeft',
@@ -67,14 +63,13 @@ var main_exp_BDM_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great work on completing the practice! We will now go into instructions for the main experiment.</p>",
-      "<p>Please do your best to understand the tasks and experiment, as <strong>you will be given a monetary bonus based on your performance in this experiment.</strong>\
-      You will not be shown this bonus until the end.</p>",
+      "<p>Please do your best to understand the tasks and experiment, and try your best on the tasks. As long as you adhere to the instructions and do your best, you will receive a 4 dollar bonus at the end of the experiment.",
       "<p>You will also get an endowment of 500 points to begin with, which you can use as currency in this experiment.\
       These points are valuable, and they represent your ability to make choices during the experiment. \
-      However, do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</p>",
-      "<p> You will start off playing one of the games. At certain points in the experiment, you will be given the option to switch to the other game.\
+      However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>",
+      "<p> You will start off playing one of the games. At certain points in the experiment, you will be given the option to switch to the other game.<br>\
        To do this, you will place a bid in points from 1 to 100. These points will come from your endowment, and this bid represents how much you value switching to the new game.</p>",
-      "<p>After you place your bid, a random number will be generated. If your bid is higher than this random number, you will get to switch to the other game, and it will only use the random number of points (even if your bid was higher). \
+      "<p>After you place your bid, a random number will be generated. If your bid is higher than this random number, you will get to switch to the other game, <br>and it will only use the random number of points (even if your bid was higher). \
       If your bid is lower, you will stay in the current game, and no points will be used.</p>",
       "<p>It is important to bid the true value of how much you want to switch games. This ensures that your choices reflect your true preferences. Your optimal strategy is to be honest about how many points you want to trade to switch to the other game</p>",
       "<h2>Example</h2>\
@@ -167,7 +162,7 @@ var BDM_q2_feedback = {
   stimulus: function(){
     var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
     if (last_resp_correct) {
-    return "<p>CORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>"
+    return "<p>CORRECT: The points you offer when you get the option to switch come from your initial endowment of points. They are here to make your experience more enjoyable, so use them as you wish.</p>"
   } else {
     return "<p>INCORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>" 
   }},
@@ -211,7 +206,7 @@ var BDM_q3_feedback = {
     var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
     if (last_resp_correct) {
     return "<p>CORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
-    you would be willing to trade.</p>"
+    you would be willing to trade in order to switch games.</p>"
   } else {
     return "<p>INCORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
     you would be willing to trade. </p>" 

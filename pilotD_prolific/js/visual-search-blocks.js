@@ -1,12 +1,12 @@
 // constants that are necessary
-const visual_search_trials_practice = 16 // called practiceLen in og code
-const visual_search_trials_block = 16 // called numTrialsPerBlock in og code
-const fixationDuration = 500;
-const stimStimulusDuration = 1500;
-const stimTrialDuration = 1500;
+const visual_search_trials_practice = 10 // called practiceLen in og code
+const visual_search_trials_block = 12 // called numTrialsPerBlock in og code
+const fixationDuration = 400;
+const stimStimulusDuration = 1300;
+const stimTrialDuration = 1300;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
-var numTestBlocks = 13 // number of blocks of the main experiment
+var numTestBlocks = 18 // number of blocks of the main experiment
 // const accuracyThresh = 0.8; // threshhold for block-level feedback
 const practiceAccuracyThresh = 0.75; //threshold to proceed to test blocks, 3 out of 4 trials for .75
 const rtThresh = 1250;
@@ -159,7 +159,7 @@ function getStims(blockStimNums_t,blockStimTargets_t,blockStimConditions_t,lengt
   
       var obj = {
         html: html,
-        targetPresent: targetPresent,//im not sure what targetPresent means when its 0 or 1 
+        targetPresent: targetPresent,
         condition: stimCondition,
         stimNum: stimNum,
       };
@@ -372,7 +372,7 @@ const choices = [possibleResponses[0][1], possibleResponses[1][1]];
 // I got rid of endText, feedbackInstructText
 const vs_instruct_reminder_text = `<div class="centerbox">
 <p class="block-text">Place your left hand on the <b>q key</b> and your right hand on the <b>p key</b></p>
-<p class="block-text">If you determine the vertical lighter gray rectangle is <b>${
+<p class="block-text">If you determine the vertical light gray rectangle is <b>${
   possibleResponses[0][0] == "right" ? "present" : "absent"
 }</b>, press <b>p</b>, and if you determine a target is <b>${
   possibleResponses[0][0] == "right" ? "absent" : "present"
@@ -382,23 +382,21 @@ const vs_instruct_reminder_text = `<div class="centerbox">
 var speedReminder =
   "<p class = block-text>Try to respond as quickly and accurately as possible.</p>";
 const pageInstruct = [
-    `<div class="centerbox">
-      <p class="block-text">We will now practice the search game!</p>
-      <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>
-      <p class="block-text">During this task, on each trial rectangles will appear on the screen. There will be two colors of rectangles: a darker shade of gray, and a lighter shade of gray. These rectangles will either be vertical or horizontal. </p>
-      <div style="display: flex; align-items: center; justify-content: center; padding-top: 80px; padding-bottom: 80px;">
-      <p style="width: 70%; font-size: 24px;">The light gray rectangle looks like: </p>
-      <div style="display: flex; justify-content: center; align-items: center; width:100%;">
-      <div id="target" class="box" style="background-color:#999999; width:40px; height:80px;"></div>
-      <p style="width: 70%; font-size: 24px;">The dark gray rectangle looks like: </p>
-      <div style="display: flex; justify-content: center; align-items: center; width:100%;">
-      <div id="target" class="box" style="background-color:#666666; width:40px; height:80px;"></div>
-      </div>
-      </div>
-      </div>
-      `,
+  '<div class="centerbox">\
+  <p class="block-text">We will now practice the search game!</p>\
+  <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>\
+  <p class="block-text">During this task, on each trial rectangles will appear on the screen. There will be two colors of rectangles: a darker gray, and a lighter gray. These rectangles will either be vertical or horizontal.</p>\
+  <div style="display: flex; align-items: center; justify-content: center; padding-top: 80px; padding-bottom: 80px;">\
+    <p style="width: 50%; font-size: 24px;">The light gray color looks like:</p>\
+    <div id="target" class="box" style="background-color:#999999; width:40px; height:40px; margin-right: 40px;"></div>\
+    <p style="width: 50%; font-size: 24px;">The dark gray color looks like:</p>\
+    <div id="target" class="box" style="background-color:#666666; width:40px; height:40px;"></div>\
+  </div>\
+  <p class="block-text">Remember these colors!</p>\
+  </div>'  
+  ,
       `<div class="centerbox">
-      <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical lighter gray rectangle</b>. We will call this rectangle the 'target'.</p>
+      <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical light gray rectangle</b>. We will call this rectangle the 'target'.</p>
       <div style="display: flex; align-items: center; justify-content: center; padding-top: 80px; padding-bottom: 80px;">
       <p style="width: 70%; font-size: 24px;">The target looks like: </p>
       <div style="display: flex; justify-content: center; align-items: center; width:100%;">
@@ -410,17 +408,17 @@ const pageInstruct = [
       ,
     `
     <div class="centerbox">
-      <p class="block-text">Your task is to determine whether the vertical white rectangle is ${
+      <p class="block-text">Your task is to determine whether the vertical light gray rectangle is ${
         possibleResponses[0][0] == "right" ? "present" : "absent"
       } or ${
         possibleResponses[0][0] == "right" ? "absent" : "present"
       } on each trial.</p>
-      <p class="block-text">If you determine the vertical white rectangle (the target) is <b>${
+      <p class="block-text">If you determine the vertical light gray rectangle (the target) is <b>${
         possibleResponses[0][0] == "right" ? "on the screen (present)" : "not on the screen (absent)"
       }</b>, press <b>p</b>, and if you determine a target is <b>${
         possibleResponses[0][0] == "right" ? "not on the screen (absent)" : "on the screen (present)"
       }</b>, press <b>q</b>.</p>
-      <p class="block-text">We'll start with a practice round. During practice, you will receive feedback and a reminder of the rules. These will be taken out for the main game, so make sure you understand the instructions before moving on.</p>
+      <p class="block-text">We'll start with a practice round. During practice, you will receive feedback. These will be taken out for the main game, so make sure you understand the instructions before moving on.</p>
       ${speedReminder}
     </div>`,
   ];

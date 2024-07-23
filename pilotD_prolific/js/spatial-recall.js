@@ -1,7 +1,7 @@
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 10
-var sr_practice_trial_num = 8
-var consistent_tile_duration = 350
+var sr_trials_per_block = 8
+var sr_practice_trial_num = 6
+var consistent_tile_duration = 200
 var grid_size_constant = 4
 var digits_to_mem = 4
 
