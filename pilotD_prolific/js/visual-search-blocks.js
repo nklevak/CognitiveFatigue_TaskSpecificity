@@ -1,12 +1,12 @@
 // constants that are necessary
-const visual_search_trials_practice = 10 // called practiceLen in og code
-const visual_search_trials_block = 12 // called numTrialsPerBlock in og code
+const visual_search_trials_practice = 15 // called practiceLen in og code
+const visual_search_trials_block = 30 // called numTrialsPerBlock in og code
 const fixationDuration = 400;
-const stimStimulusDuration = 1300;
-const stimTrialDuration = 1300;
+const stimStimulusDuration = 1350;
+const stimTrialDuration = 1400;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
-var numTestBlocks = 18 // number of blocks of the main experiment
+var numTestBlocks = 20 // number of blocks of the main experiment
 // const accuracyThresh = 0.8; // threshhold for block-level feedback
 const practiceAccuracyThresh = 0.75; //threshold to proceed to test blocks, 3 out of 4 trials for .75
 const rtThresh = 1250;

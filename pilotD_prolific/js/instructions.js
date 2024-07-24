@@ -11,7 +11,7 @@ var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Welcome to this experiment! In this experiment, you will be playing two games. <br>\
-      You will be paid 8 dollars / hour, plus a completion bonus of 4 dollars.<br>\
+      You will be paid 8.57 dollars / hour, plus a completion bonus of 3 dollars.<br>\
       Before we begin the actual experiment, let\'s do some practice of the games.</p><br>\
       We will begin with the first game."
     ],
@@ -63,7 +63,7 @@ var main_exp_BDM_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great work on completing the practice! We will now go into instructions for the main experiment.</p>",
-      "<p>Please do your best to understand the tasks and experiment, and try your best on the tasks. As long as you adhere to the instructions and do your best, you will receive a 4 dollar bonus at the end of the experiment.",
+      "<p>Please do your best to understand the tasks and experiment, and try your best on the tasks. As long as you adhere to the instructions and do your best, you will receive a 3 dollar bonus at the end of the experiment.",
       "<p>You will also get an endowment of 500 points to begin with, which you can use as currency in this experiment.\
       These points are valuable, and they represent your ability to make choices during the experiment. \
       However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>",

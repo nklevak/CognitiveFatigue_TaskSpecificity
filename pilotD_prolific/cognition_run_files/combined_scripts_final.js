@@ -8,18 +8,31 @@ var jsPsych = initJsPsych({
       jsPsych.data.get().addToLast({interactions: interaction_data.json()});
   
       // Display jsPsych data in viewport.
-      jsPsych.data.displayData();
+      // jsPsych.data.displayData();
     },
     on_start: function(){
       document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+    },
+    on_finish: function(){
+      window.location = "https://app.prolific.com/submissions/complete?cc=C1KBNHGP"
     }
   });
+
+// consent form
+// declare the block.
+var consent_form = {
+type: jsPsychExternalHtml,
+url: "./js/poldrack_consent_form.html",
+cont_btn: "start"
+};
 
 // WELCOME TO EXPERIMENT
 var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
-      "<p>Welcome to this experiment! In this experiment, you will be playing two games. Before we begin the actual experiment, let\'s do some practice rounds.</p><br>\
+      "<p>Welcome to this experiment! In this experiment, you will be playing two games. <br>\
+      You will be paid 8.57 dollars / hour, plus a completion bonus of 3 dollars.<br>\
+      Before we begin the actual experiment, let\'s do some practice of the games.</p><br>\
       We will begin with the first game."
     ],
     key_forward: 'ArrowRight',
@@ -30,31 +43,17 @@ var welcome_practice_instructions = {
     button_label_next: 'Next'
   }
 
-// // consent form (the full one will have been signed already before they began)
-// var consent_form = {
-//   type: jsPsychSurveyMultiChoice,
-//   preamble: '<p>Welcome! Thank you for agreeing to take part in this study. If you consent to participating, please click the option below. If not, please exit out of the experiment.</p>',
-//   questions: [
-//     {
-//       prompt: "Are you willing to take part in this study?", 
-//       name: 'Consent_response', 
-//       options: ['I agree to take part in this study.','I do not agree.'], 
-//       required: true,
-//       horizontal: true
-//     }, 
-//   ],
-//   on_start: function(){
-//     document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
-//   }
-// }
-
 // SPATIAL RECALL TASK INSTRUCTIONS (before each SR block)
 var sr_task_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>We will now practice the memory game! Click next for the instructions.</p>",
-      "<p>In this game you will see a grid of squares that will flash blue one at a time.</p><p>Your goal is to remember the order in which the squares flashed blue.</p><p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
-      `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p><p>If you make a mistake, click the "Clear" button to erase your entries.</p><p>When you're ready, click "Next" to get started.</p>`
+      "<p>In this game you will see a grid of squares that will flash blue one at a time.</p>\
+      <p>Your goal is to remember the order in which the squares flashed blue.</p>\
+      <p>At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>",
+      `<p>Do your best to memorize the order, but do not write them down<br>or use any other external tool to help you remember.</p>\
+      <p>If you make a mistake, click the "Clear" button to erase your entries.</p>\
+      <p>When you're ready, click "Next" to get started.</p>`
     ],
     key_forward: 'ArrowRight',
     key_backward: 'ArrowLeft',
@@ -84,14 +83,13 @@ var main_exp_BDM_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Great work on completing the practice! We will now go into instructions for the main experiment.</p>",
-      "<p>Please do your best to understand the tasks and experiment, as <strong>you will be given a monetary bonus based on your performance in this experiment.</strong>\
-      You will not be shown this bonus until the end.</p>",
+      "<p>Please do your best to understand the tasks and experiment, and try your best on the tasks. As long as you adhere to the instructions and do your best, you will receive a 3 dollar bonus at the end of the experiment.",
       "<p>You will also get an endowment of 500 points to begin with, which you can use as currency in this experiment.\
       These points are valuable, and they represent your ability to make choices during the experiment. \
-      However, do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</p>",
-      "<p> You will start off playing one of the games. At certain points in the experiment, you will be given the option to switch to the other game.\
+      However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>",
+      "<p> You will start off playing one of the games. At certain points in the experiment, you will be given the option to switch to the other game.<br>\
        To do this, you will place a bid in points from 1 to 100. These points will come from your endowment, and this bid represents how much you value switching to the new game.</p>",
-      "<p>After you place your bid, a random number will be generated. If your bid is higher than this random number, you will get to switch to the other game, and it will only use the random number of points (even if your bid was higher). \
+      "<p>After you place your bid, a random number will be generated. If your bid is higher than this random number, you will get to switch to the other game, <br>and it will only use the random number of points (even if your bid was higher). \
       If your bid is lower, you will stay in the current game, and no points will be used.</p>",
       "<p>It is important to bid the true value of how much you want to switch games. This ensures that your choices reflect your true preferences. Your optimal strategy is to be honest about how many points you want to trade to switch to the other game</p>",
       "<h2>Example</h2>\
@@ -184,7 +182,7 @@ var BDM_q2_feedback = {
   stimulus: function(){
     var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
     if (last_resp_correct) {
-    return "<p>CORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>"
+    return "<p>CORRECT: The points you offer when you get the option to switch come from your initial endowment of points. They are here to make your experience more enjoyable, so use them as you wish.</p>"
   } else {
     return "<p>INCORRECT: The points you offer when you get the option to switch come from your initial endowment of points. </p>" 
   }},
@@ -228,7 +226,7 @@ var BDM_q3_feedback = {
     var last_resp_correct = jsPsych.data.getLastTrialData().values()[0].correct; 
     if (last_resp_correct) {
     return "<p>CORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
-    you would be willing to trade.</p>"
+    you would be willing to trade in order to switch games.</p>"
   } else {
     return "<p>INCORRECT: To get the best results when it comes to switching, you should always be honest about exactly how many points \
     you would be willing to trade. </p>" 
@@ -271,9 +269,9 @@ var final_exp_instructions = {
     }
 }
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 10
-var sr_practice_trial_num = 8
-var consistent_tile_duration = 350
+var sr_trials_per_block = 12
+var sr_practice_trial_num = 5
+var consistent_tile_duration = 275
 var grid_size_constant = 4
 var digits_to_mem = 4
 
@@ -390,14 +388,14 @@ function sr_getBlock() {
 }
 
 // constants that are necessary
-const visual_search_trials_practice = 16 // called practiceLen in og code
-const visual_search_trials_block = 16 // called numTrialsPerBlock in og code
-const fixationDuration = 500;
-const stimStimulusDuration = 1500;
-const stimTrialDuration = 2000;
+const visual_search_trials_practice = 15 // called practiceLen in og code
+const visual_search_trials_block = 30 // called numTrialsPerBlock in og code
+const fixationDuration = 400;
+const stimStimulusDuration = 1350;
+const stimTrialDuration = 1400;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
-var numTestBlocks = 13 // number of blocks of the main experiment
+var numTestBlocks = 20 // number of blocks of the main experiment
 // const accuracyThresh = 0.8; // threshhold for block-level feedback
 const practiceAccuracyThresh = 0.75; //threshold to proceed to test blocks, 3 out of 4 trials for .75
 const rtThresh = 1250;
@@ -550,7 +548,7 @@ function getStims(blockStimNums_t,blockStimTargets_t,blockStimConditions_t,lengt
   
       var obj = {
         html: html,
-        targetPresent: targetPresent,//im not sure what targetPresent means when its 0 or 1 
+        targetPresent: targetPresent,
         condition: stimCondition,
         stimNum: stimNum,
       };
@@ -683,7 +681,7 @@ function generateTargetElement(left, top, width, height) {
       width +
       "px; height: " +
       height +
-      'px; background-color: white;"></div>'
+      'px; background-color:  #999999;"></div>'
     );
 }
 function generateDistractorElement(left, top, width, height, stimCondition) {
@@ -697,7 +695,7 @@ function generateDistractorElement(left, top, width, height, stimCondition) {
         width +
         "px; height: " +
         height +
-        'px; background-color: black;"></div>'
+        'px; background-color: #666666;"></div>'
       );
     } else if (stimCondition === "conjunction") {
       if (Math.random() < 0.5) {
@@ -710,7 +708,7 @@ function generateDistractorElement(left, top, width, height, stimCondition) {
           width +
           "px; height: " +
           height +
-          'px; background-color: white; transform: rotate(90deg); transform-origin: center;"></div>'
+          'px; background-color:  #999999; transform: rotate(90deg); transform-origin: center;"></div>'
         );
       } else {
         return (
@@ -722,7 +720,7 @@ function generateDistractorElement(left, top, width, height, stimCondition) {
           width +
           "px; height: " +
           height +
-          'px; background-color: black;"></div>'
+          'px; background-color: #666666;"></div>'
         );
       }
     }
@@ -763,7 +761,7 @@ const choices = [possibleResponses[0][1], possibleResponses[1][1]];
 // I got rid of endText, feedbackInstructText
 const vs_instruct_reminder_text = `<div class="centerbox">
 <p class="block-text">Place your left hand on the <b>q key</b> and your right hand on the <b>p key</b></p>
-<p class="block-text">If you determine the vertical white rectangle is <b>${
+<p class="block-text">If you determine the vertical light gray rectangle is <b>${
   possibleResponses[0][0] == "right" ? "present" : "absent"
 }</b>, press <b>p</b>, and if you determine a target is <b>${
   possibleResponses[0][0] == "right" ? "absent" : "present"
@@ -773,32 +771,43 @@ const vs_instruct_reminder_text = `<div class="centerbox">
 var speedReminder =
   "<p class = block-text>Try to respond as quickly and accurately as possible.</p>";
 const pageInstruct = [
-    `<div class="centerbox">
-      <p class="block-text">We will now practice the search game!</p>
-      <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>
-      <p class="block-text">During this task, on each trial rectangles will appear on the screen. The rectangles can be either black or white in color.</p>
-      <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical white rectangle</b>. We will call this rectangle the 'target'.</p>
+  '<div class="centerbox">\
+  <p class="block-text">We will now practice the search game!</p>\
+  <p class="block-text">Place a finger on your left hand on the <b>q key</b> and a finger on your right hand on the <b>p key</b></p>\
+  <p class="block-text">During this task, on each trial rectangles will appear on the screen. There will be two colors of rectangles: a darker gray, and a lighter gray. These rectangles will either be vertical or horizontal.</p>\
+  <div style="display: flex; align-items: center; justify-content: center; padding-top: 80px; padding-bottom: 80px;">\
+    <p style="width: 50%; font-size: 24px;">The light gray color looks like:</p>\
+    <div id="target" class="box" style="background-color:#999999; width:40px; height:40px; margin-right: 40px;"></div>\
+    <p style="width: 50%; font-size: 24px;">The dark gray color looks like:</p>\
+    <div id="target" class="box" style="background-color:#666666; width:40px; height:40px;"></div>\
+  </div>\
+  <p class="block-text">Remember these colors!</p>\
+  </div>'  
+  ,
+      `<div class="centerbox">
+      <p class="block-text">On some trials, <b>one</b> of these rectangles will be a <b>vertical light gray rectangle</b>. We will call this rectangle the 'target'.</p>
       <div style="display: flex; align-items: center; justify-content: center; padding-top: 80px; padding-bottom: 80px;">
       <p style="width: 70%; font-size: 24px;">The target looks like: </p>
       <div style="display: flex; justify-content: center; align-items: center; width:100%;">
-      <div id="target" class="box" style="background-color:white; width:40px; height:80px;"></div>
+      <div id="target" class="box" style="background-color:#999999; width:40px; height:80px;"></div>
       </div>
       </div>
       </div>
-      `,
+      `
+      ,
     `
     <div class="centerbox">
-      <p class="block-text">Your task is to determine whether the vertical white rectangle is ${
+      <p class="block-text">Your task is to determine whether the vertical light gray rectangle is ${
         possibleResponses[0][0] == "right" ? "present" : "absent"
       } or ${
         possibleResponses[0][0] == "right" ? "absent" : "present"
       } on each trial.</p>
-      <p class="block-text">If you determine the vertical white rectangle (the target) is <b>${
+      <p class="block-text">If you determine the vertical light gray rectangle (the target) is <b>${
         possibleResponses[0][0] == "right" ? "on the screen (present)" : "not on the screen (absent)"
       }</b>, press <b>p</b>, and if you determine a target is <b>${
         possibleResponses[0][0] == "right" ? "not on the screen (absent)" : "on the screen (present)"
       }</b>, press <b>q</b>.</p>
-      <p class="block-text">We'll start with a practice round. During practice, you will receive feedback and a reminder of the rules. These will be taken out for the main game, so make sure you understand the instructions before moving on.</p>
+      <p class="block-text">We'll start with a practice round. During practice, you will receive feedback. These will be taken out for the main game, so make sure you understand the instructions before moving on.</p>
       ${speedReminder}
     </div>`,
   ];
@@ -1278,16 +1287,26 @@ doInitialAssignment()
 
 
 
+
 // important variables to customize
 var dollars_per_correct_bonus = 0.02
 var num_blocks = numTestBlocks
+
+// make a prolific id place for them to enter
+var prolific_id_insert = {
+    type: jsPsychSurveyText,
+    preamble: `<p>Welcome! Please enter your Prolific ID below:</p>`,
+    questions: [
+      {prompt: 'Enter here:', rows: 1,name: 'prolific_id'},
+    ]
+  }
 
 // INITIALIZE TIMELINE
 var timeline = [];
 
 // INTRUCTIONS AND PRACTICE SESSION
 //timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
-timeline.push(fullscreen,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
+timeline.push(fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
 
 // MAIN EXPERIMENT INSTRUCTIONS
 timeline.push(main_exp_BDM_instructions, BDM_q1_loop, BDM_q2_loop, BDM_q3_loop, final_exp_instructions)
@@ -1420,24 +1439,23 @@ var calculate_bonus = function(){
         sr_accuracy: sr_accuracy_count,
         vs_accuracy: vs_accuracy_count
     });
+    // ADDED SINCE THIS IS NOW JUST A COMPLETION BONUS
+    final_bonus = 3;
 
     return final_bonus
 }
+
 
 var overall_debrief = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: 
       `<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
-      effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
-    were) is <strong>insert</strong>. The experiment is over now, press any button to continue</p>`,
+      effort, errors, and task switching interact. Your final completion bonus is\
+      <strong>3</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>`,
     on_start: function(overall_debrief) {
         var bonus = calculate_bonus()
 
         document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
-
-        overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
-            effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
-          were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
     }
 }
 
@@ -1545,7 +1563,7 @@ var sr_debrief = {
 
 var vs_debrief = {
     type: jsPsychSurveyText,
-    preamble: `<p>One of the games you played was the search game, where you had to press a button if a vertical white rectangle was on the screen.</p>`,
+    preamble: `<p>One of the games you played was the search game, where you had to press a button if a target rectangle was on the screen.</p>`,
     questions: [
         {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find this game? 100 is very boring, 1 is not boring at all.',name: 'vs_boring'},
         {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find this game? 100 is very difficult, 1 is not difficult at all', name: 'vs_difficult'}

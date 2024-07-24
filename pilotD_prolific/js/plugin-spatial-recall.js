@@ -33,7 +33,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
         tile_duration: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Tile duration',
-          default: 200, // was originally 750
+          default: 375, // was originally 750
           description: 'How long to show a tile.'
         },
         iti_duration: {

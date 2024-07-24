@@ -8,7 +8,7 @@ var jsPsych = initJsPsych({
       jsPsych.data.get().addToLast({interactions: interaction_data.json()});
   
       // Display jsPsych data in viewport.
-      jsPsych.data.displayData();
+      // jsPsych.data.displayData();
     },
     on_start: function(){
       document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";

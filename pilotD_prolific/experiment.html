@@ -44,12 +44,21 @@
 var dollars_per_correct_bonus = 0.02
 var num_blocks = numTestBlocks
 
+// make a prolific id place for them to enter
+var prolific_id_insert = {
+    type: jsPsychSurveyText,
+    preamble: `<p>Welcome! Please enter your Prolific ID below:</p>`,
+    questions: [
+      {prompt: 'Enter here:', rows: 1,name: 'prolific_id'},
+    ]
+  }
+
 // INITIALIZE TIMELINE
 var timeline = [];
 
 // INTRUCTIONS AND PRACTICE SESSION
 //timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
-timeline.push(fullscreen,consent_form,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
+timeline.push(fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions,sr_task_instructions,sr_recall_forwards_practice,practice_transition,vs_instructionNode,vs_practiceNode)
 
 // MAIN EXPERIMENT INSTRUCTIONS
 timeline.push(main_exp_BDM_instructions, BDM_q1_loop, BDM_q2_loop, BDM_q3_loop, final_exp_instructions)
@@ -182,24 +191,23 @@ var calculate_bonus = function(){
         sr_accuracy: sr_accuracy_count,
         vs_accuracy: vs_accuracy_count
     });
+    // ADDED SINCE THIS IS NOW JUST A COMPLETION BONUS
+    final_bonus = 3;
 
     return final_bonus
 }
+
 
 var overall_debrief = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: 
       `<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
-      effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
-    were) is <strong>insert</strong>. The experiment is over now, press any button to continue</p>`,
+      effort, errors, and task switching interact. Your final completion bonus is\
+      <strong>3</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>`,
     on_start: function(overall_debrief) {
         var bonus = calculate_bonus()
 
         document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
-
-        overall_debrief.stimulus = "<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
-            effort, errors, and task switching interact. Your final bonus (based purely on how correct you \
-          were) is $<strong>" + bonus + " dollars </strong>. The experiment is over now, press any button to continue</p>"
     }
 }
 
@@ -307,7 +315,7 @@ var sr_debrief = {
 
 var vs_debrief = {
     type: jsPsychSurveyText,
-    preamble: `<p>One of the games you played was the search game, where you had to press a button if a vertical white rectangle was on the screen.</p>`,
+    preamble: `<p>One of the games you played was the search game, where you had to press a button if a target rectangle was on the screen.</p>`,
     questions: [
         {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find this game? 100 is very boring, 1 is not boring at all.',name: 'vs_boring'},
         {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find this game? 100 is very difficult, 1 is not difficult at all', name: 'vs_difficult'}
