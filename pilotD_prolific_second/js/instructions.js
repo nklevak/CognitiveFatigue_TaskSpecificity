@@ -11,7 +11,7 @@ var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Welcome to this experiment! In this experiment, you will be playing two games. <br>\
-      You will be paid 8.57 dollars / hour, plus a completion bonus of 3 dollars.<br>\
+      You will be paid 8.05 dollars / hour, plus a completion bonus of 3 dollars.<br>\
       Before we begin the actual experiment, let\'s do some practice of the games.</p><br>\
       We will begin with the first game."
     ],

@@ -64,9 +64,13 @@ timeline.push(fullscreen,consent_form,prolific_id_insert,welcome_practice_instru
 var practiceNum_generated = Math.floor(Math.random() * 101);
 if (Math.random() < 0.5) {
     // sr practice goes first then
-    timeline.push(sr_task_instructions,sr_recall_forwards_practice,practice_transition)
+    timeline.push(sr_task_instructions,sr_recall_forwards_practice)
+    timeline.push(practice_transition)
+    timeline.push(vs_instructionNode,vs_practiceNode)
 } else {
     timeline.push(vs_instructionNode,vs_practiceNode)
+    timeline.push(practice_transition)
+    timeline.push(sr_task_instructions,sr_recall_forwards_practice)
 }
 
 // MAIN EXPERIMENT INSTRUCTIONS

@@ -31,7 +31,7 @@ var welcome_practice_instructions = {
     type: jsPsychInstructions,
     pages: [
       "<p>Welcome to this experiment! In this experiment, you will be playing two games. <br>\
-      You will be paid 8.57 dollars / hour, plus a completion bonus of 3 dollars.<br>\
+      You will be paid 8.05 dollars / hour, plus a completion bonus of 3 dollars.<br>\
       Before we begin the actual experiment, let\'s do some practice of the games.</p><br>\
       We will begin with the first game."
     ],
@@ -391,8 +391,8 @@ function sr_getBlock() {
 const visual_search_trials_practice = 15 // called practiceLen in og code
 const visual_search_trials_block = 30 // called numTrialsPerBlock in og code
 const fixationDuration = 400;
-const stimStimulusDuration = 1450;
-const stimTrialDuration = 1650;
+const stimStimulusDuration = 1475;
+const stimTrialDuration = 1575;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
 var numTestBlocks = 20 // number of blocks of the main experiment
@@ -1312,9 +1312,13 @@ timeline.push(fullscreen,consent_form,prolific_id_insert,welcome_practice_instru
 var practiceNum_generated = Math.floor(Math.random() * 101);
 if (Math.random() < 0.5) {
     // sr practice goes first then
-    timeline.push(sr_task_instructions,sr_recall_forwards_practice,practice_transition)
+    timeline.push(sr_task_instructions,sr_recall_forwards_practice)
+    timeline.push(practice_transition)
+    timeline.push(vs_instructionNode,vs_practiceNode)
 } else {
     timeline.push(vs_instructionNode,vs_practiceNode)
+    timeline.push(practice_transition)
+    timeline.push(sr_task_instructions,sr_recall_forwards_practice)
 }
 
 // MAIN EXPERIMENT INSTRUCTIONS
