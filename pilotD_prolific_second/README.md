@@ -2,7 +2,7 @@ This is the second pilot D prolific sample, which is the same as the initial Pil
 
 These VS changes are:
 - making the stimulus duration = 1450 instead of 1350 like in the previous iteration
-- making the trial duration = 1600 instead of 1400 like in the previous iteration
+- making the trial duration = 1650 instead of 1400 like in the previous iteration
 
 For spatial recall, the changes are:
 - decreased the max response time to be 5 seconds instead of 10 seconds
