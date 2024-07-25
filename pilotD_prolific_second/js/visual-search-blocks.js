@@ -2,8 +2,8 @@
 const visual_search_trials_practice = 15 // called practiceLen in og code
 const visual_search_trials_block = 30 // called numTrialsPerBlock in og code
 const fixationDuration = 400;
-const stimStimulusDuration = 1475;
-const stimTrialDuration = 1575;
+const stimStimulusDuration = 1450;
+const stimTrialDuration = 1550;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
 var numTestBlocks = 20 // number of blocks of the main experiment

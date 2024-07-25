@@ -391,8 +391,8 @@ function sr_getBlock() {
 const visual_search_trials_practice = 15 // called practiceLen in og code
 const visual_search_trials_block = 30 // called numTrialsPerBlock in og code
 const fixationDuration = 400;
-const stimStimulusDuration = 1475;
-const stimTrialDuration = 1575;
+const stimStimulusDuration = 1450;
+const stimTrialDuration = 1550;
 const instructTimeThresh = 5; // /in seconds
 var sumInstructTime = 0; // ms
 var numTestBlocks = 20 // number of blocks of the main experiment
@@ -1309,8 +1309,7 @@ var timeline = [];
 timeline.push(fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
 
 // counterbalance which other the practice goes in
-var practiceNum_generated = Math.floor(Math.random() * 101);
-if (Math.random() < 0.5) {
+if (jsPsych.randomization.randomInt(0,1) == 0) {
     // sr practice goes first then
     timeline.push(sr_task_instructions,sr_recall_forwards_practice)
     timeline.push(practice_transition)
@@ -1328,7 +1327,7 @@ timeline.push(main_exp_BDM_instructions, BDM_q1_loop, BDM_q2_loop, BDM_q3_loop, 
 // MAIN EXPERIMENT
 var generated_value = Math.floor(Math.random() * 101);
 var currentTask = "spatial_recall" //(50% chance of either task being the first block) // other option is "vs"
-if (Math.random() < 0.5) {
+if (jsPsych.randomization.randomInt(0,1) == 0) {
     currentTask = "vs"
 }
 console.log(currentTask)
