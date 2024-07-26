@@ -27,7 +27,7 @@ var vs_practice_prop_added = 1/visual_search_trials_practice
 var vs_test_prop_added = 1/visual_search_trials_block
 
 // important variables to customize
-var dollars_per_correct_bonus = 0.02
+var dollars_per_correct_bonus = 0.01
 var num_blocks = numTestBlocks
 
 // PARAMETERS FOR DECAYING EXPONENTIAL FUNCTION
