@@ -163,13 +163,16 @@ var BDM_quiz_1 = {
   ],
   randomize_question_order: false,
   on_finish: function(data) {
-      var BDM_gen = data.response.BDM_gen; 
+      if (data.response && data.response.BDM_gen) {
+        var BDM_gen = data.response.BDM_gen; 
         if(BDM_gen == 'This randomly selected value gets re-generated every time I am given the option to switch.') {
           data.correct = true
         } else {
           data.correct = false
         }
      }
+        
+  }
 };
 var BDM_q1_feedback = {
   type: jsPsychHtmlButtonResponse,
@@ -208,6 +211,7 @@ var BDM_quiz_2 = {
   ],
   randomize_question_order: false,
   on_finish: function(data) {
+    if (data.response && data.response.BDM_points) {
       var BDM_points = data.response.BDM_points; 
         if(BDM_points == 'My initial endowment of points.') {
           data.correct = true
@@ -215,6 +219,7 @@ var BDM_quiz_2 = {
           data.correct = false
         }
      }
+  }
 };
 var BDM_q2_feedback = {
   type: jsPsychHtmlButtonResponse,
@@ -251,6 +256,7 @@ var BDM_quiz_3 = {
   ],
   randomize_question_order: false,
   on_finish: function(data) {
+    if (data.response && data.response.BDM_should) {
       var BDM_should = data.response.BDM_should; 
         if(BDM_should == 'Always be honest about exactly how many points I want to trade.') {
           data.correct = true
@@ -258,6 +264,7 @@ var BDM_quiz_3 = {
           data.correct = false
         }
      }
+  }
 };
 var BDM_q3_feedback = {
   type: jsPsychHtmlButtonResponse,
@@ -1285,6 +1292,13 @@ var prolific_id_insert = {
     ]
   }
 
+
+// preload external html file
+var preload = {
+    type: 'preload',
+    images: ['/stimuli/poldrack_consent_form.html']
+  };
+
 // INITIALIZE TIMELINE
 var timeline = [];
 
@@ -1341,49 +1355,62 @@ var switch_offer_screen = {
     },
     on_finish: function(data){
         cpt_ran = false
-        var trade_value = jsPsych.data.get().last(1).values()[0].response.bid;
-        var ans = parseInt(trade_value);
-        if (!(isNaN(ans) | ans < 1 | ans > 100)) {
-            data.generated_BDM_value = generated_value
-            data.blocks_completed = curr_block
-            data.prevBlockType = currentTask
-
-            if (trade_value >= generated_value) {
-                nextSwitch = true
-
-                if (currentTask == "spatial_recall") {
-                    currentTask = "vs"
-                } else if (currentTask == "vs") {
-                    currentTask = "spatial_recall"
-                }
-            } else {
-                nextSwitch = false
-            }
-
-            data.switch_next_block = nextSwitch
-
-            document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-            jsPsych.setProgressBar(0);
+        var lastData = jsPsych.data.get().last(1).values()[0]
+        if (lastData.response && lastData.response.bid) {
+          var trade_value = lastData.response.bid;
+          var ans = parseInt(trade_value);
+          if (!(isNaN(ans) | ans < 1 | ans > 100)) {
+              data.generated_BDM_value = generated_value
+              data.blocks_completed = curr_block
+              data.prevBlockType = currentTask
+  
+              if (trade_value >= generated_value) {
+                  nextSwitch = true
+  
+                  if (currentTask == "spatial_recall") {
+                      currentTask = "vs"
+                  } else if (currentTask == "vs") {
+                      currentTask = "spatial_recall"
+                  }
+              } else {
+                  nextSwitch = false
+              }
+  
+              data.switch_next_block = nextSwitch
+  
+              document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+              jsPsych.setProgressBar(0);
+          } else {
+              console.log("not valid")
+          }
         } else {
-            console.log("not valid")
+          console.log("not valid, doesn't exist")
         }
+        
     }
 }
 var repeat_message_conditional = {
     timeline: [repeat_message],
     conditional_function: function() {
-        // get last response
-        var response = jsPsych.data.get().last(1).values()[0].response.bid
-        // convert from text to number
-        var response_num = parseInt(response);
-        if (isNaN(response_num) | response_num < 1 | response_num > 100) {
-            repeat_loop = true
-            // return true to show the repeat_message trial
-            return true;
+        var lastData = jsPsych.data.get().last(1).values()[0]
+        if (lastData.response && lastData.response.bid) {
+          // get last response
+          var response = lastData.response.bid
+          // convert from text to number
+          var response_num = parseInt(response);
+          if (isNaN(response_num) | response_num < 1 | response_num > 100) {
+              repeat_loop = true
+              // return true to show the repeat_message trial
+              return true;
+          } else {
+              repeat_loop = false
+              // return false to skip the repeat_message trial
+              return false;
+          }
         } else {
-            repeat_loop = false
-            // return false to skip the repeat_message trial
-            return false;
+          repeat_loop = true
+          // return true to show the repeat_message trial
+          return true;
         }
     }
 }

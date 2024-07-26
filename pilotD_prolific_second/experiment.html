@@ -53,6 +53,13 @@ var prolific_id_insert = {
     ]
   }
 
+// preload external html file
+var preload = {
+    type: 'preload',
+    images: ['./js/poldrack_consent_form.html']
+  };
+
+
 // INITIALIZE TIMELINE
 var timeline = [];
 
@@ -109,49 +116,62 @@ var switch_offer_screen = {
     },
     on_finish: function(data){
         cpt_ran = false
-        var trade_value = jsPsych.data.get().last(1).values()[0].response.bid;
-        var ans = parseInt(trade_value);
-        if (!(isNaN(ans) | ans < 1 | ans > 100)) {
-            data.generated_BDM_value = generated_value
-            data.blocks_completed = curr_block
-            data.prevBlockType = currentTask
-
-            if (trade_value >= generated_value) {
-                nextSwitch = true
-
-                if (currentTask == "spatial_recall") {
-                    currentTask = "vs"
-                } else if (currentTask == "vs") {
-                    currentTask = "spatial_recall"
-                }
-            } else {
-                nextSwitch = false
-            }
-
-            data.switch_next_block = nextSwitch
-
-            document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-            jsPsych.setProgressBar(0);
+        var lastData = jsPsych.data.get().last(1).values()[0]
+        if (lastData.response && lastData.response.bid) {
+          var trade_value = lastData.response.bid;
+          var ans = parseInt(trade_value);
+          if (!(isNaN(ans) | ans < 1 | ans > 100)) {
+              data.generated_BDM_value = generated_value
+              data.blocks_completed = curr_block
+              data.prevBlockType = currentTask
+  
+              if (trade_value >= generated_value) {
+                  nextSwitch = true
+  
+                  if (currentTask == "spatial_recall") {
+                      currentTask = "vs"
+                  } else if (currentTask == "vs") {
+                      currentTask = "spatial_recall"
+                  }
+              } else {
+                  nextSwitch = false
+              }
+  
+              data.switch_next_block = nextSwitch
+  
+              document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+              jsPsych.setProgressBar(0);
+          } else {
+              console.log("not valid")
+          }
         } else {
-            console.log("not valid")
+          console.log("not valid, doesn't exist")
         }
+        
     }
 }
 var repeat_message_conditional = {
     timeline: [repeat_message],
     conditional_function: function() {
-        // get last response
-        var response = jsPsych.data.get().last(1).values()[0].response.bid
-        // convert from text to number
-        var response_num = parseInt(response);
-        if (isNaN(response_num) | response_num < 1 | response_num > 100) {
-            repeat_loop = true
-            // return true to show the repeat_message trial
-            return true;
+        var lastData = jsPsych.data.get().last(1).values()[0]
+        if (lastData.response && lastData.response.bid) {
+          // get last response
+          var response = lastData.response.bid
+          // convert from text to number
+          var response_num = parseInt(response);
+          if (isNaN(response_num) | response_num < 1 | response_num > 100) {
+              repeat_loop = true
+              // return true to show the repeat_message trial
+              return true;
+          } else {
+              repeat_loop = false
+              // return false to skip the repeat_message trial
+              return false;
+          }
         } else {
-            repeat_loop = false
-            // return false to skip the repeat_message trial
-            return false;
+          repeat_loop = true
+          // return true to show the repeat_message trial
+          return true;
         }
     }
 }

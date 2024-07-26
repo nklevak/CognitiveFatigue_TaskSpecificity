@@ -104,13 +104,16 @@ var BDM_quiz_1 = {
   ],
   randomize_question_order: false,
   on_finish: function(data) {
-      var BDM_gen = data.response.BDM_gen; 
+      if (data.response && data.response.BDM_gen) {
+        var BDM_gen = data.response.BDM_gen; 
         if(BDM_gen == 'This randomly selected value gets re-generated every time I am given the option to switch.') {
           data.correct = true
         } else {
           data.correct = false
         }
      }
+        
+  }
 };
 var BDM_q1_feedback = {
   type: jsPsychHtmlButtonResponse,
@@ -149,6 +152,7 @@ var BDM_quiz_2 = {
   ],
   randomize_question_order: false,
   on_finish: function(data) {
+    if (data.response && data.response.BDM_points) {
       var BDM_points = data.response.BDM_points; 
         if(BDM_points == 'My initial endowment of points.') {
           data.correct = true
@@ -156,6 +160,7 @@ var BDM_quiz_2 = {
           data.correct = false
         }
      }
+  }
 };
 var BDM_q2_feedback = {
   type: jsPsychHtmlButtonResponse,
@@ -192,6 +197,7 @@ var BDM_quiz_3 = {
   ],
   randomize_question_order: false,
   on_finish: function(data) {
+    if (data.response && data.response.BDM_should) {
       var BDM_should = data.response.BDM_should; 
         if(BDM_should == 'Always be honest about exactly how many points I want to trade.') {
           data.correct = true
@@ -199,6 +205,7 @@ var BDM_quiz_3 = {
           data.correct = false
         }
      }
+  }
 };
 var BDM_q3_feedback = {
   type: jsPsychHtmlButtonResponse,
