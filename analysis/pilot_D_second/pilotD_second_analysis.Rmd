@@ -3,7 +3,7 @@ title: "pilotD_second_analysis"
 output: html_document
 date: "2024-07-26"
 ---
-This is the updated analysis on the "pilot D second" participants. These are prolific participants after I made the visual search more difficult following pilot D.
+This is the updated analysis on the "pilot D second" and "pilot D second ProlificCopy" participants. These are prolific participants after I made the visual search more difficult following pilot D.
 
 In this analysis, I z-scored the participant performance within each task in order to better compare across the two tasks. 
 The spatial recall was 4 squares at a time, and the visual search was conjunction only and 24 items only. 
@@ -35,7 +35,7 @@ theme_set(theme_classic())
 
 **reading in the data**
 ``` {r data_wrangling}
-setwd("../../data/pilotD_second/")
+setwd("../../data/pilotD_second/prolific_original")
 
 csv_files <- list.files(pattern = "\\.csv$")
 
@@ -48,7 +48,26 @@ read_csv_as_character <- function(file) {
 
 df_all <- bind_rows(lapply(csv_files,read_csv_as_character))
 ```
+Now we need to read in the data from the ProlificCopy cognition.run, and modify the run_ids (since there may be some run_id repeats between the two data folders)
+``` {r data_wrangling}
+setwd("../../data/pilotD_second/prolific_copy")
 
+csv_files <- list.files(pattern = "\\.csv$")
+
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+
+df_all_prolific_copy <- bind_rows(lapply(csv_files,read_csv_as_character))
+
+df_all_prolific_copy <- df_all_prolific_copy %>%
+  mutate(run_id = as.character((as.integer(run_id) + 500)))
+
+df_all <- bind_rows(df_all, df_all_prolific_copy)
+```
 **pre-processing the data**
 First I will anonymize the data and remove unneccesary columns:
 ``` {r data_wrangling_anon}
@@ -377,7 +396,7 @@ total_data <- final_df %>%
 Here, we will exclude participants. We want to exclude participants who never switched. We also want to exclude participants who got over **90% accuracy** on **both** tasks or below **30% accuracy** on either task (TODO should i remove those who got over 90 on either task?)
 
 ``` {r data_wrangling}
-cutoff = 0.90 # right now, to be cut out must get above this on both tasks
+cutoff = 0.93 # right now, to be cut out must get above this on both tasks
 bottom_cutoff = 0.30 # right now, to be cut out must get below this on either task
 
 subjects_no_switch <- total_data %>%
@@ -637,10 +656,10 @@ bid_block_total_details_binned <- bid_block_total %>%
   mutate(subj_id = as.factor(subj_id))
 
 bid_block_total_details_binned %>%
-  ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy,color=subj_id)) +
+  ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy)) +
   facet_wrap(~bid_bin_preceding,ncol=8) +
   theme(panel.spacing.x = unit(2, "lines"))+
-  geom_point(alpha=0.5,position = position_jitter(width=0.2,height=0)) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
   stat_summary(fun.data = "mean_cl_boot",
                geom = "pointrange",
                color = "black",
@@ -650,6 +669,41 @@ bid_block_total_details_binned %>%
   labs(x="Did the task switch?",y="Average accuracy in this block")+
   ggtitle("Relationship between bid offer, switch status and following average accuracy")
 ```
+``` {r data_wrangling}
+# to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('more than 1 below','0 to 1 below', '0 to 1 above', 'more than 1 above')
+
+bid_block_total_details_binned %>%
+  filter(game_type=="vs") %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average accuracy in this block")+
+  ggtitle("VS: Relationship between bid offer, switch status and following average accuracy")
+
+bid_block_total_details_binned %>%
+  filter(game_type=="spatial_recall") %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average accuracy in this block")+
+  ggtitle("SR: Relationship between bid offer, switch status and following average accuracy")
+```
 
 
 **BASIC LINEAR MODELS**
@@ -658,9 +712,9 @@ fit.compact = lmer(formula = correct ~ (1 | subj_id),
                    data = final_df)
 fit.augmented = lmer(formula = correct ~ preceding_bid_z_score + (1|subj_id),
                      data = final_df)
-fit.augmented_two = lmer(formula = correct ~ preceding_bid_z_score + (game_type|subj_id),
+fit.augmented_two = lmer(formula = correct ~ preceding_bid_z_score + (1 + game_type|subj_id),
                      data = final_df)
-fit.augmented_three = lmer(formula = correct ~ preceding_bid_z_score + block_switched + (game_type|subj_id),
+fit.augmented_three = lmer(formula = correct ~ preceding_bid_z_score + block_switched + (1 + game_type|subj_id),
                      data = final_df)
 
 anova(fit.compact, fit.augmented)
@@ -669,13 +723,41 @@ anova(fit.compact, fit.augmented_three)
 
 summary(fit.augmented_three)
 ```
+``` {r models}
+anova(fit.augmented, fit.augmented_two)
+anova(fit.augmented_two, fit.augmented_three)
+```
 
 ``` {r models}
-fit.augmented_four = lmer(formula = correct ~ preceding_bid_z_score*block_switched + (game_type|subj_id),
+fit.augmented_four = lmer(formula = correct ~ preceding_bid_z_score*block_switched + (1 + game_type|subj_id),
                      data = final_df)
 
 anova(fit.compact, fit.augmented_four)
+anova(fit.augmented_two, fit.augmented_four)
 anova(fit.augmented_three, fit.augmented_four)
+
+summary(fit.augmented_four)
+```
+
+``` {r models}
+fit.augmented_five = lmer(formula = correct ~ preceding_bid_z_score:block_switched + (1 + game_type|subj_id),
+                     data = final_df)
+
+anova(fit.compact, fit.augmented_five)
+anova(fit.augmented_two, fit.augmented_five)
+anova(fit.augmented_three, fit.augmented_five)
+
+summary(fit.augmented_five)
+```
+
+
+``` {r models}
+fit.augmented_six = lmer(formula = correct ~ trial_index + preceding_bid_z_score*block_switched + (1 + game_type|subj_id),
+                     data = final_df)
+
+anova(fit.compact, fit.augmented_six)
+anova(fit.augmented_two, fit.augmented_six)
+anova(fit.augmented_three, fit.augmented_six)
 
 summary(fit.augmented_four)
 ```
