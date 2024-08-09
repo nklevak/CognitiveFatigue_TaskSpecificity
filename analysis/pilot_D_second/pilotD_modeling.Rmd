@@ -77,7 +77,7 @@ anonymize_clean <- function(df) {
          -accept_language,-device,-internal_node_id,-view_history,
          -source_code_version, -contains("browser"),-contains("platform"),
          -contains("screen"),-contains("width"),-contains("height"),
-         -contains("failed"),-condition,-success,-event_history)
+         -contains("failed"),-condition,-success,-event_history, -block_num)
   return(df)
 }
 df_all <- anonymize_clean(df_all)
@@ -300,7 +300,7 @@ final_df <- final_df %>%
                                          ifelse(is.na(following_bid),NA,
                                                 ((following_bid - avg_bids) / stdev_bids)))) %>%
   filter(trial_type != "survey-text") %>%
-  select(-prevBlockType,-preceding_bid,-following_bid) %>%
+  select(-prevBlockType) %>%
   rename(block_switched=switch_next_block) %>%
   mutate(z_accuracy = ifelse(game_type == "vs",z_accuracy_vs,z_accuracy_sr), z_rt = ifelse(game_type == "vs",z_rt_vs,z_rt_sr)) %>%
   ungroup()
@@ -757,6 +757,97 @@ temp %>%
 
 # MODEL COMPARISON
 
-Test different linear models for predicting bid, predicting average block accuracy, predicting individual trail accuracy, and same for RT
+Test different linear models for predicting bid, predicting average block accuracy, predicting individual trail accuracy, and same for RT.
+
+``` {r single_trial_lmer_models}
+
+complete_data <- na.omit(final_df_excluded[, c("correct", "rt","curr_block_num", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index")])
+
+# for single trial accuracy prediction
+fit.compact_st = lmer(formula = correct ~ (1 | subj_id),
+                   data = complete_data)
+
+fit.augmented_st_one = lmer(formula = correct ~ (1|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_two = lmer(formula = correct ~ game_type + (1|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_three = lmer(formula = correct ~ preceding_bid + game_type + (1|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_four = lmer(formula = correct ~ preceding_bid + game_type + block_switched + (1|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_five = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1|subj_id) + (1|curr_block_num),data = complete_data)
+
+fit.augmented_st_six = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num),data = complete_data)
+
+fit.augmented_st_seven = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid + game_type|subj_id) + (1|curr_block_num),data = complete_data)
+
+```
+
+Want to add preceding_bid | subj_id as random slope, and also game_type | subj_id as random slope but it doesn't converge.
+
+``` {r models}
+summary(fit.compact_st)
+summary(fit.augmented_st_one)
+summary(fit.augmented_st_two)
+summary(fit.augmented_st_three)
+summary(fit.augmented_st_four)
+summary(fit.augmented_st_five)
+summary(fit.augmented_st_six)
+summary(fit.augmented_st_seven)
+```
+``` {r single_trial_lmer_models}
+
+anova(fit.compact_st, fit.augmented_st_one) # one is better
+
+anova(fit.augmented_st_one, fit.augmented_st_two) # two is better
+
+anova(fit.augmented_st_two, fit.augmented_st_three) # three is better
+
+anova(fit.augmented_st_three, fit.augmented_st_four) # four is better
+
+anova(fit.augmented_st_four, fit.augmented_st_five) # five is better
+
+anova(fit.augmented_st_five, fit.augmented_st_six) # six is better
+
+anova(fit.augmented_st_six, fit.augmented_st_seven) # seven is better
+
+summary(fit.augmented_st_six)
+summary(fit.augmented_st_seven)
+```
+In model 6, block_switchedtrue has a sig neg estimate but preceding_bid:block_switchedtrue has a sig positive estimate. In model 7, these patterns are still there but the interaction is no longer significant.
 
 
+``` {r block_lmer_models}
+
+complete_data <- na.omit(final_df_excluded[, c("correct", "rt","curr_block_num", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index", "preceding_bid_z_score", "following_bid_z_score")])
+
+# for block accuracy prediction
+fit.compact_b = lmer(formula = avg_block_accuracy ~ (1 | subj_id),
+                   data = complete_data)
+
+fit.augmented_b_one = lmer(formula = avg_block_accuracy ~ (1|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_b_two = lmer(formula = avg_block_accuracy ~  game_type + (1 + game_type|subj_id) + (1|curr_block_num), data = complete_data)
+
+fit.augmented_b_three = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + (1 + game_type|subj_id) + (1|curr_block_num), data = complete_data)
+
+fit.augmented_b_four = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + (1 + game_type + curr_block_num|subj_id), data = complete_data)
+
+fit.augmented_b_five = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + block_switched + (1 + game_type + curr_block_num|subj_id),
+                     data = complete_data)
+
+fit.augmented_b_six = lmer(formula = avg_block_accuracy ~ game_type + block_switched + preceding_bid_z_score:block_switched + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+
+fit.augmented_b_seven = lmer(formula = avg_block_accuracy ~ block_switched + preceding_bid_z_score:block_switched + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+
+fit.augmented_b_eight = lmer(formula = avg_block_accuracy ~ block_switched + preceding_bid_z_score:block_switched + preceding_bid_z_score + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+
+fit.augmented_b_nine = lmer(formula = avg_block_accuracy ~ vs_practice_accuracy:game_type + game_type + sr_practice_accuracy:game_type + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+```
+
+SHould check what role practice performance plays

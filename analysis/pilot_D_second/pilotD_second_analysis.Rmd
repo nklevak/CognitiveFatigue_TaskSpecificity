@@ -208,8 +208,6 @@ copy_for_avg %>%
   labs(x="Game Type",y="Average accuracy on all trials of this game, per subject")+
   ggtitle("Median of subject average mean performance on each game (pre-exclusion)")
 ```
-
-
 Now I'm going to distribute the bid value to its corresponding block for each df. I will also record which block each group of trials is, remove unnecessary columns, and change the datatypes of necessary columns (i.e. subject id). I will also save the overall average and sd of each participant for each task. #TODO (should I do this overall, or per block?) For now overall.
 
 ``` {r data_wrangling_bids_tasks}
