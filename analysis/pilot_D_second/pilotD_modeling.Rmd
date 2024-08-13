@@ -257,6 +257,19 @@ final_df <- final_df %>%
   group_by(subj_id, game_type) %>%
   arrange(subj_id,curr_block_num) %>%
   rename(preceding_bid = bid_value)
+
+# calculate average performance overall per subject:
+final_df <- final_df %>%
+  ungroup()
+
+temp <- final_df %>%
+  group_by(subj_id) %>%
+  summarize(avg_overall_correct = mean(correct, na.rm = TRUE), sd_overall_correct = sd(correct,na.rm = TRUE), avg_overall_rt = mean(rt, na.rm=TRUE), sd_overall_rt = sd(rt, na.rm=TRUE))%>%
+  ungroup()
+
+final_df <- final_df %>%
+  left_join(temp, by = "subj_id") %>%
+  mutate(z_overall_correct = ifelse(sd_overall_correct != 0, ((correct - avg_overall_correct)/sd_overall_correct), 0), z_overall_rt = ifelse(sd_overall_rt != 0, ((rt - avg_overall_rt)/sd_overall_rt),0))
 ```
 Now everything is in "final_df"
 
@@ -303,6 +316,7 @@ final_df <- final_df %>%
   select(-prevBlockType) %>%
   rename(block_switched=switch_next_block) %>%
   mutate(z_accuracy = ifelse(game_type == "vs",z_accuracy_vs,z_accuracy_sr), z_rt = ifelse(game_type == "vs",z_rt_vs,z_rt_sr)) %>%
+  mutate(z_rt = as.numeric(z_rt)) %>%
   ungroup()
 ```
 
@@ -310,17 +324,17 @@ At this point, final_df has all of the relevant data; all of the z-scores are pa
 
 In final_df, calculate average performance per block:
 ``` {r data_wrangling_bids_tasks}
-# calculate average (and z) accuracy and average (and z) rt per block.
+# calculate average (and z) accuracy and average (and z) rt per block. (this is when it was z'd by subject AND task)
 avg_spatial_recall <- final_df %>%
   filter(game_type == "spatial_recall") %>%
   group_by(subj_id, curr_block_num) %>%
-  summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(z_rt),stdev_z_rt = sd(z_rt,na.rm = TRUE), avg_block_accuracy = mean(correct), sd_block_accuracy = sd(correct),avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE))%>%
+  summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(z_rt_sr, na.rm=TRUE),stdev_z_rt = sd(z_rt_sr,na.rm = TRUE), avg_block_accuracy = mean(correct), sd_block_accuracy = sd(correct),avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE), avg_z_overall_block_accuracy = mean(z_overall_correct), sd_overall_block_accuracy = sd(z_overall_correct),avg_z_overall_block_rt = mean(z_overall_rt), sd_overall_block_rt = sd(z_overall_rt))%>%
   arrange(subj_id,curr_block_num)
 
 avg_vs <- final_df %>%
   filter(game_type == "vs") %>%
   group_by(subj_id, curr_block_num) %>%
-  summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(z_rt),stdev_z_rt = sd(z_rt,na.rm = TRUE), avg_block_accuracy = mean(correct, na.rm = TRUE), sd_block_accuracy = sd(correct, na.rm = TRUE), avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE))%>%
+  summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(as.numeric(z_rt_vs),na.rm=TRUE),stdev_z_rt = sd(z_rt_vs,na.rm = TRUE), avg_block_accuracy = mean(correct, na.rm = TRUE), sd_block_accuracy = sd(correct, na.rm = TRUE), avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE),avg_z_overall_block_accuracy = mean(z_overall_correct), sd_overall_block_accuracy = sd(z_overall_correct),avg_z_overall_block_rt = mean(z_overall_rt), sd_overall_block_rt = sd(z_overall_rt))%>%
   arrange(subj_id,curr_block_num)
 
 avg_per_block <- bind_rows(avg_spatial_recall, avg_vs) %>%
@@ -328,6 +342,15 @@ avg_per_block <- bind_rows(avg_spatial_recall, avg_vs) %>%
 
 final_df <- final_df %>%
   left_join(avg_per_block, by = c("subj_id","curr_block_num"))
+# 
+# # calculate average (and z) accuracy and average (and z) rt per block. (this is when it is z'd only by subject ACROSS tasks)
+# avg_per_block <- final_df %>%
+#   group_by(subj_id, curr_block_num) %>%
+#   summarise(avg_z_overall_accuracy = mean(z_overall_correct),stdev_z_overall_accuracy = sd(z_overall_correct,na.rm = TRUE), avg_z_overall_rt= mean(z_overall_rt),stdev_z_overall_rt = sd(z_overall_rt,na.rm = TRUE))%>%
+#   arrange(subj_id,curr_block_num)
+# 
+# final_df <- final_df %>%
+#   left_join(avg_per_block, by=c("subj_id", "curr_block_num"))
 ```
 
 # PARTICIPANT EXCLUSION
@@ -523,7 +546,7 @@ final_df_excluded %>%
 
 ## (non-normalized) Block Accuracy and RT by (normalized per participant) Following Bids 
 
-Not normalizing per participant means we are looking at **how well participants perform relative to how well they normally perfom on this task and relative to how well they perform on the other task**
+Not normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task and relative to how well they perform on the other task**
 
 **TODO: Should also plot this with regressions per block to show how this changes over time**
 
@@ -579,9 +602,9 @@ final_df_excluded %>%
 ```
 
 
-## (normalized per participant) Block Accuracy and RT by (normalized per participant) Following Bids 
+## (normalized per participant PER task) Block Accuracy and RT by (normalized per participant) Following Bids 
 
-Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perfom on this task**
+Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task**
 
 **TODO: Should also plot this with regressions per block to show how this changes over time**
 
@@ -673,7 +696,7 @@ labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
 
 temp <- final_df_excluded %>%
   group_by(subj_id, curr_block_num, avg_block_rt, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
-  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_block_rt = mean(avg_block_rt)) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_block_rt = mean(avg_block_rt, NA.rm=TRUE)) %>%
   mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
          bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
   mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
@@ -695,7 +718,7 @@ temp %>%
 ```
 
 
-## Relationship between (normalized per participant) bid offer, switch status and following (normalized per participant) average accuracy and RT
+## Relationship between (normalized per participant) bid offer, switch status and following (normalized per participant PER task) average accuracy and RT
 
 Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task**
 
@@ -754,6 +777,84 @@ temp %>%
   labs(x="Did the task switch?",y="Average (z-scored) RT in this block")+
   ggtitle("bid offer (z-scored), switch status and following average RT (z-scored)")
 ```
+# SAME GRAPHS BUT NORMALIZED BY PARTICIPANT PERFORMANCE OVERALL (NOT PER TASK)
+
+This way, we can see how they perform in each task relative to their typical performance, in order to adjust for participants but not account for which task they're doing -- could be skewed because some participants perform a lot worse on one task than another so the average will be lower (but normalization should account for that?)
+
+
+## (normalized per participant ACROSS tasks) Block Accuracy and RT by (normalized per participant) Following Bids 
+
+Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform in the experiment overall**
+
+**TODO: Should also plot this with regressions per block to show how this changes over time**
+
+``` {r data_wrangling}
+# including all subjects
+final_df_excluded %>%
+  group_by(subj_id, following_bid_z_score, avg_z_overall_block_accuracy) %>%
+  ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_overall_block_accuracy)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  labs(x = "Bid Z-Score",
+       y = "Average Accuracy in Previous Block, z-scored by subject only",
+       color = "Block Number") +
+  ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
+
+# faceted by subjects, show first few
+final_df_excluded %>%
+  filter(subj_id < 20) %>%
+  ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_overall_block_accuracy)) +
+  facet_wrap(~subj_id) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
+  labs(x = "Bid Z-Score",
+       y = "Average Accuracy in Previous Block, z-scored by subject only",
+       color = "Block Number") +
+  ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
+```
+
+## Relationship between (normalized per participant) bid offer, switch status and following (normalized per participant ACROSS tasks) average accuracy and RT
+
+Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform overall**
+
+``` {r plot_accuracy_switch_bid}
+# to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
+
+temp <- final_df_excluded %>%
+  group_by(subj_id, curr_block_num, avg_z_overall_block_accuracy, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_accuracy = mean(avg_z_overall_block_accuracy)) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
+
+temp %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average (z-scored per participant) accuracy in this block")+
+  ggtitle("bid offer (z-scored), switch status and following average accuracy (z-scored/participant)")
+```
+
+
+# MORE LOOKING INTO THE DATA
+
+## LOOK AT SWITCH COST BY LOOKING AT FIRST 5 TRIALS OF EVERY BLOCK BY switch vs not switch
+
+
+## LOOK AT DIFF IN BIDDING FOR PARTICIPANTS WHEN THEY"RE IN GAME A VS GAME B
+
+
+
 
 # MODEL COMPARISON
 
@@ -776,8 +877,7 @@ fit.augmented_st_two = lmer(formula = correct ~ game_type + (1|subj_id) + (1|cur
 fit.augmented_st_three = lmer(formula = correct ~ preceding_bid + game_type + (1|subj_id) + (1|curr_block_num),
                      data = complete_data)
 
-fit.augmented_st_four = lmer(formula = correct ~ preceding_bid + game_type + block_switched + (1|subj_id) + (1|curr_block_num),
-                     data = complete_data)
+fit.augmented_st_four = lmer(formula = correct ~ preceding_bid + game_type + block_switched + (1|subj_id) + (1|curr_block_num),data = complete_data)
 
 fit.augmented_st_five = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1|subj_id) + (1|curr_block_num),data = complete_data)
 
@@ -785,6 +885,9 @@ fit.augmented_st_six = lmer(formula = correct ~ game_type + preceding_bid*block_
 
 fit.augmented_st_seven = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid + game_type|subj_id) + (1|curr_block_num),data = complete_data)
 
+fit.augmented_st_eight = lmer(formula = correct ~ preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num) + (game_type|subj_id),data = complete_data)
+
+fit.augmented_st_nine = lmer(formula = correct ~ preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num) + (1|game_type),data = complete_data)
 ```
 
 Want to add preceding_bid | subj_id as random slope, and also game_type | subj_id as random slope but it doesn't converge.
@@ -798,6 +901,8 @@ summary(fit.augmented_st_four)
 summary(fit.augmented_st_five)
 summary(fit.augmented_st_six)
 summary(fit.augmented_st_seven)
+summary(fit.augmented_st_eight)
+summary(fit.augmented_st_nine)
 ```
 ``` {r single_trial_lmer_models}
 
@@ -815,39 +920,117 @@ anova(fit.augmented_st_five, fit.augmented_st_six) # six is better
 
 anova(fit.augmented_st_six, fit.augmented_st_seven) # seven is better
 
+anova(fit.augmented_st_seven, fit.augmented_st_eight) # unclear
+
+anova(fit.augmented_st_six, fit.augmented_st_eight) # eight is better
+
+anova(fit.augmented_st_eight, fit.augmented_st_nine) # eight is better
+
 summary(fit.augmented_st_six)
 summary(fit.augmented_st_seven)
+summary(fit.augmented_st_eight)
 ```
-In model 6, block_switchedtrue has a sig neg estimate but preceding_bid:block_switchedtrue has a sig positive estimate. In model 7, these patterns are still there but the interaction is no longer significant.
-
+In model 6, block_switchedtrue has a sig neg estimate but preceding_bid:block_switchedtrue has a sig positive estimate. In model 7 and model 8, these patterns are still there but the interaction is no longer significant.
 
 ``` {r block_lmer_models}
+fit.augmented_st_six_edit = lmer(formula = correct ~ game_type + preceding_bid*block_switched*curr_block_num + (1 + preceding_bid|subj_id) + (1|curr_block_num),data = complete_data)
 
-complete_data <- na.omit(final_df_excluded[, c("correct", "rt","curr_block_num", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index", "preceding_bid_z_score", "following_bid_z_score")])
+summary(fit.augmented_st_six_edit)
+```
+## block wide accuracy models
+``` {r block_lmer_models}
 
-# for block accuracy prediction
+complete_data <- (final_df_excluded[, c("curr_block_num", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "following_bid_z_score", "preceding_bid_z_score")]) %>%
+  na.omit() %>%
+  distinct() %>%
+  arrange(subj_id, curr_block_num)
+  
+
+# for block accuracy predictions
+
+# for single trial accuracy prediction
 fit.compact_b = lmer(formula = avg_block_accuracy ~ (1 | subj_id),
                    data = complete_data)
 
 fit.augmented_b_one = lmer(formula = avg_block_accuracy ~ (1|subj_id) + (1|curr_block_num),
                      data = complete_data)
 
-fit.augmented_b_two = lmer(formula = avg_block_accuracy ~  game_type + (1 + game_type|subj_id) + (1|curr_block_num), data = complete_data)
-
-fit.augmented_b_three = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + (1 + game_type|subj_id) + (1|curr_block_num), data = complete_data)
-
-fit.augmented_b_four = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + (1 + game_type + curr_block_num|subj_id), data = complete_data)
-
-fit.augmented_b_five = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + block_switched + (1 + game_type + curr_block_num|subj_id),
+fit.augmented_b_two = lmer(formula = avg_block_accuracy ~ game_type + (1|subj_id) + (1|curr_block_num),
                      data = complete_data)
 
-fit.augmented_b_six = lmer(formula = avg_block_accuracy ~ game_type + block_switched + preceding_bid_z_score:block_switched + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+fit.augmented_b_three = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + (1 + curr_block_num|subj_id),
+                     data = complete_data)
 
-fit.augmented_b_seven = lmer(formula = avg_block_accuracy ~ block_switched + preceding_bid_z_score:block_switched + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+fit.augmented_b_four = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + block_switched + (1 + curr_block_num|subj_id),data = complete_data)
 
-fit.augmented_b_eight = lmer(formula = avg_block_accuracy ~ block_switched + preceding_bid_z_score:block_switched + preceding_bid_z_score + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+fit.augmented_b_five = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score*block_switched + (1 + curr_block_num|subj_id),data = complete_data)
 
-fit.augmented_b_nine = lmer(formula = avg_block_accuracy ~ vs_practice_accuracy:game_type + game_type + sr_practice_accuracy:game_type + (1 + game_type + curr_block_num|subj_id),data = complete_data)
+fit.augmented_b_six = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score*block_switched + (1 + curr_block_num|subj_id) + (1|game_type),data = complete_data)
+
+fit.augmented_b_seven = lmer(formula = avg_block_accuracy ~ game_type + preceding_bid_z_score*block_switched + (1 + game_type|subj_id) + (1|curr_block_num),data = complete_data)
+
+
+
+# compare them
+anova(fit.compact_b, fit.augmented_b_one) # unclear
+anova(fit.augmented_b_one, fit.augmented_b_two) # unclear
+anova(fit.augmented_b_two, fit.augmented_b_three) # three is better
+anova(fit.augmented_b_three, fit.augmented_b_four) # four is better
+anova(fit.augmented_b_four, fit.augmented_b_five) # unclear
+anova(fit.augmented_b_five, fit.augmented_b_six) # unclear
+anova(fit.augmented_b_six, fit.augmented_b_seven) # seven is better
+anova(fit.augmented_b_four,fit.augmented_b_seven) # seven is better
+anova(fit.augmented_b_five, fit.augmented_b_seven) # seven is better
+anova(fit.augmented_b_two, fit.augmented_b_seven) # seven is better
+anova(fit.augmented_b_one, fit.augmented_b_seven) # seven is better
+anova(fit.compact_b, fit.augmented_b_seven) # seven is better
+
+summary(fit.augmented_b_seven)
+```
+Model 7 is best so far; switching blocks has a significant negative effect, but switching blocks and having a high preceding bid score had a postive effect (although non significant)
+
+## factors that predict the bid
+
+``` {r block_lmer_models}
+
+complete_data <- (final_df_excluded[, c("curr_block_num", "correct", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "following_bid_z_score")]) %>%
+  na.omit() %>%
+  arrange(subj_id, curr_block_num)
+
+# for block accuracy predictions
+
+# for single trial accuracy prediction
+fit.compact_bid = lmer(formula = following_bid_z_score ~ (1 | subj_id),
+                   data = complete_data)
+
+fit.augmented_bid_one = lmer(formula = following_bid_z_score ~ (1 + curr_block_num|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_two = lmer(formula = following_bid_z_score ~ game_type + (1|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_bid_three = lmer(formula = following_bid_z_score ~ game_type + (1 + game_type|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_bid_four = lmer(formula = following_bid_z_score ~ correct + game_type + (1 + game_type|subj_id) + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_bid_five = lmer(formula = following_bid_z_score ~ correct + game_type + (1 + game_type|subj_id) + (1|curr_block_num) + (1|block_switched),
+                     data = complete_data)
+
+fit.augmented_bid_six = lmer(formula = following_bid_z_score ~ correct + game_type + (1 + game_type + curr_block_num|subj_id) + (1|block_switched),
+                     data = complete_data)
+
+# compare them
+anova(fit.compact_bid, fit.augmented_bid_one) # one
+anova(fit.augmented_bid_one, fit.augmented_bid_two) # unclear
+anova(fit.augmented_bid_one, fit.augmented_bid_three) # three
+anova(fit.augmented_bid_two, fit.augmented_bid_three) # three is better
+anova(fit.augmented_bid_three, fit.augmented_bid_four) # four is better
+anova(fit.augmented_bid_four, fit.augmented_bid_five) # five
+anova(fit.augmented_bid_five, fit.augmented_bid_six) # six
+
+summary(fit.augmented_bid_six)
 ```
 
-SHould check what role practice performance plays
+Being more correct negatively predicts a bigger bid significantly
