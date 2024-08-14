@@ -850,10 +850,98 @@ temp %>%
 
 ## LOOK AT SWITCH COST BY LOOKING AT FIRST 5 TRIALS OF EVERY BLOCK BY switch vs not switch
 
+``` {r plot_switch_cost}
+# look at blocks 7 and 8 as an example
+filtered <- final_df_excluded %>%
+  ungroup() %>%
+  filter(curr_block_num %in% c(4,5,6,7,8,9,10,11,12))
+
+# get first 5 trials of each given block to plot
+filtered <- filtered %>%
+  group_by(subj_id, curr_block_num, block_switched) %>%
+  mutate(block_switched = ifelse(block_switched == "true","switched","didn't switch"))%>%
+  slice_head(n = 5) %>%
+  ungroup() 
+
+ggplot(filtered, aes(x = block_switched, y = z_overall_correct)) +
+  facet_wrap(~ curr_block_num) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x = "Did they switch?", y = "Trial Accuracy (z-scored by participant)", title = "Switch Cost: Accuracy for the First 5 Trials by Block")
+
+ggplot(filtered, aes(x = block_switched, y = correct)) +
+  facet_wrap(~ curr_block_num) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x = "Did they switch?", y = "Raw Trial Accuracy", title = "Switch Cost: Accuracy for the First 5 Trials by Block")
+
+# look at vs and sr separately with raw data
+ggplot(filtered%>% filter(game_type == "vs"), aes(x = block_switched, y = correct)) +
+  facet_wrap(~ curr_block_num) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x = "Did they switch?", y = "Raw Trial Accuracy", title = "VS Switch Cost: Accuracy for the First 5 Trials by Block")
+
+ggplot(filtered%>% filter(game_type == "spatial_recall"), aes(x = block_switched, y = correct)) +
+  facet_wrap(~ curr_block_num) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x = "Did they switch?", y = "Raw Trial Accuracy", title = "SR Switch Cost: Accuracy for the First 5 Trials by Block")
+
+
+## LOOK AT INdIViDUAL SUBJECT TRENDS (see if first few trials in a block have a lower performance compared to rest)
+filtered <- final_df_excluded %>%
+  ungroup() %>%
+  filter(subj_id <20, block_switched == "true")
+
+# get first 10 trials of each given block to plot
+filtered <- filtered %>%
+  group_by(subj_id, curr_block_num) %>%
+  mutate(block_switched = ifelse(block_switched == "true","switched","didn't switch"))%>%
+  slice_head(n = 5) %>%
+  mutate(trial_count = row_number()) %>%
+  ungroup() %>%
+  arrange(subj_id,curr_block_num, trial_count)
+
+ggplot(filtered%>% filter(game_type == "vs"), aes(x = trial_count, y = correct, color = curr_block_num)) +
+  facet_wrap(~ subj_id) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  labs(x = "Time", y = "Raw Trial Accuracy", title = "VS Switch Cost: Accuracy for the First 5 Trials by Block")
+
+ggplot(filtered%>% filter(game_type == "spatial_recall"), aes(x = trial_count, y = correct, color=curr_block_num)) +
+  facet_wrap(~ subj_id) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  labs(x = "Time", y = "Raw Trial Accuracy", title = "SR Switch Cost: Accuracy for the First 5 Trials by Block")
+```
 
 ## LOOK AT DIFF IN BIDDING FOR PARTICIPANTS WHEN THEY"RE IN GAME A VS GAME B
 
+``` {r plot_diff_bids}
 
+
+```
 
 
 # MODEL COMPARISON
