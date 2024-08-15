@@ -529,13 +529,12 @@ temp %>%
 # add difficulty and boringness difference
 final_df_excluded <- final_df_excluded %>%
   mutate(vs_boring = as.numeric(vs_boring, na.rm = TRUE), vs_difficult = as.numeric(vs_difficult, na.rm = TRUE), sr_boring = as.numeric(sr_boring, na.rm = TRUE), sr_difficult = as.numeric(sr_difficult, na.rm = TRUE)) %>%
-  mutate(more_boring = ifelse(vs_boring > sr_boring, "visual search","spatial recall"), more_difficult = ifelse(vs_difficult > sr_difficult, "visual-search","spatial-recall"), boring_difference = abs(vs_boring - sr_boring), difficulty_difference = abs(vs_difficult - sr_difficult))
+  mutate(more_boring = ifelse(vs_boring > sr_boring, "visual-search","spatial-recall"), more_difficult = ifelse(vs_difficult > sr_difficult, "visual-search","spatial-recall"), boring_difference = abs(vs_boring - sr_boring), difficulty_difference = abs(vs_difficult - sr_difficult))
 
 # get one row per subject
 temp <- final_df_excluded %>%
   group_by(subj_id) %>%
-  filter(curr_block_num == 1, trial_count == 1) %>%
-  un
+  filter(curr_block_num == 1, trial_count == 1)
 
 # boring difference
 temp %>% 
@@ -913,6 +912,61 @@ temp %>%
                size = 0.5)+
   labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
   ggtitle("SR: bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
+
+
+
+# REMOVING FIRST TRIAL
+temp <- final_df_excluded %>%
+  filter(trial_count != 1) %>%
+  group_by(subj_id, curr_block_num) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_block_accuracy = mean(z_overall_correct), block_switched = block_switched, trial_count = trial_count) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch")) %>%
+  filter(trial_count == 2)#keep only one row per block per subj bc avgs are the same
+
+
+temp %>%
+  filter(curr_block_num !=1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_z_block_accuracy)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
+  ggtitle("NO TRIAL 1 bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
+
+
+# REMOVING FIRST TWO TRIALS
+temp <- final_df_excluded %>%
+  filter(trial_count != 1 & trial_count != 2) %>%
+  group_by(subj_id, curr_block_num) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_block_accuracy = mean(z_overall_correct), block_switched = block_switched, trial_count = trial_count) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch")) %>%
+  filter(trial_count == 3)#keep only one row per block per subj bc avgs are the same
+
+
+temp %>%
+  filter(curr_block_num !=1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_z_block_accuracy)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
+  ggtitle("NO TRIAL 1-2 bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
 ```
 
 # MORE LOOKING INTO THE DATA
@@ -1005,11 +1059,210 @@ ggplot(filtered%>% filter(game_type == "spatial_recall"), aes(x = trial_count, y
   labs(x = "Time", y = "Raw Trial Accuracy", title = "SR Switch Cost: Accuracy for the First 5 Trials by Block")
 ```
 
+Plot the same plots with only the first trial from each block, and also plot avg lines of first x trials of blocks that switched and blocks that didn’t switch (to see if the trend is the same for both types)
+
+``` {r plot_switch_cost_extra}
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
+
+temp <- final_df_excluded %>%
+  filter(trial_count == 1)%>%
+  group_by(subj_id, curr_block_num, z_overall_correct, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), z_overall_correct = z_overall_correct, z_overall_rt = z_overall_rt, game_type = game_type) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
+
+temp %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=block_switched,y=z_overall_correct, color = subj_id)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="z-accuracy on first trial of this block")+
+  ggtitle("First trial per block: bid offer (z-scored), switch status and following z-accuracy on trial 1")
+
+
+
+temp %>%
+  filter(curr_block_num != 1, game_type == "spatial_recall") %>%
+  ggplot(mapping = aes(x=block_switched,y=z_overall_correct, color = subj_id)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="z-accuracy on first trial of this block")+
+  ggtitle("SR: First trial per block: bid offer (z-scored), switch status and following z-accuracy on trial 1")
+
+
+temp %>%
+  filter(curr_block_num != 1, game_type == "vs") %>%
+  ggplot(mapping = aes(x=block_switched,y=z_overall_correct, color = subj_id)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="z-accuracy on first trial of this block")+
+  ggtitle("VS: First trial per block: bid offer (z-scored), switch status and following z-accuracy on trial 1")
+
+
+
+
+temp %>%
+  filter(curr_block_num != 1, game_type == "spatial_recall") %>%
+  ggplot(mapping = aes(x=block_switched,y=z_overall_rt, color = subj_id)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="z-rt on first trial of this block")+
+  ggtitle("SR: First trial per block: bid offer (z-scored), switch status and following z-rt")
+
+
+temp %>%
+  filter(curr_block_num != 1, game_type == "vs") %>%
+  ggplot(mapping = aes(x=block_switched,y=z_overall_rt, color = subj_id)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="z-rt on first trial of this block")+
+  ggtitle("VS: First trial per block: bid offer (z-scored), switch status and following z-rt")
+
+```
+``` {r plot_switch_cost_extra}
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
+
+temp <- final_df_excluded %>%
+  filter(trial_count <= 4)%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"), trial_group = ifelse(trial_count <= 2, "trials 1-2","trials 3-4"))
+
+temp %>% 
+  ggplot(mapping = aes(x=trial_count, z_overall_correct, group = interaction(trial_group,block_switched), color=trial_group)) +
+  geom_point(alpha = 0.3, size=0.5, position=position_jitter(0.1,0)) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Trial number within block",y = "Z-scored accuracy in each trial, by subject") +
+  facet_wrap(~ block_switched)
+
+
+
+temp %>% 
+  filter(game_type == "vs") %>%
+  ggplot(mapping = aes(x=trial_count, z_overall_correct, group = interaction(trial_group,block_switched), color=trial_group)) +
+  geom_point(alpha = 0.3, size=0.5, position=position_jitter(0.1,0)) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Trial number within block",y = "Z-scored accuracy in each trial, by subject", title="VS switch cost") +
+  facet_wrap(~ block_switched)
+
+
+temp %>% 
+  filter(game_type == "spatial_recall") %>%
+  ggplot(mapping = aes(x=trial_count, z_overall_correct, group = interaction(trial_group,block_switched), color=trial_group)) +
+  geom_point(alpha = 0.3, size=0.5, position=position_jitter(0.1,0)) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Trial number within block",y = "Z-scored accuracy in each trial, by subject", title="Spatial Recall switch cost") +
+  facet_wrap(~ block_switched)
+
+```
+
+
+
 ## LOOK AT DIFF IN BIDDING FOR PARTICIPANTS WHEN THEY"RE IN GAME A VS GAME B
+Can color by what they rated as more boring or more difficult
 
 ``` {r plot_diff_bids}
+temp <- final_df_excluded %>%
+  filter(trial_count == 1) # to get one val per block
+
+# get how much each subject bids on avg when potentially switching to spatial recall
+# filter by bids after blocks of visual search
+temp_switch_from_vs <- temp %>%
+  filter(game_type == "vs") %>%
+  group_by(subj_id) %>%
+  summarise(avg_bid_from_vs = mean(following_bid))
 
 
+# get how much each subject bids on avg when potentially switching to vs
+# filter by bids after blocks of sr
+temp_switch_from_sr <- temp %>%
+  filter(game_type == "spatial_recall") %>%
+  group_by(subj_id) %>%
+  summarise(avg_bid_from_sr = mean(following_bid))
+
+# combine the dfs
+temp <- temp %>%left_join(temp_switch_from_sr, by="subj_id")
+temp <- temp %>% left_join(temp_switch_from_vs, by="subj_id")%>%
+  arrange(subj_id, curr_block_num)
+
+# calc the diff between bids and also which one was bid for higher
+temp <- temp %>%
+  mutate(bids_task_diff = abs(avg_bid_from_sr - avg_bid_from_vs),
+         higher_bid_from = case_when(
+           avg_bid_from_sr > avg_bid_from_vs ~ "higher avg bid to switch from sr",
+           avg_bid_from_sr < avg_bid_from_vs ~ "higher avg bid to switch from vs",
+           TRUE ~ "avg bids are equal"
+         ),
+         higher_bid_from_simp = case_when(
+           avg_bid_from_sr > avg_bid_from_vs ~ "spatial-recall",
+           avg_bid_from_sr < avg_bid_from_vs ~ "visual-search",
+           TRUE ~ "equal"
+         ))
+
+# plot this difference
+temp %>%
+  filter(curr_block_num == 1) %>%
+  ggplot(mapping = aes(x=bids_task_diff, group=higher_bid_from, color=higher_bid_from)) +
+  geom_histogram() +
+  labs(x="difference between subjects' avg bids to switch from vs or sr", y = "number of subjects",title="Task differences in bidding")
+
+
+# see how higher bid to switch from corresponds to what task they thought was more boring and what task they thought was more difficult
+temp %>%
+  filter(curr_block_num == 1, !is.na(more_boring), !is.na(more_difficult), higher_bid_from_simp != "equal") %>%
+  select(subj_id, higher_bid_from_simp, more_boring, more_difficult) %>%
+  mutate(boring_higher_bid_aligns = ifelse(higher_bid_from_simp == more_boring, TRUE, FALSE),
+         difficulty_higher_bid_aligns = ifelse(higher_bid_from_simp == more_difficult, TRUE, FALSE),
+         boring_difficulty_aligns = ifelse(more_difficult == more_boring, TRUE, FALSE)) %>%
+  mutate(what_aligns = case_when(
+           boring_higher_bid_aligns & difficulty_higher_bid_aligns ~ "boring, bidded more to switch from, difficult",
+           boring_higher_bid_aligns & !difficulty_higher_bid_aligns ~ "boring, bidded more to switch from",
+           !boring_higher_bid_aligns & difficulty_higher_bid_aligns ~ "difficult, bidded more to switch from",
+           !boring_higher_bid_aligns & boring_difficulty_aligns ~ "boring, difficult",
+           TRUE ~ "other"
+         )) %>%
+  ggplot(aes(y = what_aligns)) +
+  geom_bar(fill = "lightblue") +
+  geom_text(stat = 'count', aes(label = ..count..), hjust = -0.2) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5)) +
+  labs(x = "Count", y = "Per subject, which align? The same task is more: ")
 ```
 
 
