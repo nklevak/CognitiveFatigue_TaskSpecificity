@@ -20,6 +20,7 @@ The setup was:
 
 
 # SETUP:
+## imports
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -233,9 +234,9 @@ temp <- sr_final %>%
   filter(trial_type == "spatial-recall") %>%
   summarize(avg_sr_correct = mean(correct, na.rm = TRUE), sd_sr_correct = sd(correct,na.rm = TRUE), avg_sr_rt = mean(rt, na.rm=TRUE), sd_sr_rt = sd(rt, na.rm=TRUE)) %>%
   ungroup()
-
-sr_final <- merge(sr_final, temp, by = "run_id") %>%
-  mutate(z_accuracy_sr = ifelse(sd_sr_correct != 0, ((correct - avg_sr_correct)/sd_sr_correct), 0), z_rt_sr = ifelse(sd_sr_rt != 0, ((rt - avg_sr_rt)/sd_sr_rt),0))
+# 
+sr_final <- merge(sr_final, temp, by = "run_id") 
+#   %>%mutate(z_accuracy_sr = ifelse(sd_sr_correct != 0, ((correct - avg_sr_correct)/sd_sr_correct), 0), z_rt_sr = ifelse(sd_sr_rt != 0, ((rt - avg_sr_rt)/sd_sr_rt),0))
 
 # for visual search:
 temp <- vs_final %>%
@@ -243,10 +244,11 @@ temp <- vs_final %>%
   filter(trial_id == "test_trial") %>%
   summarize(avg_vs_correct = mean(correct, na.rm = TRUE), sd_vs_correct = sd(correct,na.rm = TRUE), avg_vs_rt = mean(rt, na.rm=TRUE), sd_vs_rt = sd(rt, na.rm=TRUE)) %>%
   ungroup()
+# 
+vs_final <- merge(vs_final, temp, by = "run_id") 
+#   %>%mutate(z_accuracy_vs = ifelse(sd_vs_correct != 0, ((correct - avg_vs_correct)/sd_vs_correct), 0), z_rt_vs = ifelse(sd_vs_rt != 0, ((rt - avg_vs_rt)/sd_vs_rt),0))
 
-vs_final <- merge(vs_final, temp, by = "run_id") %>%
-  mutate(z_accuracy_vs = ifelse(sd_vs_correct != 0, ((correct - avg_vs_correct)/sd_vs_correct), 0), z_rt_vs = ifelse(sd_vs_rt != 0, ((rt - avg_vs_rt)/sd_vs_rt),0))
-  
+
 # Combine them all
 final_df <- bind_rows(sr_final, vs_final) %>%
   mutate(subj_id = as.numeric(run_id), blocks_completed = as.numeric(blocks_completed,na.RM = TRUE)) %>%
@@ -276,7 +278,7 @@ Now everything is in "final_df"
 Remove unecessary columns.
 ``` {r data_wrangling_remove_cols}
 final_df <- final_df %>%
-  select(-c(target_rectangle_location, missed_response, sequence, backwards, responses, stimulus, time_elapsed, trial_id, trial_duration, stimulus_duration, target_present, correct_response, ITIParams, numberStim, choices, exp_stage, prolific_id))
+  select(-c(target_rectangle_location, missed_response, sequence, backwards, responses, stimulus, time_elapsed, trial_id, trial_duration, stimulus_duration, target_present, correct_response, ITIParams, numberStim, choices, exp_stage, prolific_id, sr_accuracy, vs_accuracy))
 ```
 
 Z-score participant bids (to normalize them per participant):
@@ -315,8 +317,8 @@ final_df <- final_df %>%
   filter(trial_type != "survey-text") %>%
   select(-prevBlockType) %>%
   rename(block_switched=switch_next_block) %>%
-  mutate(z_accuracy = ifelse(game_type == "vs",z_accuracy_vs,z_accuracy_sr), z_rt = ifelse(game_type == "vs",z_rt_vs,z_rt_sr)) %>%
-  mutate(z_rt = as.numeric(z_rt)) %>%
+  # mutate(z_accuracy = ifelse(game_type == "vs",z_accuracy_vs,z_accuracy_sr), z_rt = ifelse(game_type == "vs",z_rt_vs,z_rt_sr)) %>%
+  # mutate(z_rt = as.numeric(z_rt)) %>%
   ungroup()
 ```
 
@@ -324,33 +326,47 @@ At this point, final_df has all of the relevant data; all of the z-scores are pa
 
 In final_df, calculate average performance per block:
 ``` {r data_wrangling_bids_tasks}
-# calculate average (and z) accuracy and average (and z) rt per block. (this is when it was z'd by subject AND task)
-avg_spatial_recall <- final_df %>%
-  filter(game_type == "spatial_recall") %>%
-  group_by(subj_id, curr_block_num) %>%
-  summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(z_rt_sr, na.rm=TRUE),stdev_z_rt = sd(z_rt_sr,na.rm = TRUE), avg_block_accuracy = mean(correct), sd_block_accuracy = sd(correct),avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE), avg_z_overall_block_accuracy = mean(z_overall_correct), sd_overall_block_accuracy = sd(z_overall_correct),avg_z_overall_block_rt = mean(z_overall_rt), sd_overall_block_rt = sd(z_overall_rt))%>%
-  arrange(subj_id,curr_block_num)
-
-avg_vs <- final_df %>%
-  filter(game_type == "vs") %>%
-  group_by(subj_id, curr_block_num) %>%
-  summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(as.numeric(z_rt_vs),na.rm=TRUE),stdev_z_rt = sd(z_rt_vs,na.rm = TRUE), avg_block_accuracy = mean(correct, na.rm = TRUE), sd_block_accuracy = sd(correct, na.rm = TRUE), avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE),avg_z_overall_block_accuracy = mean(z_overall_correct), sd_overall_block_accuracy = sd(z_overall_correct),avg_z_overall_block_rt = mean(z_overall_rt), sd_overall_block_rt = sd(z_overall_rt))%>%
-  arrange(subj_id,curr_block_num)
-
-avg_per_block <- bind_rows(avg_spatial_recall, avg_vs) %>%
-  arrange(subj_id, curr_block_num)
-
-final_df <- final_df %>%
-  left_join(avg_per_block, by = c("subj_id","curr_block_num"))
-# 
-# # calculate average (and z) accuracy and average (and z) rt per block. (this is when it is z'd only by subject ACROSS tasks)
-# avg_per_block <- final_df %>%
+# # calculate average (and z) accuracy and average (and z) rt per block. (this is when it was z'd by subject AND task)
+# avg_spatial_recall <- final_df %>%
+#   filter(game_type == "spatial_recall") %>%
 #   group_by(subj_id, curr_block_num) %>%
-#   summarise(avg_z_overall_accuracy = mean(z_overall_correct),stdev_z_overall_accuracy = sd(z_overall_correct,na.rm = TRUE), avg_z_overall_rt= mean(z_overall_rt),stdev_z_overall_rt = sd(z_overall_rt,na.rm = TRUE))%>%
+#   summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(z_rt_sr, na.rm=TRUE),stdev_z_rt = sd(z_rt_sr,na.rm = TRUE), avg_block_accuracy = mean(correct), sd_block_accuracy = sd(correct),avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE), avg_z_overall_block_accuracy = mean(z_overall_correct), sd_overall_block_accuracy = sd(z_overall_correct),avg_z_overall_block_rt = mean(z_overall_rt), sd_overall_block_rt = sd(z_overall_rt))%>%
 #   arrange(subj_id,curr_block_num)
 # 
+# avg_vs <- final_df %>%
+#   filter(game_type == "vs") %>%
+#   group_by(subj_id, curr_block_num) %>%
+#   summarise(avg_z_accuracy = mean(z_accuracy),stdev_z_accuracy = sd(z_accuracy,na.rm = TRUE), avg_z_rt = mean(as.numeric(z_rt_vs),na.rm=TRUE),stdev_z_rt = sd(z_rt_vs,na.rm = TRUE), avg_block_accuracy = mean(correct, na.rm = TRUE), sd_block_accuracy = sd(correct, na.rm = TRUE), avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE),avg_z_overall_block_accuracy = mean(z_overall_correct), sd_overall_block_accuracy = sd(z_overall_correct),avg_z_overall_block_rt = mean(z_overall_rt), sd_overall_block_rt = sd(z_overall_rt))%>%
+#   arrange(subj_id,curr_block_num)
+# 
+# avg_per_block <- bind_rows(avg_spatial_recall, avg_vs) %>%
+#   arrange(subj_id, curr_block_num)
+# 
 # final_df <- final_df %>%
-#   left_join(avg_per_block, by=c("subj_id", "curr_block_num"))
+#   left_join(avg_per_block, by = c("subj_id","curr_block_num"))
+
+
+# only z by participant not by both:
+# calculate average (and z) accuracy and average (and z) rt per block. (this is when it was z'd by subject AND task)
+temp <- final_df %>%
+  group_by(subj_id, curr_block_num) %>%
+  summarise(avg_z_accuracy = mean(z_overall_correct),stdev_z_accuracy = sd(z_overall_correct,na.rm = TRUE), avg_z_rt = mean(z_overall_rt, na.rm=TRUE),stdev_z_rt = sd(z_overall_rt,na.rm = TRUE), avg_block_accuracy = mean(correct), sd_block_accuracy = sd(correct),avg_block_rt = mean(rt, na.rm = TRUE), sd_block_rt = sd(rt, na.rm = TRUE))%>%
+  arrange(subj_id,curr_block_num)
+final_df <- final_df %>%
+  left_join(temp, by = c("subj_id","curr_block_num"))
+
+
+# add how many times an individual task has happened
+final_df <- final_df %>%
+  group_by(subj_id, game_type) %>%
+  mutate(task_block_count = cumsum(!duplicated(blocks_completed))) %>%
+  ungroup()
+
+# add which trial number every row is within a block
+final_df <- final_df %>%
+  group_by(subj_id, curr_block_num) %>%
+  mutate(trial_count = row_number()) %>%
+  ungroup()
 ```
 
 # PARTICIPANT EXCLUSION
@@ -365,23 +381,23 @@ Exclusion criteria (as of now):
 ``` {r performance_pre_exclusion}
 temp <- final_df
 
-temp <- temp %>%
-  select(subj_id, correct, game_type,blocks_completed) %>%
-  arrange(subj_id, game_type, blocks_completed) %>%
-  group_by(subj_id, game_type) %>%
-  mutate(block_count = cumsum(!duplicated(blocks_completed))) %>%
-  ungroup()
+# temp <- temp %>%
+#   select(subj_id, correct, game_type,blocks_completed) %>%
+#   arrange(subj_id, game_type, blocks_completed) %>%
+#   group_by(subj_id, game_type) %>%
+#   mutate(block_count = cumsum(!duplicated(blocks_completed))) %>%
+#   ungroup()
 
 # across subjects, how accuracy changes over time per task
 temp %>%
   group_by(subj_id) %>%
-  ggplot(mapping = aes(x=block_count,y=correct)) +
+  ggplot(mapping = aes(x=task_block_count,y=avg_z_accuracy)) +
   facet_wrap(~game_type) +
   geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = subj_id), size = 3) +  # Points colored by block number
+  geom_point(mapping = aes(color = subj_id), size = 0.5, position = position_jitter(0.1,0)) +  # Points colored by block number
   labs(x = "Blocks Completed of Given Task",
-       y = "Accuracy on this trial per subject") +
-  ggtitle("Average Accuracy Over Time, across subjects pre-exclusion")
+       y = "Z-Accuracy on this block per subject") +
+  ggtitle("Z-Average Accuracy Over Time, across subjects pre-exclusion")
 
 
 # average of all subj averages
@@ -460,23 +476,17 @@ final_df_excluded <- final_df %>%
 ``` {r performance_post_exclusion}
 temp <- final_df_excluded
 
-temp <- temp %>%
-  select(subj_id, correct, game_type,blocks_completed) %>%
-  arrange(subj_id, game_type, blocks_completed) %>%
-  group_by(subj_id, game_type) %>%
-  mutate(block_count = cumsum(!duplicated(blocks_completed))) %>%
-  ungroup()
 
 # across subjects, how accuracy changes over time per task
 temp %>%
   group_by(subj_id) %>%
-  ggplot(mapping = aes(x=block_count,y=correct)) +
+  ggplot(mapping = aes(x=task_block_count,y=avg_z_accuracy)) +
   facet_wrap(~game_type) +
   geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = subj_id), size = 3) +  # Points colored by block number
+  geom_point(mapping = aes(color = subj_id), size = 0.5, position = position_jitter(0.1,0)) +  # Points colored by block number
   labs(x = "Blocks Completed of Given Task",
-       y = "Accuracy on this trial per subject") +
-  ggtitle("Average Accuracy Over Time, across subjects post-exclusion")
+       y = "Z-Accuracy on this block per subject") +
+  ggtitle("Z-Average Accuracy Over Time, across subjects post-exclusion")
 
 
 # average of all subj averages
@@ -514,10 +524,37 @@ temp %>%
 ```
 
 # PLOTTING
+## How boring / difficult participants found each task
+``` {r plot_boring_diff}
+# add difficulty and boringness difference
+final_df_excluded <- final_df_excluded %>%
+  mutate(vs_boring = as.numeric(vs_boring, na.rm = TRUE), vs_difficult = as.numeric(vs_difficult, na.rm = TRUE), sr_boring = as.numeric(sr_boring, na.rm = TRUE), sr_difficult = as.numeric(sr_difficult, na.rm = TRUE)) %>%
+  mutate(more_boring = ifelse(vs_boring > sr_boring, "visual search","spatial recall"), more_difficult = ifelse(vs_difficult > sr_difficult, "visual-search","spatial-recall"), boring_difference = abs(vs_boring - sr_boring), difficulty_difference = abs(vs_difficult - sr_difficult))
+
+# get one row per subject
+temp <- final_df_excluded %>%
+  group_by(subj_id) %>%
+  filter(curr_block_num == 1, trial_count == 1) %>%
+  un
+
+# boring difference
+temp %>% 
+  select(subj_id, boring_difference, more_boring) %>%
+  ggplot(mapping = aes(x=boring_difference, color = more_boring)) +
+  geom_histogram() +
+  labs(x = "difference in rated boringness", y = "number of subjects", title = "Difference in boring rating (1-100) between sr and vs")
+
+# difficulty difference
+temp %>% 
+  select(subj_id, difficulty_difference, more_difficult) %>%
+  ggplot(mapping = aes(x=difficulty_difference, color = more_difficult)) +
+  geom_histogram() +
+  labs(x = "difference in rated difficulty", y = "number of subjects", title = "Difference in difficulty rating (1-100) between sr and vs")
+```
 
 ## (normalized per participant) Bids over time:
 
-``` {r data_wrangling}
+``` {r plot_bid_time}
 # faceted by subject
 final_df_excluded %>%
   group_by(subj_id, curr_block_num) %>%
@@ -533,9 +570,18 @@ final_df_excluded %>%
 
 # averaged across all participants
 final_df_excluded %>%
-  group_by(subj_id, curr_block_num) %>%
-  summarise(following_z_bid = mean(following_bid_z_score)) %>%
-  ggplot(mapping = aes(x=curr_block_num,y=following_z_bid)) +
+  filter(trial_count == 1) %>%
+  ggplot(mapping = aes(x=curr_block_num,y=following_bid_z_score, color = subj_id)) +
+  geom_point(alpha = 0.15,
+             position = position_jitter(height = 0, width = 0.2), size = 1) +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(x = "Block number", 
+       y = "Z-scored bid offer (relative to each subject's avg and sd)", 
+       title = "Bid offers following each block, all subjects all blocks")
+
+final_df_excluded %>%
+  filter(trial_count == 1) %>%
+  ggplot(mapping = aes(x=curr_block_num,y=following_bid_z_score, group=subj_id, color=subj_id)) +
   geom_point(alpha = 0.15,
              position = position_jitter(height = 0, width = 0.2), size = 1) +
   geom_smooth(method="lm",se=TRUE) +
@@ -544,7 +590,7 @@ final_df_excluded %>%
        title = "Bid offers following each block, all subjects all blocks")
 ```
 
-## (non-normalized) Block Accuracy and RT by (normalized per participant) Following Bids 
+## (non-normalized) Block Accuracy and RT by (normalized) Following Bids 
 
 Not normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task and relative to how well they perform on the other task**
 
@@ -554,7 +600,7 @@ Not normalizing per participant means we are looking at **how well participants 
 # including all subjects
 final_df_excluded %>%
   ungroup() %>%
-  group_by(subj_id, following_bid_z_score, avg_block_accuracy) %>%
+  # group_by(subj_id, following_bid_z_score, avg_block_accuracy) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_accuracy)) +
   geom_smooth(method="lm",se=TRUE) +
   geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
@@ -579,10 +625,11 @@ final_df_excluded %>%
 # including all subjects
 final_df_excluded %>%
   ungroup() %>%
-  group_by(subj_id, following_bid_z_score, avg_block_rt) %>%
-  ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_rt)) +
-  geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  mutate(game_type = as.factor(game_type),
+         curr_block_num = as.factor(curr_block_num)) %>%
+  ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_rt, group = game_type)) +
+  geom_smooth(mapping = aes(color = game_type), method="lm", se=TRUE) +
+  geom_point(size = 1, alpha = 0.2) +  # Points colored by block number
   labs(x = "Bid Z-Score",
        y = "Average RT in Previous Block",
        color = "Block Number") +
@@ -591,10 +638,10 @@ final_df_excluded %>%
 # faceted by subjects, show first few
 final_df_excluded %>%
   filter(subj_id < 20) %>%
-  ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_rt)) +
+  ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_rt, group = game_type, color=game_type)) +
   facet_wrap(~subj_id) +
   geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
+  geom_point(size = 0.05) +  # Points colored by block number
   labs(x = "Bid Z-Score",
        y = "Average RT in Previous Block",
        color = "Block Number") +
@@ -602,7 +649,7 @@ final_df_excluded %>%
 ```
 
 
-## (normalized per participant PER task) Block Accuracy and RT by (normalized per participant) Following Bids 
+## (normalized per participant) Block Accuracy and RT by (normalized per participant) Following Bids 
 
 Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task**
 
@@ -616,7 +663,7 @@ final_df_excluded %>%
   geom_smooth(method="lm",se=TRUE) +
   geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
   labs(x = "Bid Z-Score",
-       y = "Average Accuracy in Previous Block, z-scored by subject/task",
+       y = "Average Accuracy in Previous Block, z-scored by subject",
        color = "Block Number") +
   ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
 
@@ -628,33 +675,57 @@ final_df_excluded %>%
   geom_smooth(method="lm",se=TRUE) +
   geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
   labs(x = "Bid Z-Score",
-       y = "Average Accuracy in Previous Block, z-scored by subject/task",
+       y = "Average Accuracy in Previous Block, z-scored by subject",
        color = "Block Number") +
   ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
 ```
+
+To do reaction time, must do it per task:
 ``` {r data_wrangling}
-# including all subjects
+# # including all subjects
+# final_df_excluded %>%
+#   group_by(subj_id, following_bid_z_score, avg_z_rt) %>%
+#   ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_rt)) +
+#   geom_smooth(method="lm",se=TRUE) +
+#   geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+#   labs(x = "Bid Z-Score",
+#        y = "Average RT in Previous Block, z-scored by subject/task",
+#        color = "Block Number") +
+#   ggtitle("Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
+# 
+# # faceted by subjects, show first few
+# final_df_excluded %>%
+#   filter(subj_id < 20) %>%
+#   ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_rt)) +
+#   facet_wrap(~subj_id) +
+#   geom_smooth(method="lm",se=TRUE) +
+#   geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
+#   labs(x = "Bid Z-Score",
+#        y = "Average RT in Previous Block, z-scored by subject/task",
+#        color = "Block Number") +
+#   ggtitle("Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
+
 final_df_excluded %>%
+  filter(game_type == "vs", trial_count==1) %>%
   group_by(subj_id, following_bid_z_score, avg_z_rt) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_rt)) +
   geom_smooth(method="lm",se=TRUE) +
   geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
   labs(x = "Bid Z-Score",
-       y = "Average RT in Previous Block, z-scored by subject/task",
+       y = "Average RT in Previous Block, z-scored by subject",
        color = "Block Number") +
-  ggtitle("Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
+  ggtitle("VS: Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
 
-# faceted by subjects, show first few
 final_df_excluded %>%
-  filter(subj_id < 20) %>%
+  filter(game_type == "spatial_recall", trial_count == 1) %>%
+  group_by(subj_id, following_bid_z_score, avg_z_rt) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_rt)) +
-  facet_wrap(~subj_id) +
   geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
   labs(x = "Bid Z-Score",
-       y = "Average RT in Previous Block, z-scored by subject/task",
+       y = "Average RT in Previous Block, z-scored by subject",
        color = "Block Number") +
-  ggtitle("Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
+  ggtitle("SR: Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
 ```
 
 
@@ -701,6 +772,22 @@ temp <- final_df_excluded %>%
          bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
   mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
 
+temp_vs <- final_df_excluded %>%
+  filter(game_type == "vs") %>%
+  group_by(subj_id, curr_block_num, avg_block_rt, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_block_rt = mean(avg_block_rt, NA.rm=TRUE)) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
+
+temp_sr <- final_df_excluded %>%
+    filter(game_type == "spatial_recall") %>%
+  group_by(subj_id, curr_block_num, avg_block_rt, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_block_rt = mean(avg_block_rt, NA.rm=TRUE)) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
+
 temp %>%
   filter(curr_block_num != 1) %>%
   ggplot(mapping = aes(x=block_switched,y=avg_block_rt)) +
@@ -715,12 +802,43 @@ temp %>%
                size = 0.5)+
   labs(x="Did the task switch?",y="Average RT in this block")+
   ggtitle("bid offer (z-scored), switch status and following average RT")
+
+
+temp_vs %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_block_rt)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average RT in this block")+
+  ggtitle("VS: bid offer (z-scored), switch status and following average RT")
+
+temp_sr %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_block_rt)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average RT in this block")+
+  ggtitle("SR: bid offer (z-scored), switch status and following average RT")
 ```
 
 
-## Relationship between (normalized per participant) bid offer, switch status and following (normalized per participant PER task) average accuracy and RT
+## Relationship between (normalized per participant) bid offer, switch status and following (normalized per participant) average accuracy and RT
 
-Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task**
+Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this experiment**
 
 ``` {r plot_accuracy_switch_bid}
 # to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
@@ -747,84 +865,13 @@ temp %>%
                shape = 21,
                size = 0.5)+
   labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
-  ggtitle("bid offer (z-scored), switch status and following average accuracy (z-scored)")
-```
+  ggtitle("bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
 
-``` {r plot_RT_switch_bid}
-# to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
-breaks <- c(-Inf, -1, 0, 1, Inf)
-labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
-
+# broken up into game
 temp <- final_df_excluded %>%
-  group_by(subj_id, curr_block_num, avg_z_rt, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
-  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_rt = mean(avg_z_rt)) %>%
-  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
-         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
-  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
-
-temp %>%
-  filter(curr_block_num != 1) %>%
-  ggplot(mapping = aes(x=block_switched,y=avg_z_rt)) +
-  facet_wrap(~bid_bin_preceding,ncol=8) +
-  theme(panel.spacing.x = unit(2, "lines"))+
-  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
-  stat_summary(fun.data = "mean_cl_boot",
-               geom = "pointrange",
-               color = "black",
-               fill = "yellow",
-               shape = 21,
-               size = 0.5)+
-  labs(x="Did the task switch?",y="Average (z-scored) RT in this block")+
-  ggtitle("bid offer (z-scored), switch status and following average RT (z-scored)")
-```
-# SAME GRAPHS BUT NORMALIZED BY PARTICIPANT PERFORMANCE OVERALL (NOT PER TASK)
-
-This way, we can see how they perform in each task relative to their typical performance, in order to adjust for participants but not account for which task they're doing -- could be skewed because some participants perform a lot worse on one task than another so the average will be lower (but normalization should account for that?)
-
-
-## (normalized per participant ACROSS tasks) Block Accuracy and RT by (normalized per participant) Following Bids 
-
-Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform in the experiment overall**
-
-**TODO: Should also plot this with regressions per block to show how this changes over time**
-
-``` {r data_wrangling}
-# including all subjects
-final_df_excluded %>%
-  group_by(subj_id, following_bid_z_score, avg_z_overall_block_accuracy) %>%
-  ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_overall_block_accuracy)) +
-  geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
-  labs(x = "Bid Z-Score",
-       y = "Average Accuracy in Previous Block, z-scored by subject only",
-       color = "Block Number") +
-  ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
-
-# faceted by subjects, show first few
-final_df_excluded %>%
-  filter(subj_id < 20) %>%
-  ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_overall_block_accuracy)) +
-  facet_wrap(~subj_id) +
-  geom_smooth(method="lm",se=TRUE) +
-  geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
-  labs(x = "Bid Z-Score",
-       y = "Average Accuracy in Previous Block, z-scored by subject only",
-       color = "Block Number") +
-  ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
-```
-
-## Relationship between (normalized per participant) bid offer, switch status and following (normalized per participant ACROSS tasks) average accuracy and RT
-
-Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform overall**
-
-``` {r plot_accuracy_switch_bid}
-# to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
-breaks <- c(-Inf, -1, 0, 1, Inf)
-labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
-
-temp <- final_df_excluded %>%
-  group_by(subj_id, curr_block_num, avg_z_overall_block_accuracy, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
-  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_accuracy = mean(avg_z_overall_block_accuracy)) %>%
+  filter(game_type == "vs") %>%
+  group_by(subj_id, curr_block_num, avg_z_accuracy, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_accuracy = mean(avg_z_accuracy)) %>%
   mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
          bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
   mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
@@ -841,10 +888,32 @@ temp %>%
                fill = "yellow",
                shape = 21,
                size = 0.5)+
-  labs(x="Did the task switch?",y="Average (z-scored per participant) accuracy in this block")+
-  ggtitle("bid offer (z-scored), switch status and following average accuracy (z-scored/participant)")
-```
+  labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
+  ggtitle("VS: bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
 
+temp <- final_df_excluded %>%
+  filter(game_type == "spatial_recall") %>%
+  group_by(subj_id, curr_block_num, avg_z_accuracy, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
+  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_accuracy = mean(avg_z_accuracy)) %>%
+  mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
+         bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
+  mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
+
+temp %>%
+  filter(curr_block_num != 1) %>%
+  ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy)) +
+  facet_wrap(~bid_bin_preceding,ncol=8) +
+  theme(panel.spacing.x = unit(2, "lines"))+
+  geom_point(alpha=0.2,position = position_jitter(width=0.3,height=0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
+  ggtitle("SR: bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
+```
 
 # MORE LOOKING INTO THE DATA
 
