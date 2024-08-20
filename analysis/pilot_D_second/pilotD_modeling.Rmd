@@ -1265,6 +1265,62 @@ temp %>%
   labs(x = "Count", y = "Per subject, which align? The same task is more: ")
 ```
 
+## plotting betas of accuracy vs previous bid as a function of trial index
+
+### including all trials
+
+``` {r models}
+betas <- final_df_excluded %>%
+  filter(trial_count == 1, curr_block_num != 1) %>% # to make it one data point per participant per block
+  group_by(curr_block_num) %>%
+  do(tidy(lm(avg_z_accuracy ~ preceding_bid_z_score, data = .))) %>%
+  filter(term == "preceding_bid_z_score") %>%
+  select(curr_block_num, estimate)
+
+# 2. Plot the betas as a function of current block number
+ggplot(betas, aes(x = curr_block_num, y = estimate)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+       x = "Current Block Number",
+       y = "Beta Coefficient for preceding_bid_z_score")
+
+ggplot(betas, aes(x = curr_block_num, y = estimate)) +
+  geom_point() +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+       x = "Current Block Number",
+       y = "Beta Coefficient for preceding_bid_z_score")
+```
+
+``` {r models}
+betas_2 <- final_df_excluded %>%
+  filter(curr_block_num != 1) %>% # to make it one data point per participant per block
+  group_by(curr_block_num) %>%
+  do(tidy(lm(correct ~ preceding_bid_z_score*block_switched + (1|subj_id), data = .))) %>%
+  filter(term == "block_switched") %>%
+  select(curr_block_num, estimate)
+
+# 2. Plot the betas as a function of current block number
+ggplot(betas_2, aes(x = curr_block_num, y = estimate)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+       x = "Current Block Number",
+       y = "Beta Coefficient for preceding_bid_z_score")
+
+ggplot(betas_2, aes(x = curr_block_num, y = estimate)) +
+  geom_point() +
+  geom_smooth(method="lm",se=TRUE) +
+  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+       x = "Current Block Number",
+       y = "Beta Coefficient for preceding_bid_z_score")
+```
+
+
+### including only the first trial of each block
+
+
 
 # MODEL COMPARISON
 

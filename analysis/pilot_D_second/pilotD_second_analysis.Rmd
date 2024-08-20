@@ -703,8 +703,7 @@ bid_block_total_details_binned %>%
   ggtitle("SR: Relationship between bid offer, switch status and following average accuracy")
 ```
 
-
-**BASIC LINEAR MODELS**
+# BASIC LINEAR MODELS
 ``` {r models}
 fit.compact = lmer(formula = correct ~ (1 | subj_id),
                    data = final_df)
