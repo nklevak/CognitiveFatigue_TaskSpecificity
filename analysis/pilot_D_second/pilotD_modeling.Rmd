@@ -28,6 +28,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r libraries, include=FALSE}
 library("knitr") # for knitting things
 library("tidyverse") # for all things tidyverse
+library("performance")
+library(ggplot2)
+library(see)
 ##library(jsonlite)
 library("broom")      # for tidying up linear models 
 library("car")        # for running ANOVAs
@@ -578,12 +581,16 @@ final_df_excluded %>%
        y = "Z-scored bid offer (relative to each subject's avg and sd)", 
        title = "Bid offers following each block, all subjects all blocks")
 
+library(viridis)
 final_df_excluded %>%
+  group_by(subj_id) %>%
   filter(trial_count == 1) %>%
   ggplot(mapping = aes(x=curr_block_num,y=following_bid_z_score, group=subj_id, color=subj_id)) +
+  geom_smooth(method="lm",se=TRUE) +
   geom_point(alpha = 0.15,
              position = position_jitter(height = 0, width = 0.2), size = 1) +
-  geom_smooth(method="lm",se=TRUE) +
+  scale_color_viridis(discrete = FALSE) + # Apply a viridis color theme
+  theme_minimal() +
   labs(x = "Block number", 
        y = "Z-scored bid offer (relative to each subject's avg and sd)", 
        title = "Bid offers following each block, all subjects all blocks")
@@ -592,8 +599,6 @@ final_df_excluded %>%
 ## (non-normalized) Block Accuracy and RT by (normalized) Following Bids 
 
 Not normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task and relative to how well they perform on the other task**
-
-**TODO: Should also plot this with regressions per block to show how this changes over time**
 
 ``` {r data_wrangling}
 # including all subjects
@@ -624,6 +629,7 @@ final_df_excluded %>%
 # including all subjects
 final_df_excluded %>%
   ungroup() %>%
+  filter(trial_count ==1) %>%
   mutate(game_type = as.factor(game_type),
          curr_block_num = as.factor(curr_block_num)) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_rt, group = game_type)) +
@@ -652,11 +658,10 @@ final_df_excluded %>%
 
 Normalizing per participant means we are looking at **how well participants perform relative to how well they normally perform on this task**
 
-**TODO: Should also plot this with regressions per block to show how this changes over time**
-
 ``` {r data_wrangling}
 # including all subjects
 final_df_excluded %>%
+  filter(trial_count == 1) %>%
   group_by(subj_id, following_bid_z_score, avg_z_accuracy) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_z_accuracy)) +
   geom_smooth(method="lm",se=TRUE) +
@@ -675,6 +680,19 @@ final_df_excluded %>%
   geom_point(mapping = aes(color = curr_block_num), size = 0.05) +  # Points colored by block number
   labs(x = "Bid Z-Score",
        y = "Average Accuracy in Previous Block, z-scored by subject",
+       color = "Block Number") +
+  ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
+
+
+# switch axes
+final_df_excluded %>%
+  filter(trial_count == 1) %>%
+  group_by(subj_id, following_bid_z_score, avg_z_accuracy) %>%
+  ggplot(mapping = aes(x = avg_z_accuracy, y = following_bid_z_score)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  labs(x = "Average Accuracy in Previous Block, z-scored by subject",
+       y = "Bid Z-Score",
        color = "Block Number") +
   ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
 ```
@@ -723,6 +741,32 @@ final_df_excluded %>%
   geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
   labs(x = "Bid Z-Score",
        y = "Average RT in Previous Block, z-scored by subject",
+       color = "Block Number") +
+  ggtitle("SR: Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
+
+
+
+# flip axes
+
+final_df_excluded %>%
+  filter(game_type == "vs", trial_count==1) %>%
+  group_by(subj_id, following_bid_z_score, avg_z_rt) %>%
+  ggplot(mapping = aes(x = avg_z_rt, y = following_bid_z_score)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  labs(x = "Average RT in Previous Block, z-scored by subject",
+       y = "Bid Z-Score",
+       color = "Block Number") +
+  ggtitle("VS: Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
+
+final_df_excluded %>%
+  filter(game_type == "spatial_recall", trial_count == 1) %>%
+  group_by(subj_id, following_bid_z_score, avg_z_rt) %>%
+  ggplot(mapping = aes(x = avg_z_rt, y = following_bid_z_score)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  labs(x = "Average RT in Previous Block, z-scored by subject",
+       y = "Bid Z-Score",
        color = "Block Number") +
   ggtitle("SR: Prior Block's Average z-scored RT by Z-Scored Bid, all subjects")
 ```
@@ -1271,50 +1315,51 @@ temp %>%
 
 ``` {r models}
 betas <- final_df_excluded %>%
-  filter(trial_count == 1, curr_block_num != 1) %>% # to make it one data point per participant per block
+  filter(trial_count == 1) %>% # to make it one data point per participant per block
   group_by(curr_block_num) %>%
-  do(tidy(lm(avg_z_accuracy ~ preceding_bid_z_score, data = .))) %>%
-  filter(term == "preceding_bid_z_score") %>%
+  do(tidy(lm(following_bid_z_score ~ avg_z_accuracy, data = .))) %>%
+  filter(term == "avg_z_accuracy") %>%
   select(curr_block_num, estimate)
 
 # 2. Plot the betas as a function of current block number
 ggplot(betas, aes(x = curr_block_num, y = estimate)) +
   geom_line() +
   geom_point() +
-  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+  labs(title = "Betas of avg block accuracy as a function of Block Number, to predict following bid",
        x = "Current Block Number",
-       y = "Beta Coefficient for preceding_bid_z_score")
+       y = "Beta Coefficient for z-scored block accuracy")
 
 ggplot(betas, aes(x = curr_block_num, y = estimate)) +
   geom_point() +
   geom_smooth(method="lm",se=TRUE) +
-  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+  labs(title = "Betas of avg block accuracy as a function of Block Number, to predict following bid",
        x = "Current Block Number",
-       y = "Beta Coefficient for preceding_bid_z_score")
+       y = "Beta Coefficient for z-scored avg block accuracy")
 ```
 
 ``` {r models}
 betas_2 <- final_df_excluded %>%
   filter(curr_block_num != 1) %>% # to make it one data point per participant per block
-  group_by(curr_block_num) %>%
-  do(tidy(lm(correct ~ preceding_bid_z_score*block_switched + (1|subj_id), data = .))) %>%
-  filter(term == "block_switched") %>%
-  select(curr_block_num, estimate)
+  group_by(curr_block_num, game_type) %>%
+  do(tidy(lm(following_bid_z_score ~ avg_block_rt + (1|subj_id), data = .))) %>%
+  filter(term == "avg_block_rt") %>%
+  select(curr_block_num, game_type, estimate)
 
 # 2. Plot the betas as a function of current block number
 ggplot(betas_2, aes(x = curr_block_num, y = estimate)) +
   geom_line() +
   geom_point() +
-  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+  labs(title = "Betas of avg_block_rt as a function of Block Number, to predict following bid",
        x = "Current Block Number",
-       y = "Beta Coefficient for preceding_bid_z_score")
+       y = "Beta Coefficient for avg_block_rt")
 
 ggplot(betas_2, aes(x = curr_block_num, y = estimate)) +
   geom_point() +
+  facet_wrap(~game_type) +
   geom_smooth(method="lm",se=TRUE) +
-  labs(title = "Betas of z-preceding bid as a function of Block Number, to predict block z-acc",
+  labs(title = "Betas of rt as a function of Block Number, to predict following bid",
        x = "Current Block Number",
-       y = "Beta Coefficient for preceding_bid_z_score")
+       y = "Beta Coefficient for rt")
 ```
 
 
@@ -1347,13 +1392,13 @@ fit.augmented_st_four = lmer(formula = correct ~ preceding_bid + game_type + blo
 
 fit.augmented_st_five = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1|subj_id) + (1|curr_block_num),data = complete_data)
 
-fit.augmented_st_six = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num),data = complete_data)
+fit.augmented_st_six = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num),data = complete_data) # didnt converge
 
-fit.augmented_st_seven = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid + game_type|subj_id) + (1|curr_block_num),data = complete_data)
+fit.augmented_st_seven = lmer(formula = correct ~ game_type + preceding_bid*block_switched + (1 + preceding_bid + game_type|subj_id) + (1|curr_block_num),data = complete_data) # didnt converge
 
-fit.augmented_st_eight = lmer(formula = correct ~ preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num) + (game_type|subj_id),data = complete_data)
+fit.augmented_st_eight = lmer(formula = correct ~ preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num) + (game_type|subj_id),data = complete_data) # didnt converge
 
-fit.augmented_st_nine = lmer(formula = correct ~ preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num) + (1|game_type),data = complete_data)
+fit.augmented_st_nine = lmer(formula = correct ~ preceding_bid*block_switched + (1 + preceding_bid|subj_id) + (1|curr_block_num) + (1|game_type),data = complete_data) # didnt converge
 ```
 
 Want to add preceding_bid | subj_id as random slope, and also game_type | subj_id as random slope but it doesn't converge.
@@ -1403,6 +1448,39 @@ fit.augmented_st_six_edit = lmer(formula = correct ~ game_type + preceding_bid*b
 
 summary(fit.augmented_st_six_edit)
 ```
+
+
+### using easy stats for this to better understand model performance
+``` {r block_lmer_models}
+complete_data <- na.omit(final_df_excluded[, c("correct", "rt","curr_block_num", "game_type", "preceding_bid_z_score","z_overall_correct", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index")])
+
+# do the models from before (other than the singular ones)
+fit.compact_st_z = lmer(formula = z_overall_correct ~ (1|curr_block_num),
+                   data = complete_data)
+
+fit.augmented_st_one_z = lmer(formula = z_overall_correct ~ game_type + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_two_z = lmer(formula = z_overall_correct ~ preceding_bid_z_score + game_type + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_three_z = lmer(formula = z_overall_correct ~ preceding_bid_z_score + game_type + block_switched + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_st_four_z = lmer(formula = z_overall_correct ~ preceding_bid_z_score + game_type + block_switched + (1 + preceding_bid_z_score|curr_block_num),data = complete_data)
+
+fit.augmented_st_five_z = lmer(formula = z_overall_correct ~ game_type + preceding_bid_z_score*block_switched + (1 + preceding_bid_z_score|curr_block_num),data = complete_data)
+
+# Evaluate the model performance
+# model_st_five_performance <- performance::check_model(fit.augmented_st_five_z)
+# model_performance(fit.augmented_st_five_z)
+
+# compare the models
+compare_performance(fit.compact_st_z, fit.augmented_st_one_z, fit.augmented_st_two_z, fit.augmented_st_three_z, fit.augmented_st_four_z,  fit.augmented_st_five_z,rank = TRUE, verbose = FALSE)
+
+summary(fit.augmented_st_five_z)
+```
+
 ## block wide accuracy models
 ``` {r block_lmer_models}
 
@@ -1425,15 +1503,15 @@ fit.augmented_b_two = lmer(formula = avg_block_accuracy ~ game_type + (1|subj_id
                      data = complete_data)
 
 fit.augmented_b_three = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + (1 + curr_block_num|subj_id),
-                     data = complete_data)
+                     data = complete_data) # no converge
 
-fit.augmented_b_four = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + block_switched + (1 + curr_block_num|subj_id),data = complete_data)
+fit.augmented_b_four = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score + game_type + block_switched + (1 + curr_block_num|subj_id),data = complete_data) # no converge
 
 fit.augmented_b_five = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score*block_switched + (1 + curr_block_num|subj_id),data = complete_data)
 
 fit.augmented_b_six = lmer(formula = avg_block_accuracy ~ preceding_bid_z_score*block_switched + (1 + curr_block_num|subj_id) + (1|game_type),data = complete_data)
 
-fit.augmented_b_seven = lmer(formula = avg_block_accuracy ~ game_type + preceding_bid_z_score*block_switched + (1 + game_type|subj_id) + (1|curr_block_num),data = complete_data)
+fit.augmented_b_seven = lmer(formula = avg_block_accuracy ~ game_type + preceding_bid_z_score*block_switched + (1 + game_type|subj_id) + (1|curr_block_num),data = complete_data) # no converge
 
 
 
@@ -1455,48 +1533,85 @@ summary(fit.augmented_b_seven)
 ```
 Model 7 is best so far; switching blocks has a significant negative effect, but switching blocks and having a high preceding bid score had a postive effect (although non significant)
 
+
+### using easy stats for this to better understand model performance
+``` {r block_lmer_models}
+complete_data <- na.omit(final_df_excluded[, c("curr_block_num", "game_type", "preceding_bid_z_score", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index", "avg_z_accuracy", "following_bid_z_score")])%>%
+  na.omit() %>%
+  distinct() %>%
+  arrange(subj_id, curr_block_num)
+
+fit.compact_b_z = lmer(formula = avg_z_accuracy ~ (1 | curr_block_num),
+                   data = complete_data)
+
+fit.augmented_b_one_z = lmer(formula = avg_z_accuracy ~ game_type + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_b_two_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score + game_type + (1|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_b_three_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score + game_type + (1 + preceding_bid_z_score|curr_block_num),
+                     data = complete_data)
+
+fit.augmented_b_four_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score + game_type + block_switched + (1 + preceding_bid_z_score|curr_block_num),data = complete_data) 
+
+fit.augmented_b_five_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score*block_switched + (1 + preceding_bid_z_score|curr_block_num),data = complete_data)
+
+fit.augmented_b_six_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score*block_switched + game_type + (1+preceding_bid_z_score|curr_block_num),data = complete_data)
+
+fit.augmented_b_seven_z = lmer(formula = avg_z_accuracy ~ game_type + preceding_bid_z_score*block_switched + (game_type|subj_id) + (1|curr_block_num),data = complete_data) 
+
+fit.augmented_b_eight_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score*block_switched + (game_type|subj_id) + (1|curr_block_num),data = complete_data) 
+
+fit.augmented_b_nine_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score*block_switched + (1|subj_id) + (1|curr_block_num),data = complete_data) 
+
+fit.augmented_b_ten_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score*block_switched + (1|subj_id) + (1+preceding_bid_z_score|curr_block_num),data = complete_data) 
+
+fit.augmented_b_eleven_z = lmer(formula = avg_z_accuracy ~ preceding_bid_z_score*block_switched + (1+game_type|subj_id) + (1|curr_block_num),data = complete_data) 
+
+# compare the models
+compare_performance(fit.compact_b_z, fit.augmented_b_one_z, fit.augmented_b_two_z, fit.augmented_b_three_z, fit.augmented_b_four_z,  fit.augmented_b_five_z, fit.augmented_b_six_z, fit.augmented_b_seven_z, fit.augmented_b_eight_z, fit.augmented_b_nine_z,fit.augmented_b_ten_z,fit.augmented_b_eleven_z,rank = TRUE, verbose = FALSE)
+
+summary(fit.augmented_b_eight_z)
+
+summary(fit.augmented_b_eleven_z)
+```
+
+  
 ## factors that predict the bid
 
 ``` {r block_lmer_models}
 
-complete_data <- (final_df_excluded[, c("curr_block_num", "correct", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "following_bid_z_score")]) %>%
+complete_data <- (final_df_excluded[, c("curr_block_num", "correct", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "following_bid_z_score", "z_overall_correct", "avg_z_accuracy")]) %>%
   na.omit() %>%
   arrange(subj_id, curr_block_num)
 
-# for block accuracy predictions
-
-# for single trial accuracy prediction
+# for bid predictions
 fit.compact_bid = lmer(formula = following_bid_z_score ~ (1 | subj_id),
                    data = complete_data)
 
-fit.augmented_bid_one = lmer(formula = following_bid_z_score ~ (1 + curr_block_num|subj_id),
+fit.augmented_bid_one = lmer(formula = following_bid_z_score ~ (1|curr_block_num) + (1|subj_id),
                      data = complete_data)
 
 fit.augmented_bid_two = lmer(formula = following_bid_z_score ~ game_type + (1|subj_id) + (1|curr_block_num),
                      data = complete_data)
 
-fit.augmented_bid_three = lmer(formula = following_bid_z_score ~ game_type + (1 + game_type|subj_id) + (1|curr_block_num),
+fit.augmented_bid_three = lmer(formula = following_bid_z_score ~ (1 + game_type|subj_id) + (1|curr_block_num),
                      data = complete_data)
 
-fit.augmented_bid_four = lmer(formula = following_bid_z_score ~ correct + game_type + (1 + game_type|subj_id) + (1|curr_block_num),
+fit.augmented_bid_four = lmer(formula = following_bid_z_score ~ z_overall_correct + (1 + game_type|subj_id) + (1|curr_block_num),
                      data = complete_data)
 
-fit.augmented_bid_five = lmer(formula = following_bid_z_score ~ correct + game_type + (1 + game_type|subj_id) + (1|curr_block_num) + (1|block_switched),
+fit.augmented_bid_five = lmer(formula = following_bid_z_score ~ z_overall_correct + (1 + game_type|subj_id) + (1|curr_block_num) + (1|block_switched),
                      data = complete_data)
 
-fit.augmented_bid_six = lmer(formula = following_bid_z_score ~ correct + game_type + (1 + game_type + curr_block_num|subj_id) + (1|block_switched),
+fit.augmented_bid_six = lmer(formula = following_bid_z_score ~ avg_z_accuracy + (1 + game_type|subj_id) + (1|curr_block_num) + (1|block_switched),
                      data = complete_data)
 
-# compare them
-anova(fit.compact_bid, fit.augmented_bid_one) # one
-anova(fit.augmented_bid_one, fit.augmented_bid_two) # unclear
-anova(fit.augmented_bid_one, fit.augmented_bid_three) # three
-anova(fit.augmented_bid_two, fit.augmented_bid_three) # three is better
-anova(fit.augmented_bid_three, fit.augmented_bid_four) # four is better
-anova(fit.augmented_bid_four, fit.augmented_bid_five) # five
-anova(fit.augmented_bid_five, fit.augmented_bid_six) # six
+compare_performance(fit.compact_bid, fit.augmented_bid_one, fit.augmented_bid_two, fit.augmented_bid_three, fit.augmented_bid_four, fit.augmented_bid_five,fit.augmented_bid_six, rank = TRUE, verbose = FALSE)
 
+summary(fit.augmented_bid_five)
 summary(fit.augmented_bid_six)
+
 ```
 
-Being more correct negatively predicts a bigger bid significantly
