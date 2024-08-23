@@ -1308,6 +1308,98 @@ temp %>%
   theme(axis.text.x = element_text(angle = 0, hjust = 0.5)) +
   labs(x = "Count", y = "Per subject, which align? The same task is more: ")
 ```
+### making a scatterplot of boring ratings vs difficulty ratings vs which task was bid to switch away from more
+``` {r scatter_diff_boring_bids}
+temp %>%
+  filter(!is.na(more_boring), !is.na(more_difficult), curr_block_num == 1, trial_count == 1) %>%
+  group_by(subj_id) %>%
+  ggplot(aes(x=more_boring, y=more_difficult, color=higher_bid_from_simp)) +
+  geom_point(position = position_jitter(0.3,0.3), alpha = 1, size=1) +
+  labs(x="which is more boring", y="which is more difficult", title="more difficult vs more boring")
+
+temp %>%
+  filter(!is.na(more_boring), !is.na(more_difficult), curr_block_num == 1, trial_count == 1) %>%
+  mutate(sr_more_boring_and_difficult = ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall", 1, 0),
+         vs_more_boring_and_difficult = ifelse(more_boring=="visual-search" & more_difficult=="visual-search", 1, 0),
+         sr_more_boring_vs_more_difficult = ifelse(more_boring=="spatial-recall" & more_difficult=="visual-search", 1, 0),
+         vs_more_boring_sr_more_difficult = ifelse(more_boring=="visual-search" & more_difficult=="spatial-recall", 1, 0)) %>%
+  summarise(sr_boring_sr_difficult = sum(sr_more_boring_and_difficult), vs_boring_vs_difficult = sum(vs_more_boring_and_difficult), vs_boring_sr_difficult = sum(vs_more_boring_sr_more_difficult), sr_boring_vs_difficult = sum(sr_more_boring_vs_more_difficult)) %>%
+  pivot_longer(cols = everything(), names_to = "category", values_to = "count") %>%
+  ggplot(aes(x=category, y=count)) +
+  geom_bar(stat = "identity")+
+  labs(x="feedback", y="count", title="count of participant boring/difficulty feedback")
+
+
+temp %>%
+  filter(!is.na(more_boring), !is.na(more_difficult), curr_block_num == 1, trial_count == 1) %>%
+  mutate(sr_more_boring_and_difficult = ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall", 1, 0),
+         vs_more_boring_and_difficult = ifelse(more_boring=="visual-search" & more_difficult=="visual-search", 1, 0),
+         sr_more_boring_vs_more_difficult = ifelse(more_boring=="spatial-recall" & more_difficult=="visual-search", 1, 0),
+         vs_more_boring_sr_more_difficult = ifelse(more_boring=="visual-search" & more_difficult=="spatial-recall", 1, 0)) %>%
+  pivot_longer(cols=c(sr_more_boring_and_difficult,vs_more_boring_and_difficult,sr_more_boring_vs_more_difficult, vs_more_boring_sr_more_difficult), names_to = "category", values_to = "true_or_false") %>%
+  filter(true_or_false != 0) %>%
+  arrange(subj_id) %>%
+  ggplot(mapping = aes(x = boring_difference, y=difficulty_difference, color=category))+
+  geom_point()+
+  labs(x="more boring task - less boring task", y="more difficult task - less difficult task", title="ratings of each category")
+
+
+temp %>%
+  filter(!is.na(more_boring), !is.na(more_difficult), curr_block_num == 1, trial_count == 1) %>%
+  mutate(sr_more_boring_and_difficult = ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall", 1, 0),
+         vs_more_boring_and_difficult = ifelse(more_boring=="visual-search" & more_difficult=="visual-search", 1, 0),
+         sr_more_boring_vs_more_difficult = ifelse(more_boring=="spatial-recall" & more_difficult=="visual-search", 1, 0),
+         vs_more_boring_sr_more_difficult = ifelse(more_boring=="visual-search" & more_difficult=="spatial-recall", 1, 0)) %>%
+  pivot_longer(cols=c(sr_more_boring_and_difficult,vs_more_boring_and_difficult,sr_more_boring_vs_more_difficult, vs_more_boring_sr_more_difficult), names_to = "category", values_to = "true_or_false") %>%
+  filter(true_or_false != 0, category == "sr_more_boring_and_difficult" | category == "vs_more_boring_and_difficult") %>%
+  arrange(subj_id) %>%
+  ggplot(mapping = aes(x = boring_difference, y=difficulty_difference, color=category))+
+  geom_point()+
+  labs(x="more boring task - less boring task", y="more difficult task - less difficult task", title="ratings of each fully aligned category")
+
+
+temp %>%
+  filter(!is.na(more_boring), !is.na(more_difficult), curr_block_num == 1, trial_count == 1) %>%
+  mutate(sr_more_boring_and_difficult_and_bidFrom = ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall" & higher_bid_from_simp == "spatial-recall", 1, 0),
+         vs_more_boring_and_difficult_and_bidFrom = ifelse(more_boring=="visual-search" & more_difficult=="visual-search" & higher_bid_from_simp == "visual-search" , 1, 0),
+         sr_more_boring_and_difficult_vs_bidFrom = ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall" & higher_bid_from_simp == "visual-search", 1, 0),
+         vs_more_boring_and_difficult_sr_bidFrom = ifelse(more_boring=="visual-search" & more_difficult=="visual-search" & higher_bid_from_simp == "spatial-recall" , 1, 0)) %>%
+  pivot_longer(cols=c(sr_more_boring_and_difficult_and_bidFrom, vs_more_boring_and_difficult_and_bidFrom, sr_more_boring_and_difficult_vs_bidFrom, vs_more_boring_and_difficult_sr_bidFrom), names_to = "category", values_to = "true_or_false") %>%
+  filter(true_or_false != 0) %>%
+  arrange(subj_id) %>%
+  ggplot(mapping = aes(x = boring_difference, y=difficulty_difference, color=category))+
+  geom_point()+
+  labs(x="more boring task - less boring task", y="more difficult task - less difficult task", title="ratings of each category")
+
+
+temp %>%
+  filter(!is.na(more_boring), !is.na(more_difficult), curr_block_num == 1, trial_count == 1) %>%
+  mutate(
+    sr_more_boring_and_difficult_and_bidFrom = 
+      ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall" & 
+               higher_bid_from_simp == "spatial-recall", 1, 0),
+         vs_more_boring_and_difficult_and_bidFrom = 
+      ifelse(more_boring=="visual-search" & more_difficult=="visual-search" & higher_bid_from_simp == "visual-search" , 1, 0),
+         sr_more_boring_and_difficult_vs_bidFrom = 
+      ifelse(more_boring=="spatial-recall" & more_difficult=="spatial-recall" & higher_bid_from_simp == "visual-search", 1, 0),
+         vs_more_boring_and_difficult_sr_bidFrom = 
+      ifelse(more_boring=="visual-search" & more_difficult=="visual-search" & higher_bid_from_simp == "spatial-recall" , 1, 0)) %>%
+  summarise(spatial_recall_boringDifficultBidFrom = sum(sr_more_boring_and_difficult_and_bidFrom), visual_search_boringDifficultBidFrom = sum(vs_more_boring_and_difficult_and_bidFrom), spatial_recall_boringDifficult = sum(sr_more_boring_and_difficult_vs_bidFrom), visual_search_boringDifficult = sum(vs_more_boring_and_difficult_sr_bidFrom)) %>%
+  pivot_longer(cols = everything(), names_to = "category", values_to = "count") %>%
+  ggplot(aes(x=count, y=category)) +
+  geom_bar(stat = "identity")+
+  labs(x="feedback", y="count", title="count of participant boring/difficulty feedback")
+
+temp %>%
+  filter(curr_block_num == 1, trial_count == 1) %>%
+  summarise(spatial_recall = sum(higher_bid_from_simp == "spatial-recall"), 
+            visual_search = sum(higher_bid_from_simp == "visual-search"),
+            equal = sum(higher_bid_from_simp == "equal")) %>%
+  pivot_longer(cols=everything(), names_to = "Bid_more_from_which_task", values_to = "count") %>%
+  ggplot(aes(x=Bid_more_from_which_task, y=count)) +
+  geom_bar(stat="identity") +
+  labs(x="which task did they bid more to switch from?",y="subject count", title="comparing which task they switched away from more")
+```
 
 ## plotting betas of accuracy vs previous bid as a function of trial index
 
@@ -1361,10 +1453,6 @@ ggplot(betas_2, aes(x = curr_block_num, y = estimate)) +
        x = "Current Block Number",
        y = "Beta Coefficient for rt")
 ```
-
-
-### including only the first trial of each block
-
 
 
 # MODEL COMPARISON
@@ -1481,6 +1569,38 @@ compare_performance(fit.compact_st_z, fit.augmented_st_one_z, fit.augmented_st_t
 summary(fit.augmented_st_five_z)
 ```
 
+### keep curr_block_num as fixed effect and always keep (1|subj_id)
+``` {r block_lmer_models}
+complete_data <- na.omit(final_df_excluded[, c("correct", "rt","curr_block_num", "game_type", "preceding_bid_z_score","z_overall_correct", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index")])
+
+# do the models from before (other than the singular ones)
+fit.compact_st_z = lmer(formula = correct ~ (1|subj_id),
+                   data = complete_data)
+
+fit.augmented_st_one_z = lmer(formula = correct ~ curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_st_two_z = lmer(formula = correct ~ preceding_bid + game_type + curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_st_three_z = lmer(formula = correct ~ preceding_bid + game_type + block_switched + curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_st_four_z = lmer(formula = correct ~ game_type + preceding_bid*block_switched + curr_block_num + (1|subj_id),data = complete_data)
+
+# Evaluate the model performance
+# model_st_five_performance <- performance::check_model(fit.augmented_st_five_z)
+# model_performance(fit.augmented_st_five_z)
+
+# compare the models
+compare_performance(fit.compact_st_z, fit.augmented_st_one_z, fit.augmented_st_two_z, fit.augmented_st_three_z, fit.augmented_st_four_z,rank = TRUE, verbose = FALSE)
+
+summary(fit.augmented_st_four_z)
+```
+
+
+
+
 ## block wide accuracy models
 ``` {r block_lmer_models}
 
@@ -1577,7 +1697,45 @@ summary(fit.augmented_b_eight_z)
 summary(fit.augmented_b_eleven_z)
 ```
 
-  
+### keep curr_block_num as a fixed effect and always keeping (1|subj_id)
+``` {r block_lmer_models}
+complete_data <- na.omit(final_df_excluded[, c("curr_block_num", "game_type", "preceding_bid_z_score", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "trial_index", "avg_z_accuracy", "following_bid_z_score")])%>%
+  na.omit() %>%
+  distinct() %>%
+  arrange(subj_id, curr_block_num)
+
+fit.compact_b_z = lmer(formula = avg_block_accuracy ~ (1 | subj_id),
+                   data = complete_data)
+
+fit.augmented_b_one_z = lmer(formula = avg_block_accuracy ~ curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_b_two_z = lmer(formula = avg_block_accuracy ~ curr_block_num + game_type + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_b_three_z = lmer(formula = avg_block_accuracy ~ preceding_bid + game_type + curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_b_four_z = lmer(formula = avg_block_accuracy ~ preceding_bid + game_type + block_switched + curr_block_num + (1|subj_id),data = complete_data) 
+
+fit.augmented_b_five_z = lmer(formula = avg_block_accuracy ~ preceding_bid*block_switched + curr_block_num + game_type + (1|subj_id),data = complete_data)
+
+fit.augmented_b_six_z = lmer(formula = avg_block_accuracy ~ preceding_bid*block_switched + game_type + curr_block_num + (1|subj_id),data = complete_data)
+
+fit.augmented_b_seven_z = lmer(formula = avg_block_accuracy ~ game_type + preceding_bid*block_switched +curr_block_num+ (1+game_type|subj_id),data = complete_data) 
+
+fit.augmented_b_eight_z = lmer(formula = avg_block_accuracy ~ preceding_bid*block_switched +curr_block_num+ (1+game_type|subj_id),data = complete_data) 
+
+fit.augmented_b_nine_z = lmer(formula = avg_block_accuracy ~ preceding_bid*block_switched +curr_block_num + (1|subj_id),data = complete_data) 
+
+# compare the models
+compare_performance(fit.compact_b_z, fit.augmented_b_one_z, fit.augmented_b_two_z, fit.augmented_b_three_z, fit.augmented_b_four_z,  fit.augmented_b_five_z, fit.augmented_b_six_z, fit.augmented_b_seven_z, fit.augmented_b_eight_z,fit.augmented_b_nine_z,rank = TRUE, verbose = FALSE)
+
+summary(fit.augmented_b_eight_z)
+
+summary(fit.augmented_b_seven_z)
+
+```
 ## factors that predict the bid
 
 ``` {r block_lmer_models}
@@ -1615,3 +1773,82 @@ summary(fit.augmented_bid_six)
 
 ```
 
+## add curr block num as fixed, and always (1|subj_id)
+
+``` {r block_lmer_models}
+
+complete_data <- (final_df_excluded[, c("curr_block_num", "correct", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "following_bid_z_score","following_bid", "z_overall_correct", "avg_z_accuracy")]) %>%
+  na.omit() %>%
+  arrange(subj_id, curr_block_num)
+
+# for bid predictions
+fit.compact_bid = lmer(formula = following_bid ~ (1 | subj_id),
+                   data = complete_data)
+
+fit.augmented_bid_one = lmer(formula = following_bid ~ curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_two = lmer(formula = following_bid ~ game_type + curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_three = lmer(formula = following_bid ~ curr_block_num + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_four = lmer(formula = following_bid ~ curr_block_num + game_type + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_five = lmer(formula = following_bid ~ correct + curr_block_num + game_type + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_six = lmer(formula = following_bid ~ correct + curr_block_num + block_switched + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_seven = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num + block_switched + (1 + game_type|subj_id),
+                     data = complete_data)
+
+compare_performance(fit.compact_bid, fit.augmented_bid_one, fit.augmented_bid_two, fit.augmented_bid_three, fit.augmented_bid_four, fit.augmented_bid_five,fit.augmented_bid_six, fit.augmented_bid_seven, rank = TRUE, verbose = FALSE)
+
+summary(fit.augmented_bid_seven)
+
+```
+
+
+## add curr block num as fixed, and always (1|subj_id); focus on using avg block acc
+
+``` {r block_lmer_models}
+
+complete_data <- (final_df_excluded[, c("curr_block_num", "game_type", "preceding_bid", "block_switched", "subj_id", "sr_practice_accuracy", "vs_practice_accuracy", "avg_block_accuracy", "avg_block_rt", "following_bid_z_score","following_bid", "z_overall_correct", "avg_z_accuracy")]) %>%
+  na.omit() %>%
+  distinct() %>%
+  arrange(subj_id, curr_block_num)
+
+# for bid predictions
+fit.compact_bid = lmer(formula = following_bid ~ (1 | subj_id),
+                   data = complete_data)
+
+fit.augmented_bid_one = lmer(formula = following_bid ~ curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_two = lmer(formula = following_bid ~ game_type + curr_block_num + (1|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_three = lmer(formula = following_bid ~ curr_block_num + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_four = lmer(formula = following_bid ~ curr_block_num + game_type + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_five = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num + game_type + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_six = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num + block_switched + (1 + game_type|subj_id),
+                     data = complete_data)
+
+fit.augmented_bid_seven = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num  + (1 + game_type|subj_id) + (1|block_switched),
+                     data = complete_data)
+
+compare_performance(fit.compact_bid, fit.augmented_bid_one, fit.augmented_bid_two, fit.augmented_bid_three, fit.augmented_bid_four, fit.augmented_bid_five,fit.augmented_bid_six, fit.augmented_bid_seven, rank = TRUE, verbose = FALSE)
+
+summary(fit.augmented_bid_six)
+
+```
