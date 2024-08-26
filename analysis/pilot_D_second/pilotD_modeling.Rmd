@@ -1847,8 +1847,17 @@ fit.augmented_bid_six = lmer(formula = following_bid ~ avg_block_accuracy + curr
 fit.augmented_bid_seven = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num  + (1 + game_type|subj_id) + (1|block_switched),
                      data = complete_data)
 
-compare_performance(fit.compact_bid, fit.augmented_bid_one, fit.augmented_bid_two, fit.augmented_bid_three, fit.augmented_bid_four, fit.augmented_bid_five,fit.augmented_bid_six, fit.augmented_bid_seven, rank = TRUE, verbose = FALSE)
+fit.augmented_bid_eight = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num  + block_switched + game_type + (1 + game_type|subj_id), data = complete_data)
+
+
+fit.augmented_bid_nine = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num  + block_switched + (1+game_type|subj_id), data = complete_data)
+summary(fit.augmented_bid_nine)
+
+fit.augmented_bid_ten = lmer(formula = following_bid ~ avg_block_accuracy + curr_block_num*block_switched + (1+game_type|subj_id), data = complete_data)
+summary(fit.augmented_bid_ten)
+
+compare_performance(fit.compact_bid, fit.augmented_bid_one, fit.augmented_bid_two, fit.augmented_bid_three, fit.augmented_bid_four, fit.augmented_bid_five,fit.augmented_bid_six, fit.augmented_bid_seven, fit.augmented_bid_eight, fit.augmented_bid_nine, fit.augmented_bid_ten,rank = TRUE, verbose = FALSE)
 
 summary(fit.augmented_bid_six)
-
+summary(fit.augmented_bid_eight)
 ```
