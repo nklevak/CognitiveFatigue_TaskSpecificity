@@ -1525,3 +1525,4 @@ compare_performance(fit.compact_b_glm, fit.augmented_b_one_gllm, fit.augmented_b
 check_model(fit.augmented_b_six_gllm)
 summary(fit.augmented_b_six_gllm)
 ```
+
