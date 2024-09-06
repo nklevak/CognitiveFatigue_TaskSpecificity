@@ -1545,9 +1545,9 @@ automaticity_con <- automaticity_con %>%
   group_by(subj_id, game_type) %>%
   mutate(switch_group = cumsum(block_switched == "true" & trial_count == 1)) %>%
   ungroup()
-
-automaticity_con <- automaticity_con %>%
-  mutate(switch_group = ifelse(game_type == "vs", switch_group, switch_group + 30))
+# 
+# automaticity_con <- automaticity_con %>%
+#   mutate(switch_group = ifelse(game_type == "vs", switch_group, switch_group + 30))
 
 # Plot
 #sr
@@ -1573,4 +1573,125 @@ automaticity_con %>%
   theme_minimal()
 ```
 
+Now plot this across participants:
+``` {r automaticity}
 
+library(broom)  # For tidy extraction of coefficients
+
+# Check if any groups have only 0s or 1s
+separation_check <- automaticity_con %>%
+  group_by(subj_id, switch_group) %>%
+  summarize(all_zeros = all(correct == 0), all_ones = all(correct == 1)) %>%
+  filter(all_zeros | all_ones)
+
+# View problematic groups
+separation_check
+
+# Filter out groups with all 0s or all 1s
+filtered_data <- automaticity_con %>%
+  group_by(subj_id, game_type, switch_group) %>%
+  filter(!all(correct == 0) & !all(correct == 1))
+
+
+filtered_data <- automaticity_con %>%
+  group_by(subj_id, game_type, switch_group) %>%
+  filter(sum(correct == 0) > 0 & sum(correct == 1) > 0) %>%
+  filter(n() > 5)  # Ensures groups with too few data points are also removed
+
+library(purrr)
+
+# Safely fit GLMs to avoid errors
+safe_glm <- safely(function(data) {
+  glm(correct ~ trial_count_con_total, data = data, family = binomial)
+})
+
+# Fit GLMs for each participant and switch group with error handling
+glm_models <- filtered_data %>%
+  group_by(subj_id, game_type, switch_group) %>%
+  nest() %>%
+  mutate(model = map(data, safe_glm))  # Apply safely wrapped glm function
+
+# Extract successful models
+glm_models <- glm_models %>%
+  mutate(success = map_lgl(model, ~ is.null(.x$error)),
+         result = map(model, "result"))
+
+# Filter out failed models
+successful_models <- glm_models %>%
+  filter(success)
+
+# View the results of successful models
+successful_models
+library(broom)
+
+# Extract coefficients from successful models
+coefficients <- successful_models %>%
+  mutate(coefs = map(result, tidy)) %>%
+  unnest(coefs) %>%
+  filter(term == "(Intercept)")  # Only keep intercepts
+
+# Plot the intercepts across participants and switch groups
+ggplot(coefficients %>% filter(subj_id <= 10), aes(x = switch_group, y = estimate, color = subj_id)) +
+  geom_point(size = 2) +
+  geom_point(aes(group = subj_id)) +
+  facet_grid(subj_id ~ game_type) +  # Facet by subj_id and game_type
+  labs(x = "Switch Group", y = "Intercept (log-odds)", color = "Participant") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+
+# Extract coefficients from successful models
+coefficients <- successful_models %>%
+  mutate(coefs = map(result, tidy)) %>%
+  unnest(coefs) %>%
+  filter(term == "trial_count_con_total")  # Only keep learning rate
+
+# Plot the intercepts across participants and switch groups
+ggplot(coefficients %>% filter(subj_id <= 10), aes(x = switch_group, y = estimate, color = subj_id)) +
+  geom_point(size = 2) +
+  geom_point(aes(group = subj_id)) +
+  facet_grid(subj_id ~ game_type) +  # Facet by subj_id and game_type
+  labs(x = "Switch Group", y = "learning rate over time", color = "Participant") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+
+# make a graph across all subjects
+
+# Extract coefficients from successful models
+coefficients <- successful_models %>%
+  mutate(coefs = map(result, tidy)) %>%
+  unnest(coefs) %>%
+  filter(term == "trial_count_con_total")  # Only keep learning rate
+
+# Plot the intercepts across participants and switch groups
+ggplot(coefficients, aes(x = switch_group, y = estimate, color = subj_id)) +
+  geom_point(size = 2) +
+  geom_point(aes(group = subj_id)) +
+  facet_wrap(~game_type) +  # Facet by subj_id and game_type
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Switch Group", y = "learning rate over time", color = "Participant") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+# Extract coefficients from successful models
+coefficients <- successful_models %>%
+  mutate(coefs = map(result, tidy)) %>%
+  unnest(coefs) %>%
+  filter(term == "(Intercept)")  # Only keep learning rate
+
+# Plot the intercepts across participants and switch groups
+ggplot(coefficients, aes(x = switch_group, y = estimate, color = subj_id)) +
+  geom_point(size = 2) +
+  geom_point(aes(group = subj_id)) +
+  facet_wrap(~game_type) +  # Facet by subj_id and game_type
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Switch Group", y = "intercept over time", color = "Participant") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+
+```
