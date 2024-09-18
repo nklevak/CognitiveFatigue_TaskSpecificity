@@ -1669,7 +1669,7 @@ coefficients <- successful_models %>%
 # Plot the intercepts across participants and switch groups
 ggplot(coefficients, aes(x = switch_group, y = estimate, color = subj_id)) +
   geom_point(size = 2) +
-  geom_point(aes(group = subj_id)) +
+  geom_point() +
   facet_wrap(~game_type) +  # Facet by subj_id and game_type
   geom_smooth(method = "lm", se = TRUE) +
   labs(x = "Switch Group", y = "learning rate over time", color = "Participant") +
@@ -1686,7 +1686,7 @@ coefficients <- successful_models %>%
 # Plot the intercepts across participants and switch groups
 ggplot(coefficients, aes(x = switch_group, y = estimate, color = subj_id)) +
   geom_point(size = 2) +
-  geom_point(aes(group = subj_id)) +
+  geom_point() +
   facet_wrap(~game_type) +  # Facet by subj_id and game_type
   geom_smooth(method = "lm", se = TRUE) +
   labs(x = "Switch Group", y = "intercept over time", color = "Participant") +
