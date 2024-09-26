@@ -25,13 +25,21 @@
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.1"></script>
   <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-external-html@1.1.3"></script>
-
+  <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.1.2"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.2"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.3"></script>
 
   <!-- Load experiment -->
   <script src="./js/spatial-recall.js" type="text/javascript"></script>
   <script src="./js/visual-search-blocks.js" type="text/javascript"></script>
   <script src="./js/instructions-E.js"></script>
+  <script src="./js/dsst-experiment.js"></script>
+  <script src="./js/plugin-dsst.js"></script>
+  <script src="./js/plugin-dsst-instructions.js"></script>
+
   <link rel="stylesheet" href="./js/style.css">
+  <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+  <link href="./js/dsst-css.min.css" rel="stylesheet" type="text/css" />
 
   <!-- Load CSS styles -->
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
@@ -39,7 +47,6 @@
 </head>
 <body></body>
 <script>
-
 // IMPORTANT INITIALIZATION VARIABLES
 // decides if spatial recall is game A; if gameA_SR = false, then digit span is game A and SR is game B
 var gameA_SR = (jsPsych.randomization.randomInt(0,1) == 0)
@@ -49,6 +56,68 @@ if (gameA_SR == 0) {
     gameA = "digit_span"
     gameB = "spatial_recall"
 }
+
+// FUNCTIONS FOR CUSTOMIZING
+// function to return instructions for either game A or game B
+function getInstructions(game_type) {
+  if (gameA_SR == 0) {
+    if (game_type == "A"){
+      return DS_practice
+    } else{
+      return SR_practice
+    }
+  } else {
+    if (game_type == "A"){
+      return SR_practice
+    } else{
+      return DS_practice
+    }
+  }
+  return ""
+}
+
+// preload external html file and images for rest task
+var preload = {
+  type: 'preload',
+  message: 'Loading images. This may take a moment depending on your internet connection.',
+  error_message: '<p>The experiment failed to load. Please try restarting your browser.</p><p>If this error persists after 2-3 tries, please contact the experimenter.</p>',
+  continue_after_error: false,
+  show_progress_bar: true,
+  max_load_time: 30000,
+  images: ['./js/poldrack_consent_form.html','./img/circle.png','./img/square.png','./img/diamond.png']
+};
+
+// consent form
+var consent_form = {
+  type: jsPsychExternalHtml,
+  url: "./js/poldrack_consent_form.html",
+  cont_btn: "start",
+  on_finish: function(data){
+    data.gameA_name = gameA
+    data.gameB_name = gameB
+    data.gameA_isSR = gameA_SR
+  }
+};
+
+// INITIALIZE TIMELINE
+var timeline = [];
+
+// INTRUCTIONS AND PRACTICE SESSION
+timeline.push(preload,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
+
+// A and B practice
+if (gameA=="spatial_recall"){
+  timeline.push(gameA_practice_instructions, sr_recall_forwards_practice, practice_transition, gameB_practice_instructions, ds_recall_forwards_practice)
+} else {
+  timeline.push(gameA_practice_instructions, ds_recall_forwards_practice, practice_transition, gameB_practice_instructions, sr_recall_forwards_practice)
+}
+// transition from B to rest practice and rest task practice 
+timeline.push(rest_practice_instructions,rt_practice)
+
+// MAIN EXPERIMENT INSTRUCTIONS
+timeline.push(main_exp_instructions)
+
+// MAIN EXPERIMENT TASKS:
 
 
 // RUN THE EXPERIMENT
