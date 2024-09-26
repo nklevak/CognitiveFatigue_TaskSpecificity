@@ -112,12 +112,23 @@ if (gameA=="spatial_recall"){
   timeline.push(gameA_practice_instructions, ds_recall_forwards_practice, practice_transition, gameB_practice_instructions, sr_recall_forwards_practice)
 }
 // transition from B to rest practice and rest task practice 
-timeline.push(rest_practice_instructions,rt_practice)
+timeline.push(rest_practice_instructions,rt_instructions_01,rt_practice)
 
 // MAIN EXPERIMENT INSTRUCTIONS
 timeline.push(main_exp_instructions)
 
 // MAIN EXPERIMENT TASKS:
+// since game A and game B are counterbalanced, we can make it all the same order:
+// ABABBABAABABAABABB
+// each A group is: A, rest, A, rest, A, rest
+// each B group is: B, rest, B, rest, B, rest
+// 18 blocks in total
+
+// set up the rest node
+
+
+// set up an A group (A + rest + A + rest + A + rest)
+// set up a B group (B + rest + B + rest + B + rest)
 
 
 // RUN THE EXPERIMENT
