@@ -39,7 +39,7 @@ var dsstWithEndRestPlugin = (function (jspsych) {
       `).join('');
 
       const end_rest_button_html = trial.show_end_rest_button ? 
-        `<button id="end-rest-btn" style="position: absolute; top: 10px; right: 10px;">End Rest</button>` :
+        `<button id="end-rest-btn" style="position: absolute; top: -30px; right: -30px;">End Rest</button>` :
         `<button id="end-rest-btn" style="display: none; pointer-events: none;">End Rest</button>`;
 
       display_element.innerHTML = `

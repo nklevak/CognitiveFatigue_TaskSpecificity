@@ -17,6 +17,15 @@ const rt_instructions_01 = {
   `,
 };
 
+
+// REST BREAK INSTRUCTIONS
+var rest_ended = false;
+
+function shouldTrialRun() {
+  console.log('in function')
+  return rest_ended
+}
+
 // Create trials
 function rest_task_createTrials(num_rt_trials) {
   const shapes = ['circle', 'diamond', 'square'];
@@ -38,16 +47,13 @@ function rest_task_createTrials(num_rt_trials) {
         if (!data.end_rest) {
           data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
         }
-      }
+      },
     });
   }
 
   return trials;
 }
 
-
-// REST BREAK INSTRUCTIONS
-var rest_ended = false;
 
 // cue that task will stay
 var cue_stay = {
@@ -57,6 +63,7 @@ var cue_stay = {
   trial_duration: 5000,
   on_finish: function(data){
     rest_ended = false
+    console.log(rest_ended)
   }
 }
 
@@ -68,6 +75,7 @@ var cue_switch = {
   trial_duration: 5000,
   on_finish: function(data){
     rest_ended = false
+    console.log(rest_ended)
   }
 }
 
@@ -81,16 +89,25 @@ function createSelfPacedRestTimeline(cue) {
     loop_function: function(data) {
       // Check if the last trial was ended by the "End Rest" button
       var last_trial = data.values().slice(-1)[0];
-      if (last_trial.end_rest || rest_ended == true) {
+      if (rest_ended == true || last_trial.end_rest == true) {
+        console.log('ended in loop')
         rest_ended = true
         return false; // This will end the loop immediately
+      } else {
+        rest_ended = false
       }
       // Continue the loop if the trial wasn't ended by the button
       return true;
     },
+    conditional_function: function() {
+      console.log("conditioning")
+      return !shouldTrialRun()
+    },
     on_finish: function(data) {
       var rest_duration = data.last(1).time_elapsed - data.first(1).time_elapsed;
       jsPsych.data.addProperties({rest_duration: rest_duration});
+      console.log("in on finish")
+      rest_ended = false
     }
   };
 
