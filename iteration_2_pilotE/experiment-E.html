@@ -12,6 +12,7 @@
   <!-- Load jsPsych plug-ins -->
   <script src="./js/plugin-spatial-recall.js"></script>
   <script src="./js/plugin-screen-check.js"></script>
+  <script src="./js/plugin-dsst-with-end-rest.js"></script>
   <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@1.1.1"></script>
   <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.3"></script>
   <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.1"></script>
@@ -31,15 +32,12 @@
 
   <!-- Load experiment -->
   <script src="./js/spatial-recall.js" type="text/javascript"></script>
-  <script src="./js/visual-search-blocks.js" type="text/javascript"></script>
   <script src="./js/instructions-E.js"></script>
   <script src="./js/dsst-experiment.js"></script>
-  <script src="./js/plugin-dsst.js"></script>
-  <script src="./js/plugin-dsst-instructions.js"></script>
+  
 
   <link rel="stylesheet" href="./js/style.css">
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
-  <link href="./js/dsst-css.min.css" rel="stylesheet" type="text/css" />
 
   <!-- Load CSS styles -->
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
@@ -47,14 +45,19 @@
 </head>
 <body></body>
 <script>
+var fullscreen = {
+  type: jsPsychFullscreen,
+  fullscreen_mode: true,
+};
+
 // IMPORTANT INITIALIZATION VARIABLES
 // decides if spatial recall is game A; if gameA_SR = false, then digit span is game A and SR is game B
 var gameA_SR = (jsPsych.randomization.randomInt(0,1) == 0)
 var gameA = "spatial_recall"
 var gameB = "digit_span"
 if (gameA_SR == 0) {
-    gameA = "digit_span"
-    gameB = "spatial_recall"
+   gameA = "digit_span"
+   gameB = "spatial_recall"
 }
 
 // FUNCTIONS FOR CUSTOMIZING
@@ -76,15 +79,44 @@ function getInstructions(game_type) {
   return ""
 }
 
+var gameA_practice_instructions = {
+  type: jsPsychInstructions,
+  pages: getInstructions("A"),
+  key_forward: 'ArrowRight',
+  key_backward: 'ArrowLeft',
+  allow_keys: true,
+  show_clickable_nav: true,
+  button_label_previous: 'Prev',
+  button_label_next: 'Next',
+  on_finish: function(){
+    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+    jsPsych.setProgressBar(0);
+  }
+}
+
+var gameB_practice_instructions = {
+  type: jsPsychInstructions,
+  pages: getInstructions("B"),
+  key_forward: 'ArrowRight',
+  key_backward: 'ArrowLeft',
+  allow_keys: true,
+  show_clickable_nav: true,
+  button_label_previous: 'Prev',
+  button_label_next: 'Next',
+  on_finish: function(){
+    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+    jsPsych.setProgressBar(0);
+  }
+}
 // preload external html file and images for rest task
 var preload = {
-  type: 'preload',
+  type: jsPsychPreload,
   message: 'Loading images. This may take a moment depending on your internet connection.',
   error_message: '<p>The experiment failed to load. Please try restarting your browser.</p><p>If this error persists after 2-3 tries, please contact the experimenter.</p>',
   continue_after_error: false,
   show_progress_bar: true,
   max_load_time: 30000,
-  images: ['./js/poldrack_consent_form.html','./img/circle.png','./img/square.png','./img/diamond.png']
+  images: ['./img/circle.png','./img/square.png','./img/diamond.png']
 };
 
 // consent form
@@ -103,33 +135,79 @@ var consent_form = {
 var timeline = [];
 
 // INTRUCTIONS AND PRACTICE SESSION
-timeline.push(preload,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
+timeline.push(preload,fullscreen, prolific_id_insert,welcome_practice_instructions)
+//timeline.push(preload,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
+//timeline.push(preload,fullscreen,prolific_id_insert,welcome_practice_instructions)
+
 
 // A and B practice
-if (gameA=="spatial_recall"){
-  timeline.push(gameA_practice_instructions, sr_recall_forwards_practice, practice_transition, gameB_practice_instructions, ds_recall_forwards_practice)
-} else {
-  timeline.push(gameA_practice_instructions, ds_recall_forwards_practice, practice_transition, gameB_practice_instructions, sr_recall_forwards_practice)
-}
+//if (gameA=="spatial_recall"){
+//  timeline.push(gameA_practice_instructions, sr_recall_forwards_practice, practice_transition, gameB_practice_instructions, ds_recall_forwards_practice)
+//} else {
+//  timeline.push(gameA_practice_instructions, ds_recall_forwards_practice, practice_transition, gameB_practice_instructions, sr_recall_forwards_practice)
+//}
 // transition from B to rest practice and rest task practice 
-timeline.push(rest_practice_instructions,rt_instructions_01,rt_practice)
+//timeline.push(rest_practice_instructions,rt_instructions_01,rt_practice)
+
+// FOR TESTING PURPOSES:
+timeline.push(rest_practice_instructions,rt_instructions_01, rt_practice)
+//timeline.push(gameA_practice_instructions, sr_recall_forwards_practice, practice_transition, rest_practice_instructions, rt_instructions_01, rt_practice)
+
+//timeline.push(SR_practice, sr_recall_forwards_practice, practice_transition, rest_practice_instructions, rt_instructions_01, rt_practice)
 
 // MAIN EXPERIMENT INSTRUCTIONS
-timeline.push(main_exp_instructions)
+//timeline.push(main_exp_instructions)
 
 // MAIN EXPERIMENT TASKS:
 // since game A and game B are counterbalanced, we can make it all the same order:
 // ABABBABAABABAABABB
-// each A group is: A, rest, A, rest, A, rest
-// each B group is: B, rest, B, rest, B, rest
+// each A group is: A, rest, A, rest, A
+// each B group is: B, rest, B, rest, B
 // 18 blocks in total
 
-// set up the rest node
+// create rest timelines
+var rest_stay = createSelfPacedRestTimeline("stay")
+var rest_switch = createSelfPacedRestTimeline("switch")
 
+// FOR TESTING PURPOSES:
+var sr_block_trials = {
+  timeline: sr_getBlock()
+}
+var sr_group = {
+  timeline: [sr_block_trials, rest_stay, sr_block_trials, rest_stay, sr_block_trials]
+}
 
+timeline.push(sr_group, rest_stay, sr_group, rest_switch)
+
+// set up spatial recall block
+//var sr_block_trials = {
+//  timeline: sr_getBlock()
+//}
+//var sr_group = {
+//  timeline: [sr_block_trials, rest_stay, sr_block_trials, rest_stay, sr_block_trials]
+//}
+
+// set up digit span group
+//var ds_block_trials = {
+//  timeline: ds_getBlock()
+//}
+
+//var ds_group = {
+//  timeline: [ds_block_trials, rest_stay, ds_block_trials, rest_stay, ds_block_trials]
+//}
+
+// HAVE TO ADD CUEING TO EACH REST BLOCK TODO
 // set up an A group (A + rest + A + rest + A + rest)
 // set up a B group (B + rest + B + rest + B + rest)
+//gameA_block = sr_group
+//gameB_block = ds_group
+//if (gameA!="spatial_recall"){
+//  gameA_block = ds_group
+//  gameB_block = sr_group
+//}
 
+// push the order: ABABBABAA + BABAABABB
+//timeline.push(gameA_block, rest_switch, gameB_block,rest_switch, gameA_block, rest_switch, gameB_block,rest_stay, gameB_block,rest_switch, gameA_block,rest_switch, gameB_block, rest_switch, gameA_block, rest_stay, gameA_block,rest_stay)
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);

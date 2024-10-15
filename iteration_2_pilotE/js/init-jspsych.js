@@ -14,6 +14,6 @@ var jsPsych = initJsPsych({
       document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(){
-      window.location = "https://app.prolific.com/submissions/complete?cc=C1KBNHGP"
+      //window.location = "https://app.prolific.com/submissions/complete?cc=C1KBNHGP"
     }
   });

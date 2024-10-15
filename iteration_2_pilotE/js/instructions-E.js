@@ -26,9 +26,7 @@ var welcome_practice_instructions = {
     button_label_next: 'Next'
   }
 
-
 // practice instructions
-
 SR_practice = [
     "<p>In this game you will see a grid of squares that will flash blue one at a time.</p>\
     <p>Your goal is to remember the order in which the squares flashed blue.</p>\
@@ -54,22 +52,6 @@ rest_practice = [
    When you are ready, click "Next" to get started.</p>'
 ]
 
-var gameA_practice_instructions = {
-    type: jsPsychInstructions,
-    pages: getInstructions("A"),
-    key_forward: 'ArrowRight',
-    key_backward: 'ArrowLeft',
-    allow_keys: true,
-    show_clickable_nav: true,
-    button_label_previous: 'Prev',
-    button_label_next: 'Next',
-    on_finish: function(){
-      document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-      jsPsych.setProgressBar(0);
-    }
-  }
-
-
 // practice transition between A and B
 var practice_transition = {
   type: jsPsychHtmlKeyboardResponse,
@@ -81,20 +63,6 @@ var practice_transition = {
   trial_duration: 5000,
 }
 
-var gameB_practice_instructions = {
-    type: jsPsychInstructions,
-    pages: getInstructions("B"),
-    key_forward: 'ArrowRight',
-    key_backward: 'ArrowLeft',
-    allow_keys: true,
-    show_clickable_nav: true,
-    button_label_previous: 'Prev',
-    button_label_next: 'Next',
-    on_finish: function(){
-      document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-      jsPsych.setProgressBar(0);
-    }
-}
 
 // rest task practice instructions and transition
 var rest_practice_instructions = {
@@ -150,18 +118,6 @@ After that, you can keep playing for however long you want, but every extra seco
     document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
   }
 }
-
-// REST BREAK INSTRUCTIONS
-// cue that task will switch
-
-
-// cue that task will stay
-
-
-// BLOCK IS BEGINNING TRANSITION
-// rest is over, we will now continue
-
-
 
 // END OF EXPERIMENT INSTRUCTION
 // thanks for participating, your bonus is ______
