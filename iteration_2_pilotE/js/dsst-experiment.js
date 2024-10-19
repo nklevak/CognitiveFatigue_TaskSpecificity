@@ -1,4 +1,4 @@
-var max_num_rest_trials_per_block = 10;
+var max_num_rest_trials_per_block = 20;
 var num_practice_trials = 5;
 
 const rt_instructions_01 = {
@@ -23,10 +23,10 @@ var rest_ended = false;
 
 function shouldTrialRun() {
   console.log('in function')
-  return rest_ended
+  console.log(rest_ended)
+  return !rest_ended
 }
 
-// Create trials
 function rest_task_createTrials(num_rt_trials) {
   const shapes = ['circle', 'diamond', 'square'];
   const trials = [];
@@ -34,20 +34,32 @@ function rest_task_createTrials(num_rt_trials) {
   for (let i = 0; i < num_rt_trials; i++) {
     const targetShape = jsPsych.randomization.sampleWithoutReplacement(shapes, 1)[0];
     trials.push({
-      type: dsstWithEndRestPlugin,
-      stimulus: targetShape,
-      choices: ['1', '2', '3'],
-      shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
-      show_end_rest_button: true,
-      data: {
-        target_shape: targetShape,
-        correct_response: shapes.indexOf(targetShape) + 1
-      },
-      on_finish: function(data) {
-        if (!data.end_rest) {
-          data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
-        }
-      },
+      timeline: [{
+        type: dsstWithEndRestPlugin,
+        stimulus: targetShape,
+        choices: ['1', '2', '3'],
+        shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+        show_end_rest_button: true,
+        data: {
+          target_shape: targetShape,
+          correct_response: shapes.indexOf(targetShape) + 1
+        },
+        on_finish: function(data) {
+          console.log("end_rest: " + data.end_rest.toString());
+          if (data.end_rest == false && rest_ended == false) {
+            data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
+            rest_ended = false;
+          } else {
+            rest_ended = true;
+          }
+        },
+      }],
+      conditional_function: function() {
+        console.log("Evaluating conditional function for trial " + (i + 1));
+        const shouldRun = shouldTrialRun();
+        console.log("shouldTrialRun() returned: " + shouldRun);
+        return shouldRun;
+      }
     });
   }
 
@@ -86,23 +98,6 @@ function createSelfPacedRestTimeline(cue) {
   
   var self_paced_rest_procedure = {
     timeline: rest_timeline,
-    loop_function: function(data) {
-      // Check if the last trial was ended by the "End Rest" button
-      var last_trial = data.values().slice(-1)[0];
-      if (rest_ended == true || last_trial.end_rest == true) {
-        console.log('ended in loop')
-        rest_ended = true
-        return false; // This will end the loop immediately
-      } else {
-        rest_ended = false
-      }
-      // Continue the loop if the trial wasn't ended by the button
-      return true;
-    },
-    conditional_function: function() {
-      console.log("conditioning")
-      return !shouldTrialRun()
-    },
     on_finish: function(data) {
       var rest_duration = data.last(1).time_elapsed - data.first(1).time_elapsed;
       jsPsych.data.addProperties({rest_duration: rest_duration});

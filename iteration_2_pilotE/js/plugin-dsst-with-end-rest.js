@@ -37,21 +37,21 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           <p>${index + 1}</p>
         </div>
       `).join('');
-
-      const end_rest_button_html = trial.show_end_rest_button ? 
-        `<button id="end-rest-btn" style="position: absolute; top: -30px; right: -30px;">End Rest</button>` :
-        `<button id="end-rest-btn" style="display: none; pointer-events: none;">End Rest</button>`;
-
-      display_element.innerHTML = `
-        <div style="position: relative;">
-          <div style="margin-bottom: 20px;">
-            ${shapes_html}
+      const end_rest_button_html = trial.show_end_rest_button ?
+      `<button id="end-rest-btn" class="modern-button">End Rest</button>` :
+      `<button id="end-rest-btn" style="display: none; pointer-events: none;">End Rest</button>`;
+  
+  display_element.innerHTML = `
+      <div class="experiment-container">
+          <div class="button-container">
+              ${end_rest_button_html}
+          </div>
+          <div class="shapes-container">
+              ${shapes_html}
           </div>
           <p>What is the number under the ${trial.stimulus}?</p>
-          ${end_rest_button_html}
-        </div>
-      `;
-
+      </div>
+  `;
       const end_trial = (response) => {
         this.jsPsych.pluginAPI.cancelAllKeyboardResponses();
         display_element.innerHTML = '';

@@ -82,6 +82,38 @@ body {
     background-color: none;
     text-align: center;
   }
+  .experiment-container {
+    position: relative;
+    width: 100%;
+    padding-top: 60px; /* This creates space for the button above */
+}
+
+.button-container {
+    position: absolute;
+    top: 0;
+    right: 5%;
+    z-index: 10; /* Ensures the button is above other elements */
+}
+
+.shapes-container {
+    margin-bottom: 20px;
+}
+
+.modern-button {
+    padding: 10px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.modern-button:hover {
+    background-color: #2980b9;
+}
 
   .bottom-left {
     position: absolute;
