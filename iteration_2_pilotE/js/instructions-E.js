@@ -47,9 +47,18 @@ DS_practice = [
 rest_practice = [
   "<p>You have completed the practice for the two main games, game A and game B!</p>\
   <p>Now, you will practice the rest task, which will be shown to you during rest breaks. </p>",
-  '<p>In this task, you will be shown three shapes and each shape will have the number 1,2, or 3 underneath it.\
-   When prompted with one of the three shapes, please press the key that corresponded to that shape.\
-   When you are ready, click "Next" to get started.</p>'
+  `
+    <p>In this task, you will see three shapes with numbers underneath them.</p>
+    <p>You will be asked about the number under one of the shapes.</p>
+    <div style="display: flex; justify-content: space-around; margin: 20px;">
+      <div><img src="img/circle.png" style="width: 50px;"><br>1</div>
+      <div><img src="img/diamond.png" style="width: 50px;"><br>2</div>
+      <div><img src="img/square.png" style="width: 50px;"><br>3</div>
+    </div>
+    <p>Press the corresponding number key when asked about a specific shape.</p>
+    <p>You can end the rest at any time by clicking the "End Rest" button.</p>
+    <p>Press Next to begin the practice.</p>
+  `,
 ]
 
 // practice transition between A and B
@@ -121,5 +130,18 @@ After that, you can keep playing for however long you want, but every extra seco
 
 // END OF EXPERIMENT INSTRUCTION
 // thanks for participating, your bonus is ______
+
+var overall_debrief = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: 
+    `<p>Thanks for participating! This experiment seeked to understand how cognitive fatigue, \
+    effort, errors, and task switching interact. Your final completion bonus is\
+    <strong>3</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>`,
+  //on_start: function(overall_debrief) {
+  //    var bonus = calculate_bonus()
+
+   //   document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+  //}
+}
 
 

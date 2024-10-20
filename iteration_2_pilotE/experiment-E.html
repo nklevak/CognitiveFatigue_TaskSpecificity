@@ -55,25 +55,33 @@ var fullscreen = {
 var gameA_SR = (jsPsych.randomization.randomInt(0,1) == 0)
 var gameA = "spatial_recall"
 var gameB = "digit_span"
+
+// set the practice vars
+var gameA_practice = sr_recall_forwards_practice
+var gameB_practice = ds_recall_forwards_practice
+
 if (gameA_SR == 0) {
    gameA = "digit_span"
    gameB = "spatial_recall"
+
+   gameA_practice = ds_recall_forwards_practice
+   gameB_practice = sr_recall_forwards_practice
 }
 
 // FUNCTIONS FOR CUSTOMIZING
 // function to return instructions for either game A or game B
 function getInstructions(game_type) {
-  if (gameA_SR == 0) {
+  if (gameA == "spatial_recall") {
     if (game_type == "A"){
-      return DS_practice
-    } else{
       return SR_practice
+    } else{
+      return DS_practice
     }
-  } else {
+  } else { // this means gameA == "digit_span"
     if (game_type == "A"){
-      return SR_practice
-    } else{
       return DS_practice
+    } else {
+      return SR_practice
     }
   }
   return ""
@@ -120,6 +128,7 @@ var preload = {
 };
 
 // consent form
+// preload this later on cognition.run (right now it doesn't work because of access issues)
 var consent_form = {
   type: jsPsychExternalHtml,
   url: "./js/poldrack_consent_form.html",
@@ -137,26 +146,9 @@ var timeline = [];
 // INTRUCTIONS AND PRACTICE SESSION
 timeline.push(preload,fullscreen, prolific_id_insert,welcome_practice_instructions)
 //timeline.push(preload,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
-//timeline.push(preload,fullscreen,prolific_id_insert,welcome_practice_instructions)
 
-
-// A and B practice
-//if (gameA=="spatial_recall"){
-//  timeline.push(gameA_practice_instructions, sr_recall_forwards_practice, practice_transition, gameB_practice_instructions, ds_recall_forwards_practice)
-//} else {
-//  timeline.push(gameA_practice_instructions, ds_recall_forwards_practice, practice_transition, gameB_practice_instructions, sr_recall_forwards_practice)
-//}
-// transition from B to rest practice and rest task practice 
-//timeline.push(rest_practice_instructions,rt_instructions_01,rt_practice)
-
-// FOR TESTING PURPOSES:
-timeline.push(rest_practice_instructions,rt_instructions_01, rt_practice)
-//timeline.push(gameA_practice_instructions, sr_recall_forwards_practice, practice_transition, rest_practice_instructions, rt_instructions_01, rt_practice)
-
-//timeline.push(SR_practice, sr_recall_forwards_practice, practice_transition, rest_practice_instructions, rt_instructions_01, rt_practice)
-
-// MAIN EXPERIMENT INSTRUCTIONS
-//timeline.push(main_exp_instructions)
+// A and B and rest practice
+timeline.push(gameA_practice_instructions, gameA_practice, practice_transition, gameB_practice_instructions, gameB_practice, rest_practice_instructions, rt_practice)
 
 // MAIN EXPERIMENT TASKS:
 // since game A and game B are counterbalanced, we can make it all the same order:
@@ -169,45 +161,41 @@ timeline.push(rest_practice_instructions,rt_instructions_01, rt_practice)
 var rest_stay = createSelfPacedRestTimeline("stay")
 var rest_switch = createSelfPacedRestTimeline("switch")
 
-// FOR TESTING PURPOSES:
+// create A and B main blocks
 var sr_block_trials = {
   timeline: sr_getBlock()
 }
 var sr_group = {
   timeline: [sr_block_trials, rest_stay, sr_block_trials, rest_stay, sr_block_trials]
 }
+var ds_block_trials = {
+  timeline: ds_getBlock()
+}
+var ds_group = {
+  timeline: [ds_block_trials, rest_stay, ds_block_trials, rest_stay, ds_block_trials]
+}
 
-timeline.push(sr_group, rest_stay, sr_group, rest_switch)
-
-// set up spatial recall block
-//var sr_block_trials = {
-//  timeline: sr_getBlock()
-//}
-//var sr_group = {
-//  timeline: [sr_block_trials, rest_stay, sr_block_trials, rest_stay, sr_block_trials]
-//}
-
-// set up digit span group
-//var ds_block_trials = {
-//  timeline: ds_getBlock()
-//}
-
-//var ds_group = {
-//  timeline: [ds_block_trials, rest_stay, ds_block_trials, rest_stay, ds_block_trials]
-//}
-
-// HAVE TO ADD CUEING TO EACH REST BLOCK TODO
-// set up an A group (A + rest + A + rest + A + rest)
-// set up a B group (B + rest + B + rest + B + rest)
-//gameA_block = sr_group
-//gameB_block = ds_group
-//if (gameA!="spatial_recall"){
-//  gameA_block = ds_group
-//  gameB_block = sr_group
-//}
+// assign A and B main blocks
+var A_block_group = sr_group
+var B_block_group = ds_group
+if (gameA_SR == 0) {// this means game A is actually digit span
+  A_block_group = ds_group
+  B_block_group = sr_group
+}
 
 // push the order: ABABBABAA + BABAABABB
-//timeline.push(gameA_block, rest_switch, gameB_block,rest_switch, gameA_block, rest_switch, gameB_block,rest_stay, gameB_block,rest_switch, gameA_block,rest_switch, gameB_block, rest_switch, gameA_block, rest_stay, gameA_block,rest_stay)
+timeline.push(A_block_group, rest_switch, B_block_group, rest_switch, 
+A_block_group, rest_switch, B_block_group, rest_stay, 
+B_block_group, rest_switch, A_block_group, rest_switch,
+B_block_group, rest_switch, A_block_group, rest_stay,
+A_block_group, rest_switch, B_block_group, rest_switch, 
+A_block_group, rest_switch,B_block_group, rest_switch, 
+A_block_group, rest_stay, A_block_group, rest_switch, 
+B_block_group, rest_switch, A_block_group, rest_switch, 
+B_block_group, rest_stay, B_block_group, rest_switch)
+
+// CONCLUSION
+timeline.push(overall_debrief)
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);
