@@ -131,6 +131,11 @@ After that, you can keep playing for however long you want, but every extra seco
 // END OF EXPERIMENT INSTRUCTION
 // thanks for participating, your bonus is ______
 
+var exitFullscreen = {
+  type: jsPsychFullscreen,
+  fullscreen_mode: false,
+};
+
 var overall_debrief = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: 

@@ -32,7 +32,7 @@
 
   <!-- Load experiment -->
   <script src="./js/spatial-recall.js" type="text/javascript"></script>
-  <script src="./js/instructions-E.js"></script>
+  <script src="./js/instructions.js"></script>
   <script src="./js/dsst-experiment.js"></script>
   
 
@@ -195,7 +195,7 @@ B_block_group, rest_switch, A_block_group, rest_switch,
 B_block_group, rest_stay, B_block_group, rest_switch)
 
 // CONCLUSION
-timeline.push(overall_debrief)
+timeline.push(overall_debrief, exitFullscreen)
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);
