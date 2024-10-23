@@ -1,4 +1,4 @@
-This is the October 2024 iteration of this experiment, with self-paced rest periods.
+This is the October 2024 iteration of this experiment, with self-paced rest periods. SPR = self-paced rest
 The rest task and spatial recall are based off of the dsst task in the niv lab demos site
 The digit span task was inspired by experiment factory digit span
 
