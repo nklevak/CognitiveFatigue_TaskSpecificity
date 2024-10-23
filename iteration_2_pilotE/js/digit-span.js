@@ -1,87 +1,110 @@
+// EXPERIMENT SET UP VARIABLES
+var ds_trials_per_block = 1 // make it 12 like before
+var ds_practice_trial_num = 1
+var ds_digit_duration = 275
+var ds_digits_to_mem = 4
+
 // Define the HTML for the keypad
 const keypadHTML = `
-<div id="keypad" class="grid grid-cols-3 gap-2 max-w-xs mx-auto mt-4">
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">1</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">2</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">3</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">4</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">5</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">6</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">7</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">8</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">9</button>
-  <button id="clear-btn" class="p-4 text-xl bg-red-200 rounded col-span-1">Clear</button>
-  <button class="digit-btn p-4 text-xl bg-gray-200 rounded">0</button>
-  <button id="submit-btn" class="p-4 text-xl bg-green-200 rounded col-span-1">Submit</button>
+<div id="custom-keypad-container">
+    <div id="response-display" class="text-2xl mb-4 h-8 text-center"></div>
+    <div class="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(1)">1</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(2)">2</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(3)">3</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(4)">4</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(5)">5</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(6)">6</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(7)">7</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(8)">8</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(9)">9</button>
+        <button class="p-4 text-xl bg-[#94a3b8] rounded" onclick="handleClear()">Clear</button>
+        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(0)">0</button>
+        <button class="jspsych-btn p-4 text-xl bg-[#0ea5e9] text-white rounded" onclick="handleSubmit()">Submit</button>
+    </div>
 </div>
-<div id="response-display" class="text-2xl mt-4 h-8 text-center"></div>
 `;
 
-// Generate random sequence of 4 digits
-function generateSequence() {
-    return Array.from({length: 4}, () => Math.floor(Math.random() * 10));
+// Global variables to store response
+let currentResponse = [];
+let currentTrial = null;
+
+// Handler functions
+function handleDigit(digit) {
+    if (currentResponse.length < 4) {
+        currentResponse.push(digit);
+        document.getElementById('response-display').textContent = currentResponse.join(' ');
+    }
 }
 
-// Timeline for showing digits one by one
+function handleClear() {
+    currentResponse = [];
+    document.getElementById('response-display').textContent = '';
+}
+
+function handleSubmit() {
+    if (currentResponse.length === 4) {
+        // Store response before ending trial
+        if (currentTrial) {
+            currentTrial.data.response = currentResponse.slice();
+        }
+        // Find and click the hidden jsPsych button
+        document.querySelector('#jspsych-html-button-response-button-0').click();
+    }
+}
+
+// Generate random sequence of 4 digits
+function generateSequence(num_digits) {
+    var seq = Array.from({length: num_digits}, () => Math.floor(Math.random() * 10));
+    console.log(seq);
+    return seq;
+}
+
 function createDigitDisplayTimeline(sequence) {
-    return sequence.map(digit => ({
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: `<div class="text-7xl">${digit}</div>`,
-        choices: "NO_KEYS",
-        trial_duration: 1000,
-        css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
-    }));
+    let timeline = [];
+    for (let digit of sequence) {
+        // Add blank screen before digit
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div class="text-7xl"></div>`,  // Empty div to maintain spacing
+            choices: "NO_KEYS",
+            trial_duration: 50,  // Brief blank screen
+            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
+        });
+
+        // Show digit
+        timeline.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div class="text-7xl">${digit}</div>`,
+            choices: "NO_KEYS",
+            trial_duration: ds_digit_duration,
+            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
+        });
+    }
+    return timeline;
 }
 
 // Response phase with keypad
-var responsePhase = {
-    type: jsPsychHtmlButtonResponse,
-    stimulus: '',
-    choices: [],
-    button_html: keypadHTML,
-    data: {
-        sequence: null,
-        response_time: null,
-        is_correct: null
-    },
-    on_load: function(trial) {
-        let response = [];
-        const responseDisplay = document.getElementById('response-display');
-        const digitBtns = document.querySelectorAll('.digit-btn');
-        const clearBtn = document.getElementById('clear-btn');
-        const submitBtn = document.getElementById('submit-btn');
-        
-        // Record start time
-        const startTime = performance.now();
-        
-        // Add click handlers for digit buttons
-        digitBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (response.length < 4) {
-                    response.push(parseInt(btn.textContent));
-                    responseDisplay.textContent = response.join(' ');
-                }
-            });
-        });
-        
-        // Clear button handler
-        clearBtn.addEventListener('click', () => {
-            response = [];
-            responseDisplay.textContent = '';
-        });
-        
-        // Submit button handler
-        submitBtn.addEventListener('click', () => {
-            if (response.length === 4) {
-                const endTime = performance.now();
-                trial.data.response_time = endTime - startTime;
-                trial.data.response = response;
-                trial.data.is_correct = JSON.stringify(response) === JSON.stringify(trial.data.sequence);
-                trial.end_trial();
-            }
-        });
-    }
-};
+function createResponsePhase(sequence) {
+    return {
+        type: jsPsychHtmlButtonResponse,
+        stimulus: keypadHTML,
+        choices: ['Continue'],
+        button_html: '<button style="display:none" class="jspsych-btn">%choice%</button>',
+        data: {
+            sequence: sequence
+        },
+        on_start: function(trial) {
+            currentResponse = [];
+            currentTrial = trial;
+        },
+        on_finish: function(data) {
+            data.is_correct = JSON.stringify(data.response) === JSON.stringify(data.sequence);
+            console.log(JSON.stringify(data.response) === JSON.stringify(data.sequence))
+            currentTrial = null;
+        }
+    };
+}
 
 var ds_instructions = {
     type: jsPsychHtmlKeyboardResponse,
@@ -92,18 +115,13 @@ var ds_instructions = {
             <p class="mb-4">After the sequence, use the on-screen keypad to enter the digits in the order they were presented.</p>
             <p class="text-center mt-8">Press any key to begin.</p>
         </div>
-    `,
+    `
 }
+function ds_getMainBlock(num_trials = ds_trials_per_block, num_d = ds_digits_to_mem) {
+    var trials = [];
 
-function ds_getPracticeBlock(num_practice){
-    var trials = []
-    var sequence = []
-
-    // practice instructions
-    trials.push(ds_instructions)
-
-    for (let i = 0; i < num_practice; i++) {
-        sequence = generateSequence();
+    for (let i = 0; i < num_trials; i++) {
+        var sequence = jsPsych.randomization.sampleWithReplacement([...Array(10).keys()], num_d);
 
         // fixation cross
         trials.push({
@@ -112,18 +130,89 @@ function ds_getPracticeBlock(num_practice){
             choices: "NO_KEYS",
             trial_duration: 1000,
             css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
-        })
+        });
 
         // actual digit sequence
-        trials.push(...createDigitDisplayTimeline(sequence))
+        trials.push(...createDigitDisplayTimeline(sequence));
 
         // Add response phase
-        var responseTrial = {...responsePhase};
-        responseTrial.data = {...responsePhase.data, sequence: sequence};
-        trials.push(responseTrial);
+        trials.push(createResponsePhase(sequence));
     }
 
-    return trials
+    return trials;
 }
 
-var ds_practice = {timeline: ds_getPracticeBlock(5)}
+function ds_getPracticeBlock(num_practice, num_d) {
+    var trials = [];
+
+    for (let i = 0; i < num_practice; i++) {
+        var sequence = jsPsych.randomization.sampleWithReplacement([...Array(10).keys()], num_d);
+
+        // fixation cross
+        trials.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: '<div class="text-4xl">+</div>',
+            choices: "NO_KEYS",
+            trial_duration: 1000,
+            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
+        });
+
+        // actual digit sequence
+        trials.push(...createDigitDisplayTimeline(sequence));
+
+        // Add response phase
+        trials.push(createResponsePhase(sequence));
+
+        // Add feedback
+        trials.push({
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: function() {
+                var last_trial = jsPsych.data.get().last(1).values()[0];
+                if (last_trial.is_correct) {
+                    return `
+                        <div class="flex flex-col items-center justify-center">
+                            <p class="text-2xl text-green-500 mb-4">Correct!</p>
+                            <p class="text-xl">The sequence was: ${last_trial.sequence.join(' ')}</p>
+                            <p class="text-xl">Your response was: ${last_trial.response.join(' ')}</p>
+                            <p class="mt-8">Press any key to continue</p>
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div class="flex flex-col items-center justify-center">
+                            <p class="text-2xl text-red-500 mb-4">Incorrect</p>
+                            <p class="text-xl">The correct sequence was: ${last_trial.sequence.join(' ')}</p>
+                            <p class="text-xl">Your response was: ${last_trial.response.join(' ')}</p>
+                            <p class="mt-8">Press any key to continue</p>
+                        </div>
+                    `;
+                }
+            },
+            choices: "ALL_KEYS",
+            trial_duration: null
+        });
+    }
+
+    // Add completion message
+    trials.push({
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `
+            <div class="max-w-2xl mx-auto p-6">
+                <h1 class="text-2xl mb-4">Practice Complete!</h1>
+                <p class="mb-4">You have completed the practice trials.</p>
+                <p class="text-center mt-8">Press any key to begin the main task.</p>
+            </div>
+        `,
+        choices: "ALL_KEYS"
+    });
+
+    return trials;
+}
+
+function ds_getBlock(num_trials, num_d) {
+    return {
+        timeline: ds_getMainBlock(num_trials, num_d)
+    }
+}
+
+var ds_practice_block = {timeline: ds_getPracticeBlock(num_practice = ds_practice_trial_num, num_d = ds_digits_to_mem)};
