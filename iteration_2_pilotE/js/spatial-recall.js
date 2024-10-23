@@ -1,6 +1,6 @@
 // EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 1 // make it 12 like before
-var sr_practice_trial_num = 1
+var sr_trials_per_block = 1 // make it 12
+var sr_practice_trial_num = 1 // make it 6
 var consistent_tile_duration = 275
 var grid_size_constant = 4
 var digits_to_mem = 4
@@ -106,8 +106,8 @@ function sr_getBlock() {
         data.practice = "false"
         data.game_type = "spatial_recall"
 
-        var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
-        jsPsych.setProgressBar(progressbar_update);
+        //var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
+        //jsPsych.setProgressBar(progressbar_update);
       }
     }
 

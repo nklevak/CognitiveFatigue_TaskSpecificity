@@ -1,5 +1,5 @@
 var max_num_rest_trials_per_block = 20;
-var num_practice_trials = 5;
+var rest_num_practice_trials = 6;
 
 const rt_instructions_01 = {
   type: jsPsychHtmlKeyboardResponse,
@@ -40,6 +40,7 @@ function rest_task_createTrials(num_rt_trials) {
         choices: ['1', '2', '3'],
         shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
         show_end_rest_button: true,
+        trial_duration: 2000,
         data: {
           target_shape: targetShape,
           correct_response: shapes.indexOf(targetShape) + 1
@@ -109,7 +110,7 @@ function createSelfPacedRestTimeline(cue) {
   return {timeline: [cue_timeline, self_paced_rest_procedure]};
 }
 
-
+// edit to add feedback
 function practice_rest_task_createTrials(num_rt_trials) {
   const shapes = ['circle', 'diamond', 'square'];
   const trials = [];
@@ -122,13 +123,14 @@ function practice_rest_task_createTrials(num_rt_trials) {
       choices: ['1', '2', '3'],
       shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
       show_end_rest_button: false,
+      trial_duration: 2000,
       data: {
         target_shape: targetShape,
         correct_response: shapes.indexOf(targetShape) + 1
       },
       on_finish: function(data) {
         data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
-        data.type = "rest_practice"
+        data.game_type = "rest_practice"
       }
     });
   }
@@ -136,5 +138,5 @@ function practice_rest_task_createTrials(num_rt_trials) {
   return trials;
 }
 
-  var rt_practice = {timeline: practice_rest_task_createTrials(num_practice_trials)}
+  var rt_practice = {timeline: practice_rest_task_createTrials(rest_num_practice_trials)}
 

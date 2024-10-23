@@ -41,10 +41,15 @@
 
   <!-- Load CSS styles -->
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
 
 </head>
 <body></body>
 <script>
+
 var fullscreen = {
   type: jsPsychFullscreen,
   fullscreen_mode: true,
@@ -58,13 +63,13 @@ var gameB = "digit_span"
 
 // set the practice vars
 var gameA_practice = sr_recall_forwards_practice
-var gameB_practice = ds_recall_forwards_practice
+var gameB_practice = ds_practice_block
 
 if (gameA_SR == 0) {
    gameA = "digit_span"
    gameB = "spatial_recall"
 
-   gameA_practice = ds_recall_forwards_practice
+   gameA_practice = ds_practice_block
    gameB_practice = sr_recall_forwards_practice
 }
 
@@ -97,8 +102,8 @@ var gameA_practice_instructions = {
   button_label_previous: 'Prev',
   button_label_next: 'Next',
   on_finish: function(){
-    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-    jsPsych.setProgressBar(0);
+    //document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+    //jsPsych.setProgressBar(0);
   }
 }
 
@@ -112,8 +117,8 @@ var gameB_practice_instructions = {
   button_label_previous: 'Prev',
   button_label_next: 'Next',
   on_finish: function(){
-    document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-    jsPsych.setProgressBar(0);
+    //document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
+    //jsPsych.setProgressBar(0);
   }
 }
 // preload external html file and images for rest task
@@ -148,7 +153,7 @@ timeline.push(preload,fullscreen, prolific_id_insert,welcome_practice_instructio
 //timeline.push(preload,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
 
 // A and B and rest practice
-timeline.push(gameA_practice_instructions, gameA_practice, practice_transition, gameB_practice_instructions, gameB_practice, rest_practice_instructions, rt_practice)
+timeline.push(gameA_practice_instructions, gameA_practice, practice_transition, gameB_practice_instructions, gameB_practice, rest_practice_instructions, rt_practice, main_exp_instructions)
 
 // MAIN EXPERIMENT TASKS:
 // since game A and game B are counterbalanced, we can make it all the same order:
@@ -168,11 +173,11 @@ var sr_block_trials = {
 var sr_group = {
   timeline: [sr_block_trials, rest_stay, sr_block_trials, rest_stay, sr_block_trials]
 }
-var ds_block_trials = {
-  timeline: ds_getBlock()
-}
+//var ds_block_trials = {
+//  timeline: ds_getBlock(ds_trials_per_block, ds_digits_to_mem)
+//}
 var ds_group = {
-  timeline: [ds_block_trials, rest_stay, ds_block_trials, rest_stay, ds_block_trials]
+  timeline: [ds_getBlock(ds_trials_per_block, ds_digits_to_mem), rest_stay, ds_getBlock(ds_trials_per_block, ds_digits_to_mem), rest_stay, ds_getBlock(ds_trials_per_block, ds_digits_to_mem)]
 }
 
 // assign A and B main blocks

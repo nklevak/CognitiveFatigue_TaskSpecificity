@@ -1,26 +1,26 @@
 // EXPERIMENT SET UP VARIABLES
-var ds_trials_per_block = 1 // make it 12 like before
-var ds_practice_trial_num = 1
+var ds_trials_per_block = 1 // make it 12 
+var ds_practice_trial_num = 1 // make it 6
 var ds_digit_duration = 275
 var ds_digits_to_mem = 4
 
 // Define the HTML for the keypad
 const keypadHTML = `
-<div id="custom-keypad-container">
-    <div id="response-display" class="text-2xl mb-4 h-8 text-center"></div>
-    <div class="grid grid-cols-3 gap-2 max-w-xs mx-auto">
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(1)">1</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(2)">2</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(3)">3</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(4)">4</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(5)">5</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(6)">6</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(7)">7</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(8)">8</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(9)">9</button>
-        <button class="p-4 text-xl bg-[#94a3b8] rounded" onclick="handleClear()">Clear</button>
-        <button class="digit-btn p-4 text-xl bg-gray-200 rounded" onclick="handleDigit(0)">0</button>
-        <button class="jspsych-btn p-4 text-xl bg-[#0ea5e9] text-white rounded" onclick="handleSubmit()">Submit</button>
+<div id="custom-keypad-container" style="width: 100%; max-width: 500px; margin: 0 auto; position: static; transform: none;">
+    <div id="response-display" style="font-size: 32px; margin-bottom: 2rem; height: 48px; text-align: center; position: static; transform: none;"></div>
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; width: 100%; position: static; transform: none;">
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(1)">1</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(2)">2</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(3)">3</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(4)">4</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(5)">5</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(6)">6</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(7)">7</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(8)">8</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(9)">9</button>
+        <button style="padding: 1rem; font-size: 24px; background-color: #94a3b8; border-radius: 0.5rem; width: 100%; height: 64px; border: none; color: white;" onclick="handleClear()">Clear</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(0)">0</button>
+        <button style="padding: 1rem; font-size: 24px; background-color: #0ea5e9; border-radius: 0.5rem; width: 100%; height: 64px; border: none; color: white;" onclick="handleSubmit()">Submit</button>
     </div>
 </div>
 `;
@@ -60,25 +60,24 @@ function generateSequence(num_digits) {
     return seq;
 }
 
+// Modify the digit display timeline
 function createDigitDisplayTimeline(sequence) {
     let timeline = [];
     for (let digit of sequence) {
         // Add blank screen before digit
         timeline.push({
             type: jsPsychHtmlKeyboardResponse,
-            stimulus: `<div class="text-7xl"></div>`,  // Empty div to maintain spacing
+            stimulus: `<div style="font-size: 96px; min-height: 200px; display: flex; align-items: center; justify-content: center; position: static; transform: none;"></div>`,
             choices: "NO_KEYS",
-            trial_duration: 50,  // Brief blank screen
-            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
+            trial_duration: 200
         });
 
         // Show digit
         timeline.push({
             type: jsPsychHtmlKeyboardResponse,
-            stimulus: `<div class="text-7xl">${digit}</div>`,
+            stimulus: `<div style="font-size: 96px; min-height: 200px; display: flex; align-items: center; justify-content: center; position: static; transform: none;">${digit}</div>`,
             choices: "NO_KEYS",
-            trial_duration: ds_digit_duration,
-            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
+            trial_duration: ds_digit_duration
         });
     }
     return timeline;
@@ -91,6 +90,7 @@ function createResponsePhase(sequence) {
         stimulus: keypadHTML,
         choices: ['Continue'],
         button_html: '<button style="display:none" class="jspsych-btn">%choice%</button>',
+        trial_duration: 5000,  // 5 second timeout
         data: {
             sequence: sequence
         },
@@ -99,38 +99,26 @@ function createResponsePhase(sequence) {
             currentTrial = trial;
         },
         on_finish: function(data) {
+            data.game_type = "digit_span"
+            // If response is empty (timed out), set it to an empty array
+            if (!data.response) {
+                data.response = [];
+                data.is_correct = 0;
+                data.timed_out = 1;
+            }
             data.is_correct = JSON.stringify(data.response) === JSON.stringify(data.sequence);
-            console.log(JSON.stringify(data.response) === JSON.stringify(data.sequence))
+            data.timed_out = data.response.length === 0;  // Add flag for timeout
+            console.log(JSON.stringify(data.response) === JSON.stringify(data.sequence));
             currentTrial = null;
         }
     };
 }
 
-var ds_instructions = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: `
-        <div class="max-w-2xl mx-auto p-6">
-            <h1 class="text-2xl mb-4">Digit Span Task</h1>
-            <p class="mb-4">You will see a sequence of 4 digits shown one at a time.</p>
-            <p class="mb-4">After the sequence, use the on-screen keypad to enter the digits in the order they were presented.</p>
-            <p class="text-center mt-8">Press any key to begin.</p>
-        </div>
-    `
-}
 function ds_getMainBlock(num_trials = ds_trials_per_block, num_d = ds_digits_to_mem) {
     var trials = [];
 
     for (let i = 0; i < num_trials; i++) {
         var sequence = jsPsych.randomization.sampleWithReplacement([...Array(10).keys()], num_d);
-
-        // fixation cross
-        trials.push({
-            type: jsPsychHtmlKeyboardResponse,
-            stimulus: '<div class="text-4xl">+</div>',
-            choices: "NO_KEYS",
-            trial_duration: 1000,
-            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
-        });
 
         // actual digit sequence
         trials.push(...createDigitDisplayTimeline(sequence));
@@ -148,15 +136,6 @@ function ds_getPracticeBlock(num_practice, num_d) {
     for (let i = 0; i < num_practice; i++) {
         var sequence = jsPsych.randomization.sampleWithReplacement([...Array(10).keys()], num_d);
 
-        // fixation cross
-        trials.push({
-            type: jsPsychHtmlKeyboardResponse,
-            stimulus: '<div class="text-4xl">+</div>',
-            choices: "NO_KEYS",
-            trial_duration: 1000,
-            css_classes: ['flex', 'items-center', 'justify-center', 'h-screen']
-        });
-
         // actual digit sequence
         trials.push(...createDigitDisplayTimeline(sequence));
 
@@ -168,6 +147,15 @@ function ds_getPracticeBlock(num_practice, num_d) {
             type: jsPsychHtmlKeyboardResponse,
             stimulus: function() {
                 var last_trial = jsPsych.data.get().last(1).values()[0];
+                if (last_trial.timed_out) {
+                    return `
+                        <div class="flex flex-col items-center justify-center">
+                            <p class="text-2xl text-red-500 mb-4">Respond faster!</p>
+                            <p class="text-xl">The sequence was: ${last_trial.sequence.join(' ')}</p>
+                            <p class="mt-8">Press any key to continue</p>
+                        </div>
+                    `;
+                }
                 if (last_trial.is_correct) {
                     return `
                         <div class="flex flex-col items-center justify-center">
@@ -189,22 +177,9 @@ function ds_getPracticeBlock(num_practice, num_d) {
                 }
             },
             choices: "ALL_KEYS",
-            trial_duration: null
+            trial_duration: 1000
         });
     }
-
-    // Add completion message
-    trials.push({
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: `
-            <div class="max-w-2xl mx-auto p-6">
-                <h1 class="text-2xl mb-4">Practice Complete!</h1>
-                <p class="mb-4">You have completed the practice trials.</p>
-                <p class="text-center mt-8">Press any key to begin the main task.</p>
-            </div>
-        `,
-        choices: "ALL_KEYS"
-    });
 
     return trials;
 }

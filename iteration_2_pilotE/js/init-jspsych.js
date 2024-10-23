@@ -12,7 +12,7 @@ var jsPsych = initJsPsych({
       jsPsych.data.displayData();
     },
     on_start: function(){
-      document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+      //document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
     },
     on_finish: function(){
       //window.location = "https://app.prolific.com/submissions/complete?cc=C1KBNHGP"
