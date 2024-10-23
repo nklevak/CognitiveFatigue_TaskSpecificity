@@ -49,7 +49,7 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           <div class="shapes-container">
               ${shapes_html}
           </div>
-          <p>What is the number under the ${trial.stimulus}?</p>
+          <p>What is the number under the <strong>${trial.stimulus}</strong>?</p>
       </div>
   `;
       const end_trial = (response) => {

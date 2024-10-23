@@ -35,7 +35,7 @@ var welcome_practice_instructions = {
 // practice instructions
 SR_practice = [
   `<div class="instructions-container">
-    <h1 class="instructions-heading">Square Sequence Task</h1>
+    <h1 class="instructions-heading">Square Game</h1>
     <p class="instructions-text">In this game you will see a grid of squares that will flash blue one at a time.</p>
     <p class="instructions-text">Your goal is to remember the order in which the squares flashed blue.</p>
     <p class="instructions-text">At the end of each trial, press the tiles that flashed in the <b>same order</b> as they were presented to you.</p>
@@ -49,7 +49,7 @@ SR_practice = [
 
 DS_practice = [
 `<div class="instructions-container">
-  <h1 class="instructions-heading">Digit Span Task</h1>
+  <h1 class="instructions-heading">Digit Game</h1>
   <p class="instructions-text">You will see a sequence of 4 digits shown one at a time.</p>
   <p class="instructions-text">After the sequence, use the on-screen keypad to enter the digits in the order they were presented.</p>
   <p class="instructions-text">Press any key to begin.</p>
@@ -58,12 +58,12 @@ DS_practice = [
 
 rest_practice = [
 `<div class="instructions-container">
-  <h1 class="instructions-heading">Rest Game Practice</h1>
+  <h1 class="instructions-heading">Rest Practice</h1>
   <p class="instructions-text">You have completed the practice for the two main games, Game A and Game B!</p>
   <p class="instructions-text">Now, you will practice the rest game, which will be shown to you during rest breaks.</p>
 </div>`,
 `<div class="instructions-container">
-  <h1 class="instructions-heading">Rest Game Instructions</h1>
+  <h1 class="instructions-heading">Rest Instructions</h1>
   <p class="instructions-text">In this game, you will see three shapes with numbers underneath them.</p>
   <p class="instructions-text">You will be asked about the number under one of the shapes.</p>
   <div style="display: flex; justify-content: space-around; margin: 2rem 0;">

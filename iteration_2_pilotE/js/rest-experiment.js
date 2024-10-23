@@ -31,37 +31,77 @@ function rest_task_createTrials(num_rt_trials) {
   const shapes = ['circle', 'diamond', 'square'];
   const trials = [];
 
+  var count_without_button = 0 // makes first 5 trials not have option to end rest
+
   for (let i = 0; i < num_rt_trials; i++) {
     const targetShape = jsPsych.randomization.sampleWithoutReplacement(shapes, 1)[0];
-    trials.push({
-      timeline: [{
-        type: dsstWithEndRestPlugin,
-        stimulus: targetShape,
-        choices: ['1', '2', '3'],
-        shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
-        show_end_rest_button: true,
-        trial_duration: 2000,
-        data: {
-          target_shape: targetShape,
-          correct_response: shapes.indexOf(targetShape) + 1
-        },
-        on_finish: function(data) {
-          console.log("end_rest: " + data.end_rest.toString());
-          if (data.end_rest == false && rest_ended == false) {
-            data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
-            rest_ended = false;
-          } else {
-            rest_ended = true;
-          }
-        },
-      }],
-      conditional_function: function() {
-        console.log("Evaluating conditional function for trial " + (i + 1));
-        const shouldRun = shouldTrialRun();
-        console.log("shouldTrialRun() returned: " + shouldRun);
-        return shouldRun;
-      }
-    });
+    if (count_without_button < 5) {
+      trials.push({
+        timeline: [{
+          type: dsstWithEndRestPlugin,
+          stimulus: targetShape,
+          choices: ['1', '2', '3'],
+          shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+          show_end_rest_button: false,
+          trial_duration: 2000,
+          data: {
+            target_shape: targetShape,
+            correct_response: shapes.indexOf(targetShape) + 1,
+            option_to_end: false,
+            rest_trial_num: count_without_button
+          },
+          on_finish: function(data) {
+            console.log("end_rest: " + data.end_rest.toString());
+            if (data.end_rest == false && rest_ended == false) {
+              data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
+              rest_ended = false;
+            } else {
+              rest_ended = true;
+            }
+          },
+        }],
+        conditional_function: function() {
+          console.log("Evaluating conditional function for trial " + (i + 1));
+          const shouldRun = shouldTrialRun();
+          console.log("shouldTrialRun() returned: " + shouldRun);
+          return shouldRun;
+        }
+      });
+    } else {
+      trials.push({
+        timeline: [{
+          type: dsstWithEndRestPlugin,
+          stimulus: targetShape,
+          choices: ['1', '2', '3'],
+          shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+          show_end_rest_button: true,
+          trial_duration: 2000,
+          data: {
+            target_shape: targetShape,
+            correct_response: shapes.indexOf(targetShape) + 1,
+            option_to_end: true,
+            rest_trial_num: count_without_button
+          },
+          on_finish: function(data) {
+            console.log("end_rest: " + data.end_rest.toString());
+            if (data.end_rest == false && rest_ended == false) {
+              data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
+              rest_ended = false;
+            } else {
+              rest_ended = true;
+            }
+          },
+        }],
+        conditional_function: function() {
+          console.log("Evaluating conditional function for trial " + (i + 1));
+          const shouldRun = shouldTrialRun();
+          console.log("shouldTrialRun() returned: " + shouldRun);
+          return shouldRun;
+        }
+      });
+    }
+
+    count_without_button = count_without_button + 1
   }
 
   return trials;
@@ -71,7 +111,7 @@ function rest_task_createTrials(num_rt_trials) {
 // cue that task will stay
 var cue_stay = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p> You will now begin the rest break. At the end of this rest break, you will continue with the same game. </p>',
+  stimulus: '<p> You will now begin the rest break. At the end of this rest break, <strong>you will continue with the same game.</strong> </p>',
   choices: "ALL_KEYS",
   trial_duration: 5000,
   on_finish: function(data){
@@ -83,7 +123,7 @@ var cue_stay = {
 // cue that task will switch
 var cue_switch = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p> You will now begin the rest break. At the end of this rest break, you will switch to the other game. </p>',
+  stimulus: '<p> You will now begin the rest break. At the end of this rest break, <strong>you will switch to the other game.</strong> </p>',
   choices: "ALL_KEYS",
   trial_duration: 5000,
   on_finish: function(data){
@@ -91,6 +131,15 @@ var cue_switch = {
     console.log(rest_ended)
   }
 }
+
+var rest_to_game_transition= {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `<div class="instructions-container">
+    <p class="instructions-text">You are done with rest! You will now return to the games.</p>
+  </div>`,
+  choices: "ALL_KEYS",
+  trial_duration: 1000,
+  }
 
 // Create self-paced rest timeline
 function createSelfPacedRestTimeline(cue) {
@@ -107,7 +156,7 @@ function createSelfPacedRestTimeline(cue) {
     }
   };
 
-  return {timeline: [cue_timeline, self_paced_rest_procedure]};
+  return {timeline: [cue_timeline, self_paced_rest_procedure, rest_to_game_transition]};
 }
 
 // edit to add feedback
