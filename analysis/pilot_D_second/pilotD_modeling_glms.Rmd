@@ -604,7 +604,61 @@ final_df_excluded %>%
        y = "Average Accuracy in Previous Block",
        color = "Block Number") +
   ggtitle("Prior Block's Average Accuracy by Z-Scored Bid, by subject")
+
+# including all subjects, plot improved for FYP
+final_df_excluded %>%
+  ungroup() %>%
+  # group_by(subj_id, following_bid_z_score, avg_block_accuracy) %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = following_bid_z_score)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  labs(x = "Average block accuracy",
+       y = "Following bid to switch (z-scored per participant)",
+       color = "Block Number") +
+  ggtitle("Predicting bid from performance")
+
+
+
+# adding the r squared value to the plot
+
+# First create the linear model to get R-squared
+lm_model <- final_df_excluded %>%
+  ungroup() %>%
+  lm(following_bid_z_score ~ avg_block_accuracy, data = .)
+
+# Get R-squared value formatted nicely
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+print(r_squared)
+
+# Create the plot with R-squared annotation
+final_df_excluded %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = following_bid_z_score)) +
+  geom_smooth(method = "lm", se = TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +
+  annotate("text", 
+           x = 0.1,  # Try middle of x-axis
+           y = 3,    # Try near top of y-axis
+           label = r_squared_label) +
+  labs(x = "Average block accuracy",
+       y = "Following bid to switch (z-scored per participant)",
+       color = "Block Number") +
+  ggtitle("Predicting bid from performance")
 ```
+``` {r data_wrangling}
+# Separate regression lines for each block
+ggplot(final_df_excluded, aes(x = avg_block_accuracy, y = following_bid_z_score, color = factor(curr_block_num))) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Average block accuracy",
+       y = "Following bid to switch (z-scored per participant)",
+       color = "Block Number") +
+  ggtitle("Relationship between performance and bids by block")
+```
+
+
+
 ``` {r data_wrangling}
 # including all subjects
 final_df_excluded %>%
