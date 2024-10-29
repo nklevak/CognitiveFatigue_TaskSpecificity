@@ -441,7 +441,7 @@ head(subjects_no_switch)
 subjects_high_low_accuracy <- final_df %>%
   select(subj_id, avg_vs_correct, avg_sr_correct) %>%
   group_by(subj_id) %>%
-  summarize(min_avg_score = min(avg_vs_correct, avg_sr_correct), max_avg_score = max(avg_vs_correct, avg_sr_correct)) %>%
+  summarize(min_avg_score = min(avg_vs_correct, avg_sr_correct), max_avg_score = max(avg_vs_correct, avg_sr_correct), avg_vs_correct = mean(avg_vs_correct), avg_sr_correct = mean(avg_sr_correct)) %>%
   filter(min_avg_score > top_cutoff | max_avg_score < bottom_cutoff)
 head(subjects_high_low_accuracy)
 
@@ -463,6 +463,8 @@ temp <- final_df_excluded
 # across subjects, how accuracy changes over time per task
 temp %>%
   group_by(subj_id) %>%
+  select(subj_id, avg_z_accuracy, game_type, task_block_count) %>%
+  distinct() %>%
   ggplot(mapping = aes(x=task_block_count,y=avg_z_accuracy)) +
   facet_wrap(~game_type) +
   geom_smooth(method="lm",se=TRUE) +
@@ -537,6 +539,7 @@ temp %>%
 ## (normalized per participant) Bids over time:
 
 ``` {r plot_bid_time}
+copy_final_df_excluded <- final_df_excluded
 # faceted by subject
 final_df_excluded %>%
   group_by(subj_id, curr_block_num) %>%
@@ -584,6 +587,8 @@ Not normalizing per participant means we are looking at **how well participants 
 # including all subjects
 final_df_excluded %>%
   ungroup() %>%
+  select(subj_id, following_bid_z_score, avg_block_accuracy, curr_block_num) %>%
+  distinct() %>%
   # group_by(subj_id, following_bid_z_score, avg_block_accuracy) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_accuracy)) +
   geom_smooth(method="lm",se=TRUE) +
@@ -595,6 +600,9 @@ final_df_excluded %>%
 
 # faceted by subjects, show first few
 final_df_excluded %>%
+  ungroup() %>%
+  select(subj_id, following_bid_z_score, avg_block_accuracy, curr_block_num) %>%
+  distinct() %>%
   filter(subj_id < 20) %>%
   ggplot(mapping = aes(x = following_bid_z_score, y = avg_block_accuracy)) +
   facet_wrap(~subj_id) +
@@ -608,6 +616,8 @@ final_df_excluded %>%
 # including all subjects, plot improved for FYP
 final_df_excluded %>%
   ungroup() %>%
+  select(subj_id, following_bid_z_score, avg_block_accuracy, curr_block_num) %>%
+  distinct() %>%
   # group_by(subj_id, following_bid_z_score, avg_block_accuracy) %>%
   ggplot(mapping = aes(x = avg_block_accuracy, y = following_bid_z_score)) +
   geom_smooth(method="lm",se=TRUE) +
@@ -622,17 +632,25 @@ final_df_excluded %>%
 # adding the r squared value to the plot
 
 # First create the linear model to get R-squared
-lm_model <- final_df_excluded %>%
+data_plot_raw <- final_df_excluded %>%
   ungroup() %>%
+  select(subj_id, following_bid_z_score, avg_block_accuracy, curr_block_num) %>%
+  distinct() %>%
+  arrange(subj_id, curr_block_num)
+
+head(data_plot_raw)
+  
+lm_model <- data_plot_raw %>%
   lm(following_bid_z_score ~ avg_block_accuracy, data = .)
 
 # Get R-squared value formatted nicely
+summary(lm_model)
 r_squared <- summary(lm_model)$r.squared
 r_squared_label <- sprintf("R² = %.3f", r_squared)
 print(r_squared)
 
 # Create the plot with R-squared annotation
-final_df_excluded %>%
+data_plot_raw %>%
   ungroup() %>%
   ggplot(mapping = aes(x = avg_block_accuracy, y = following_bid_z_score)) +
   geom_smooth(method = "lm", se = TRUE) +
@@ -645,6 +663,10 @@ final_df_excluded %>%
        y = "Following bid to switch (z-scored per participant)",
        color = "Block Number") +
   ggtitle("Predicting bid from performance")
+
+
+
+
 ```
 ``` {r data_wrangling}
 # Separate regression lines for each block
@@ -655,9 +677,392 @@ ggplot(final_df_excluded, aes(x = avg_block_accuracy, y = following_bid_z_score,
        y = "Following bid to switch (z-scored per participant)",
        color = "Block Number") +
   ggtitle("Relationship between performance and bids by block")
+
+
+# Option 2: Create a more formal model including block number
+
+analysis_data <- final_df_excluded %>%
+  # Remove any NA values that might cause issues
+  drop_na(following_bid_z_score, avg_block_accuracy, curr_block_num) %>%
+  select(following_bid_z_score, avg_block_accuracy, curr_block_num, subj_id, game_type) %>%
+  distinct()
+
+lm_with_block <- lm(following_bid_z_score ~ avg_block_accuracy * factor(curr_block_num), 
+                    data = analysis_data)
+summary(lm_with_block)
+
+# Get R-squared for this model
+r_squared <- summary(lm_with_block)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+
+# Visualize predictions from this model
+analysis_data %>%
+  mutate(predicted = predict(lm_with_block)) %>%
+  ggplot() +
+  geom_point(aes(x = avg_block_accuracy, y = following_bid_z_score, color = factor(curr_block_num)), size = 2) +
+  geom_line(aes(x = avg_block_accuracy, y = predicted, color = factor(curr_block_num))) +
+  labs(x = "Average block accuracy",
+       y = "Following bid to switch (z-scored per participant)",
+       color = "Block Number") +
+  ggtitle("Performance-bid relationship with block interaction")
 ```
 
+``` {r data_wrangling}
+# model with block number interaction
+mixed_model <- lm(following_bid_z_score ~ avg_block_accuracy*curr_block_num + 
+                   subj_id, data = analysis_data)
 
+# Print model summary
+summary(mixed_model)
+
+# Option 1: Faceted plot by block with subject-centered measures
+analysis_data %>%
+  group_by(subj_id) %>%
+  mutate(
+    # Center accuracy and bids within subject
+    acc_centered = scale(avg_block_accuracy, center = TRUE, scale = FALSE),
+    bid_centered = scale(following_bid_z_score, center = TRUE, scale = FALSE)
+  ) %>%
+  ggplot(aes(x = acc_centered, y = bid_centered)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "lm", se = TRUE) +
+  facet_wrap(~curr_block_num, ncol = 4) +
+  labs(x = "Block Accuracy (centered within subject)",
+       y = "Following Bid (centered within subject)",
+       title = "Effect of Performance on Fatigue Across Blocks",
+       subtitle = "Each panel shows a different block") +
+  theme_minimal()
+```
+```{r}
+# Option 2: Evolution of accuracy-bid relationship across blocks
+analysis_data %>%
+  group_by(subj_id) %>%
+  mutate(
+    acc_centered = scale(avg_block_accuracy, center = TRUE, scale = FALSE),
+    bid_centered = scale(following_bid_z_score, center = TRUE, scale = FALSE)
+  ) %>%
+  ggplot(aes(x = curr_block_num, y = bid_centered, color = acc_centered)) +
+  geom_point(alpha = 0.3) +
+  geom_smooth(method = "loess") +
+  scale_color_gradient2(low = "red", mid = "white", high = "blue", 
+                       midpoint = 0,
+                       name = "Relative\nAccuracy") +
+  labs(x = "Block Number",
+       y = "Relative Bid Level",
+       title = "How Performance Affects Fatigue Across Task Progress",
+       subtitle = "Blue = better than subject's average, Red = worse") +
+  theme_minimal()
+
+```
+
+```{r}
+### plotting the betas of the coefficients
+# Calculate block-specific betas
+block_betas <- analysis_data %>%
+  group_by(curr_block_num) %>%
+  summarise(
+    model = list(lm(following_bid_z_score ~ avg_block_accuracy)),
+    tidy_model = list(tidy(model[[1]])),
+    r2 = summary(model[[1]])$r.squared
+  ) %>%
+  unnest(tidy_model) %>%
+  filter(term == "avg_block_accuracy") %>%
+  mutate(
+    ci_lower = estimate - 1.96 * std.error,
+    ci_upper = estimate + 1.96 * std.error,
+    significant = p.value < 0.05
+  )
+
+# Create the plot
+ggplot(block_betas, aes(x = curr_block_num)) +
+  # Add horizontal line at y=0 for reference
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Add linear trend line
+  geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+  # Add error bars
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  # Add points, colored by significance
+  geom_point(aes(y = estimate, color = significant), size = 3) +
+  # Add line connecting points
+  geom_line(aes(y = estimate), alpha = 0.5) +
+  # Color scheme
+  scale_color_manual(values = c("gray60", "blue"), 
+                    labels = c("p ≥ 0.05", "p < 0.05")) +
+  # Labels
+  labs(x = "Block Number",
+       y = "Beta Coefficient (Z-Bid ~ Accuracy)",
+       title = "How Performance Predicts Subsequent Bids Across Blocks",
+       subtitle = "Red line shows linear trend across blocks",
+       color = "Statistical\nSignificance") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+# Calculate and print trend statistics
+trend_model <- lm(estimate ~ curr_block_num, data = block_betas)
+trend_summary <- summary(trend_model)
+
+# Print key statistics
+cat("\nLinear Trend Analysis:\n")
+cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+
+
+```
+
+```{r}
+# analysis_data_2 <- final_df_excluded %>%
+analysis_data_2 <- final_df_excluded %>%
+  # Remove any NA values that might cause issues
+  drop_na(following_bid, avg_block_accuracy, curr_block_num, subj_id) %>%
+  select(following_bid, avg_block_accuracy, curr_block_num, subj_id, game_type) %>%
+  distinct()
+# 
+# ### plotting the betas
+# doing 1|subj_id here doesn't make sense
+# # Calculate block-specific betas
+# block_betas <- analysis_data_2 %>%
+#   group_by(curr_block_num) %>%
+#   summarise(
+#     model = list(lm(following_bid ~ avg_block_accuracy + (1|subj_id))),
+#     tidy_model = list(tidy(model[[1]])),
+#     r2 = summary(model[[1]])$r.squared
+#   ) %>%
+#   unnest(tidy_model) %>%
+#   filter(term == "avg_block_accuracy") %>%
+#   mutate(
+#     ci_lower = estimate - 1.96 * std.error,
+#     ci_upper = estimate + 1.96 * std.error,
+#     significant = p.value < 0.05
+#   )
+# 
+# # Create the plot
+# ggplot(block_betas, aes(x = curr_block_num)) +
+#   # Add horizontal line at y=0 for reference
+#   geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+#   # Add linear trend line
+#   geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+#   # Add error bars
+#   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+#   # Add points, colored by significance
+#   geom_point(aes(y = estimate, color = significant), size = 3) +
+#   # Add line connecting points
+#   geom_line(aes(y = estimate), alpha = 0.5) +
+#   # Color scheme
+#   scale_color_manual(values = c("gray60", "blue"), 
+#                     labels = c("p ≥ 0.05", "p < 0.05")) +
+#   # Labels
+#   labs(x = "Block Number",
+#        y = "Beta Coefficient (Bid ~ Accuracy + (1| subject ID))",
+#        title = "How Performance Predicts Subsequent Bids Across Blocks",
+#        subtitle = "Red line shows linear trend across blocks",
+#        color = "Statistical\nSignificance") +
+#   theme_minimal() +
+#   theme(
+#     panel.grid.minor = element_blank(),
+#     axis.title = element_text(face = "bold")
+#   )
+# 
+# # Calculate and print trend statistics
+# trend_model <- lm(estimate ~ curr_block_num, data = block_betas)
+# trend_summary <- summary(trend_model)
+# 
+# # Print key statistics
+# cat("\nLinear Trend Analysis:\n")
+# cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+# cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+# cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+
+
+```
+
+```{r}
+# PER TASK: 
+
+### plotting the betas
+# Calculate block-specific betas
+block_betas <- analysis_data %>%
+  filter(game_type=="vs") %>%
+  group_by(curr_block_num) %>%
+  summarise(
+    model = list(lm(following_bid_z_score ~ avg_block_accuracy)),
+    tidy_model = list(tidy(model[[1]])),
+    r2 = summary(model[[1]])$r.squared
+  ) %>%
+  unnest(tidy_model) %>%
+  filter(term == "avg_block_accuracy") %>%
+  mutate(
+    ci_lower = estimate - 1.96 * std.error,
+    ci_upper = estimate + 1.96 * std.error,
+    significant = p.value < 0.05
+  )
+
+# Create the plot
+ggplot(block_betas, aes(x = curr_block_num)) +
+  # Add horizontal line at y=0 for reference
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Add linear trend line
+  geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+  # Add error bars
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  # Add points, colored by significance
+  geom_point(aes(y = estimate, color = significant), size = 3) +
+  # Add line connecting points
+  geom_line(aes(y = estimate), alpha = 0.5) +
+  # Color scheme
+  scale_color_manual(values = c("gray60", "blue"), 
+                    labels = c("p ≥ 0.05", "p < 0.05")) +
+  # Labels
+  labs(x = "Block Number",
+       y = "Beta Coefficient (Z-Bid ~ Accuracy)",
+       title = "VS: How Performance Predicts Subsequent Bids Across Blocks",
+       subtitle = "Red line shows linear trend across blocks",
+       color = "Statistical\nSignificance") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+# Calculate and print trend statistics
+trend_model <- lm(estimate ~ curr_block_num, data = block_betas)
+trend_summary <- summary(trend_model)
+
+# Print key statistics
+cat("\nLinear Trend Analysis:\n")
+cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+
+
+
+
+### plotting the betas
+# Calculate block-specific betas
+block_betas <- analysis_data %>%
+  filter(game_type!="vs") %>%
+  group_by(curr_block_num) %>%
+  summarise(
+    model = list(lm(following_bid_z_score ~ avg_block_accuracy)),
+    tidy_model = list(tidy(model[[1]])),
+    r2 = summary(model[[1]])$r.squared
+  ) %>%
+  unnest(tidy_model) %>%
+  filter(term == "avg_block_accuracy") %>%
+  mutate(
+    ci_lower = estimate - 1.96 * std.error,
+    ci_upper = estimate + 1.96 * std.error,
+    significant = p.value < 0.05
+  )
+
+# Create the plot
+ggplot(block_betas, aes(x = curr_block_num)) +
+  # Add horizontal line at y=0 for reference
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Add linear trend line
+  geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+  # Add error bars
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  # Add points, colored by significance
+  geom_point(aes(y = estimate, color = significant), size = 3) +
+  # Add line connecting points
+  geom_line(aes(y = estimate), alpha = 0.5) +
+  # Color scheme
+  scale_color_manual(values = c("gray60", "blue"), 
+                    labels = c("p ≥ 0.05", "p < 0.05")) +
+  # Labels
+  labs(x = "Block Number",
+       y = "Beta Coefficient (Z-Bid ~ Accuracy)",
+       title = "SR: How Performance Predicts Subsequent Bids Across Blocks",
+       subtitle = "Red line shows linear trend across blocks",
+       color = "Statistical\nSignificance") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+# Calculate and print trend statistics
+trend_model <- lm(estimate ~ curr_block_num, data = block_betas)
+trend_summary <- summary(trend_model)
+
+# Print key statistics
+cat("\nLinear Trend Analysis:\n")
+cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+```
+
+``` {r}
+
+analysis_data_2 <- final_df_excluded %>%
+  # Remove any NA values that might cause issues
+  drop_na(following_bid_z_score, avg_z_accuracy, curr_block_num) %>%
+  distinct()
+
+### plotting the betas
+# Calculate block-specific betas
+block_betas <- analysis_data_2 %>%
+  group_by(curr_block_num) %>%
+  summarise(
+    model = list(lm(following_bid_z_score ~ avg_z_accuracy)),
+    tidy_model = list(tidy(model[[1]])),
+    r2 = summary(model[[1]])$r.squared
+  ) %>%
+  unnest(tidy_model) %>%
+  filter(term == "avg_z_accuracy") %>%
+  mutate(
+    ci_lower = estimate - 1.96 * std.error,
+    ci_upper = estimate + 1.96 * std.error,
+    significant = p.value < 0.05
+  )
+
+# Create the plot
+ggplot(block_betas, aes(x = curr_block_num)) +
+  # Add horizontal line at y=0 for reference
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Add linear trend line
+  geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+  # Add error bars
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  # Add points, colored by significance
+  geom_point(aes(y = estimate, color = significant), size = 3) +
+  # Add line connecting points
+  geom_line(aes(y = estimate), alpha = 0.5) +
+  # Color scheme
+  scale_color_manual(values = c("gray60", "blue"), 
+                    labels = c("p ≥ 0.05", "p < 0.05")) +
+  # Labels
+  labs(x = "Block Number",
+       y = "Beta Coefficient (Z-Bid ~ Z-Accuracy)",
+       title = "How Performance Predicts Subsequent Bids Across Blocks",
+       subtitle = "Red line shows linear trend across blocks",
+       color = "Statistical\nSignificance") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+# Calculate and print trend statistics
+trend_model <- lm(estimate ~ curr_block_num, data = block_betas)
+trend_summary <- summary(trend_model)
+
+# Print key statistics
+cat("\nLinear Trend Analysis:\n")
+cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+
+
+
+
+```
+  
+  
 
 ``` {r data_wrangling}
 # including all subjects
@@ -729,6 +1134,38 @@ final_df_excluded %>%
        y = "Bid Z-Score",
        color = "Block Number") +
   ggtitle("Prior Block's Average z-scored Accuracy by Z-Scored Bid, all subjects")
+
+
+
+# plot for FYP presentation: 
+data_to_plot <- final_df_excluded %>%
+  drop_na(subj_id, following_bid_z_score, avg_z_accuracy, curr_block_num) %>%
+  select(subj_id, following_bid_z_score, avg_z_accuracy, curr_block_num) %>%
+  distinct()
+
+# First create the linear model to get R-squared
+lm_model <- data_to_plot %>%
+  ungroup() %>%
+  lm(following_bid_z_score ~ avg_z_accuracy, data = .)
+
+# Get R-squared value formatted nicely
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+print(r_squared)
+
+data_to_plot %>%
+  # group_by(subj_id, following_bid_z_score, avg_z_accuracy) %>%
+  ggplot(mapping = aes(x = avg_z_accuracy, y = following_bid_z_score)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = curr_block_num), size = 2) +  # Points colored by block number
+  annotate("text", 
+           x = -2,  # Try middle of x-axis
+           y = 3,    # Try near top of y-axis
+           label = r_squared_label) +
+  labs(x = "Average block accuracy, z-scored by subject",
+       y = "Following bid to switch, z-scored by subject",
+       color = "Block Number") +
+  ggtitle("Predicting bid from performance")
 ```
 
 To do reaction time, must do it per task:
@@ -790,7 +1227,7 @@ Not normalizing per participant means we are looking at **how well participants 
 ``` {r plot_accuracy_switch_bid}
 # to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
 breaks <- c(-Inf, -1, 0, 1, Inf)
-labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
+labels <- c('bid << avg','bid < avg', 'bid > avg', 'bid >> avg')
 
 temp <- final_df_excluded %>%
   group_by(subj_id, curr_block_num, avg_block_accuracy, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
@@ -800,6 +1237,8 @@ temp <- final_df_excluded %>%
   mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
 
 temp %>%
+  select(curr_block_num, block_switched, avg_block_accuracy, bid_bin_preceding) %>%
+  distinct() %>%
   filter(curr_block_num != 1) %>%
   ggplot(mapping = aes(x=block_switched,y=avg_block_accuracy)) +
   facet_wrap(~bid_bin_preceding,ncol=8) +
@@ -808,11 +1247,11 @@ temp %>%
   stat_summary(fun.data = "mean_cl_boot",
                geom = "pointrange",
                color = "black",
-               fill = "yellow",
+               fill = "light blue",
                shape = 21,
-               size = 0.5)+
+               size = 0.75)+
   labs(x="Did the task switch?",y="Average accuracy in this block")+
-  ggtitle("bid offer (z-scored), switch status and following average accuracy")
+  ggtitle("Relationship between performance, fatigue level, and switch status")
 ```
 ``` {r plot_RT_switch_bid}
 # to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
@@ -897,17 +1336,20 @@ Normalizing per participant means we are looking at **how well participants perf
 ``` {r plot_accuracy_switch_bid}
 # to try to visualize this question: if bid offer is in higher bucket, and switch was successful vs unsucessful, how does that change accuracy? (accounting for game type)
 breaks <- c(-Inf, -1, 0, 1, Inf)
-labels <- c('more than 1 sd <','0 to 1 sd <', '0 to 1 sd >', 'more than 1 sd >')
+labels <- c('bid << avg','bid < avg', 'bid > avg', 'bid >> avg')
 
 temp <- final_df_excluded %>%
   group_by(subj_id, curr_block_num, avg_z_accuracy, following_bid_z_score, preceding_bid_z_score, block_switched) %>%
-  summarise(preceding_bid_z_score = mean(preceding_bid_z_score), following_bid_z_score =mean(following_bid_z_score), avg_z_accuracy = mean(avg_z_accuracy)) %>%
+  drop_na(subj_id, curr_block_num, avg_z_accuracy, block_switched) %>%
+  distinct(subj_id, curr_block_num, following_bid_z_score) %>%
   mutate(bid_bin_preceding = cut(preceding_bid_z_score, breaks = breaks, labels = labels, right = FALSE),
          bid_bin_following = cut(following_bid_z_score, breaks = breaks, labels = labels, right = FALSE))%>%
   mutate(block_switched = ifelse(block_switched == 'false',"no switch","switch"))
 
 temp %>%
   filter(curr_block_num != 1) %>%
+  select(block_switched, avg_z_accuracy, curr_block_num, subj_id, bid_bin_preceding) %>%
+  distinct() %>%
   ggplot(mapping = aes(x=block_switched,y=avg_z_accuracy)) +
   facet_wrap(~bid_bin_preceding,ncol=8) +
   theme(panel.spacing.x = unit(2, "lines"))+
@@ -915,11 +1357,11 @@ temp %>%
   stat_summary(fun.data = "mean_cl_boot",
                geom = "pointrange",
                color = "black",
-               fill = "yellow",
+               fill = "light blue",
                shape = 21,
-               size = 0.5)+
-  labs(x="Did the task switch?",y="Average (z-scored) accuracy in this block")+
-  ggtitle("bid offer (z-scored), switch status and following average accuracy (z-scored by participant)")
+               size = 0.75)+
+  labs(x="Did the task switch?",y="Average z-accuracy in this block")+
+  ggtitle("Relationship between performance, fatigue level, and switch status")
 
 # broken up into game
 temp <- final_df_excluded %>%
@@ -1580,3 +2022,184 @@ check_model(fit.augmented_b_six_gllm)
 summary(fit.augmented_b_six_gllm)
 ```
 
+``` {r fatigue_switch_glmer}
+
+analysis_data <- copy_final_df_excluded %>%
+  drop_na(following_bid, preceding_bid, block_switched, subj_id, curr_block_num, game_type) %>%
+  select(following_bid, preceding_bid, block_switched, subj_id, curr_block_num, game_type) %>%
+  distinct()
+
+head(analysis_data)
+
+# Fit the model
+model <- glmer(following_bid ~ preceding_bid * block_switched + curr_block_num + 
+               (1|subj_id),  # Random effects for subject
+               data = analysis_data)  # Using gaussian since bid is continuous
+
+# Print model summary
+summary(model)
+
+
+
+
+analysis_data <- copy_final_df_excluded %>%
+  drop_na(avg_block_accuracy, preceding_bid_z_score, block_switched, subj_id, curr_block_num, game_type) %>%
+  select(avg_block_accuracy, preceding_bid_z_score, block_switched, subj_id, curr_block_num, game_type) %>%
+  distinct()
+
+head(analysis_data)
+
+
+basic_model <- glmer(avg_block_accuracy ~ curr_block_num + (1|subj_id),  # Random effects for subject
+               data = analysis_data, family = binomial)  
+
+basic_model_2 <- glmer(avg_block_accuracy ~ preceding_bid_z_score + curr_block_num + (1|subj_id),  # Random effects for subject
+               data = analysis_data, family = binomial)  
+
+basic_model_3 <- glmer(avg_block_accuracy ~ preceding_bid_z_score + block_switched + curr_block_num + 
+               (1|subj_id),  # Random effects for subject
+               data = analysis_data, family = binomial) 
+
+
+
+# Fit the model
+model_4 <- glmer(avg_block_accuracy ~ preceding_bid_z_score * block_switched + curr_block_num + 
+               (1|subj_id),  # Random effects for subject
+               data = analysis_data, family = binomial)  
+
+# Print model summary
+summary(model_4)
+
+
+
+# Fit the model
+model_5 <- glmer(avg_block_accuracy ~ preceding_bid_z_score * block_switched + curr_block_num + game_type +
+               (1|subj_id),  # Random effects for subject
+               data = analysis_data, family = binomial)  # Using gaussian since bid is continuous
+
+# Print model summary
+summary(model_5)
+
+compare_performance(basic_model, basic_model_2, basic_model_3, model_4, model_5)
+
+
+# model 4 and basic_model_3 are best
+check_model(basic_model_3)
+check_model(model_4)
+
+
+summary(model_4)
+```
+
+```{r}
+# 
+# 
+# # Option 2: Raw data with smooth lines
+# ggplot(analysis_data, aes(x = preceding_bid_z_score, y = avg_block_accuracy,
+#                                color = block_switched)) +
+#   # Add individual points
+#   geom_point(alpha = 0.2) +
+#   # Add smooth lines
+#   geom_smooth(method = "glm", formula = y ~ x,
+#               method.args = list(family = "binomial")) +
+#   labs(x = "Previous Bid (z-scored)",
+#        y = "Accuracy",
+#        color = "Switched Tasks",
+#        title = "Relationship Between Previous Bid and Accuracy",
+#        subtitle = "Separate trends for switch vs. stay trials") +
+#   theme_minimal() +
+#   scale_color_manual(values = c("blue", "red"),
+#                     labels = c("Stayed", "Switched"))
+
+
+# Option 2: Coefficient plot
+# Extract and plot model coefficients
+coef_data <- data.frame(
+  term = names(fixef(model_4)),
+  estimate = fixef(model_4),
+  se = sqrt(diag(vcov(model_4)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+
+ggplot(coef_data, aes(x = estimate, y = term)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2) +
+  geom_point(size = 3) +
+  labs(x = "Coefficient Estimate",
+       y = "",
+       title = "Model Coefficient Estimates",
+       subtitle = "Error bars show 95% confidence intervals") +
+  theme_minimal()
+
+
+summary(model_4)
+
+
+
+
+
+# Create prediction grid with correct levels
+pred_data <- expand.grid(
+  preceding_bid_z_score = seq(-2, 2, length.out = 100),
+  block_switched = c("false", "true"),
+  curr_block_num = mean(analysis_data$curr_block_num),
+  subj_id = analysis_data$subj_id[30]
+)
+
+# Get predictions
+pred_data$pred <- predict(model_4, newdata = pred_data, type = "response", 
+                         re.form = NA)
+
+# Create plot
+ggplot(pred_data, aes(x = preceding_bid_z_score, y = pred, 
+                      color = block_switched, fill = block_switched)) +
+  # Add lines
+  geom_line(size = 1) +
+  # Add confidence bands
+  geom_ribbon(aes(ymin = plogis(qlogis(pred) - 1.96 * 0.15), 
+                  ymax = plogis(qlogis(pred) + 1.96 * 0.15)), 
+              alpha = 0.2) +
+  # Customize appearance
+  labs(x = "Previous Bid (z-scored)",
+       y = "Predicted Accuracy",
+       color = "Task Switch",
+       fill = "Task Switch",
+       title = "Effect of Previous Bid on Predicted Accuracy",
+       subtitle = "By switch status, controlling for block number") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "red"),
+                    labels = c("Stayed", "Switched")) +
+  scale_fill_manual(values = c("blue", "red"),
+                    labels = c("Stayed", "Switched")) +
+  # Add theme elements
+  theme(legend.position = "bottom",
+        panel.grid.minor = element_blank()) +
+  # Add reference line at mean accuracy
+  geom_hline(yintercept = mean(analysis_data$avg_block_accuracy), 
+             linetype = "dashed", alpha = 0.3)
+
+# Optional: Version with raw data points
+ggplot() +
+  # Add predicted lines
+  geom_line(data = pred_data, 
+            aes(x = preceding_bid_z_score, y = pred, 
+                color = block_switched), size = 1) +
+  # Add actual data points
+  geom_point(data = analysis_data, 
+             aes(x = preceding_bid_z_score, y = avg_block_accuracy, 
+                 color = block_switched), 
+             alpha = 0.1) +
+  # Customize appearance
+  labs(x = "Previous Bid (z-scored)",
+       y = "Accuracy",
+       color = "Task Switch",
+       title = "Model Predictions with Raw Data",
+       subtitle = "Lines: predicted, points: raw data") +
+  theme_minimal() +
+  scale_color_manual(values = c("blue", "red"),
+                    labels = c("Stayed", "Switched"))
+
+```
