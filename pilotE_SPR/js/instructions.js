@@ -171,3 +171,12 @@ stimulus:
     <strong>4</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>
   </div>`
 }
+
+
+// cue that task will stay
+var rest_leftovers_transition = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: '<p> You have completed the main experiment! Now you will do the leftover rest trials that you skipped earlier. </p>',
+  choices: "ALL_KEYS",
+  trial_duration: 1000,
+}

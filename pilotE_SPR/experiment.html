@@ -156,11 +156,10 @@ timeline.push(preload,fullscreen, prolific_id_insert,welcome_practice_instructio
 timeline.push(gameA_practice_instructions, gameA_practice, practice_transition, gameB_practice_instructions, gameB_practice, rest_practice_instructions, rt_practice, main_exp_instructions)
 
 // MAIN EXPERIMENT TASKS:
-// since game A and game B are counterbalanced, we can make it all the same order:
-// ABABBABAABABAABABB
+// ABABBABAAB
 // each A group is: A, rest, A, rest, A
 // each B group is: B, rest, B, rest, B
-// 18 blocks in total
+// 10 blocks in total
 
 // create rest timelines
 var rest_stay = createSelfPacedRestTimeline("stay")
@@ -188,19 +187,15 @@ if (gameA_SR == 0) {// this means game A is actually digit span
   B_block_group = sr_group
 }
 
-// push the order: ABABBABAA + BABAABABB
+// NEW ORDER: ABABBABAAB
 timeline.push(A_block_group, rest_switch, B_block_group, rest_switch, 
 A_block_group, rest_switch, B_block_group, rest_stay, 
 B_block_group, rest_switch, A_block_group, rest_switch,
 B_block_group, rest_switch, A_block_group, rest_stay,
-A_block_group, rest_switch, B_block_group, rest_switch, 
-A_block_group, rest_switch,B_block_group, rest_switch, 
-A_block_group, rest_stay, A_block_group, rest_switch, 
-B_block_group, rest_switch, A_block_group, rest_switch, 
-B_block_group, rest_stay, B_block_group, rest_switch)
+A_block_group, rest_switch, B_block_group, rest_switch)
 
 // CONCLUSION
-timeline.push(overall_debrief, exitFullscreen)
+timeline.push(rest_leftovers_transition, rt_leftovers, overall_debrief, exitFullscreen)
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);

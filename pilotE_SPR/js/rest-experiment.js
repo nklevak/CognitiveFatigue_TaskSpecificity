@@ -1,4 +1,4 @@
-var max_num_rest_trials_per_block = 20; // make it 40?
+var max_num_rest_trials_per_block = 5; // before it was 20; make it 40?
 var rest_num_practice_trials = 6;
 var num_groups = 10
 var num_blocks_per_group = 3
@@ -76,6 +76,7 @@ function rest_task_createTrials(num_rt_trials) {
 
   return trials;
 }
+
 
 
 // cue that task will stay
@@ -157,5 +158,43 @@ function practice_rest_task_createTrials(num_rt_trials) {
   return trials;
 }
 
-  var rt_practice = {timeline: practice_rest_task_createTrials(rest_num_practice_trials)}
 
+
+// edit to add feedback
+function leftover_rest_task_createTrials(num_rt_trials) {
+  const shapes = ['circle', 'diamond', 'square'];
+  const trials = [];
+
+  for (let i = 0; i < num_rt_trials; i++) {
+    const targetShape = jsPsych.randomization.sampleWithoutReplacement(shapes, 1)[0];
+    trials.push({
+      timeline: [{
+      type: dsstWithEndRestPlugin,
+      stimulus: targetShape,
+      choices: ['1', '2', '3'],
+      shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+      show_end_rest_button: false,
+      trial_duration: 2000,
+      data: {
+        target_shape: targetShape,
+        correct_response: shapes.indexOf(targetShape) + 1
+      },
+      on_finish: function(data) {
+        overall_rest_left = overall_rest_left - 1
+        data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
+        data.game_type = "rest_practice"
+      },
+    }],
+      conditional_function: function() {
+        console.log("Trials left" + (overall_rest_left));
+        const shouldRun = overall_rest_left > 0
+        return shouldRun;
+      }
+    });
+  }
+
+  return trials;
+}
+
+var rt_practice = {timeline: practice_rest_task_createTrials(rest_num_practice_trials)}
+var rt_leftovers = {timeline: leftover_rest_task_createTrials(overall_rest_left)}
