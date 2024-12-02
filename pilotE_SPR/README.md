@@ -13,7 +13,7 @@ Current ordering (18 blocks): ABABBABAABABAABABB (9 As and 9 Bs)
 1 practice digit span block (6 trials)
 
 **Main Experiment**
-ABABBABAABABAABABB
+ABABBABAAB
 
 *Spatial Recall Block Specifications:*
 1 normal trial is:

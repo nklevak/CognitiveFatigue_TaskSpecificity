@@ -6,12 +6,11 @@ var num_blocks_per_group = 3
 const rt_instructions_01 = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: `
-    <p>In this task, you will see three shapes with numbers underneath them.</p>
+    <p>In this task, you will see two shapes with numbers underneath them.</p>
     <p>You will be asked about the number under one of the shapes.</p>
     <div style="display: flex; justify-content: space-around; margin: 20px;">
       <div><img src="img/circle.png" style="width: 50px;"><br>1</div>
-      <div><img src="img/diamond.png" style="width: 50px;"><br>2</div>
-      <div><img src="img/square.png" style="width: 50px;"><br>3</div>
+      <div><img src="img/square.png" style="width: 50px;"><br>2</div>
     </div>
     <p>Press the corresponding number key when asked about a specific shape.</p>
     <p>You can end the rest at any time by clicking the "End Rest" button.</p>
@@ -31,7 +30,7 @@ function shouldTrialRun() {
 }
 
 function rest_task_createTrials(num_rt_trials) {
-  const shapes = ['circle', 'diamond', 'square'];
+  const shapes = ['circle', 'square'];
   const trials = [];
 
   var count_without_button = 0;
@@ -41,8 +40,8 @@ function rest_task_createTrials(num_rt_trials) {
         timeline: [{
           type: dsstWithEndRestPlugin,
           stimulus: targetShape,
-          choices: ['1', '2', '3'],
-          shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+          choices: ['1', '2'],
+          shapes: ['img/circle.png', 'img/square.png'],
           show_end_rest_button: true,
           trial_duration: 2000,
           data: {
@@ -132,7 +131,7 @@ function createSelfPacedRestTimeline(cue) {
 
 // edit to add feedback
 function practice_rest_task_createTrials(num_rt_trials) {
-  const shapes = ['circle', 'diamond', 'square'];
+  const shapes = ['circle', 'square'];
   const trials = [];
 
   for (let i = 0; i < num_rt_trials; i++) {
@@ -140,8 +139,8 @@ function practice_rest_task_createTrials(num_rt_trials) {
     trials.push({
       type: dsstWithEndRestPlugin,
       stimulus: targetShape,
-      choices: ['1', '2', '3'],
-      shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+      choices: ['1', '2'],
+      shapes: ['img/circle.png', 'img/square.png'],
       show_end_rest_button: false,
       trial_duration: 2000,
       data: {
@@ -162,7 +161,7 @@ function practice_rest_task_createTrials(num_rt_trials) {
 
 // edit to add feedback
 function leftover_rest_task_createTrials(num_rt_trials) {
-  const shapes = ['circle', 'diamond', 'square'];
+  const shapes = ['circle', 'square'];
   const trials = [];
 
   for (let i = 0; i < num_rt_trials; i++) {
@@ -171,8 +170,8 @@ function leftover_rest_task_createTrials(num_rt_trials) {
       timeline: [{
       type: dsstWithEndRestPlugin,
       stimulus: targetShape,
-      choices: ['1', '2', '3'],
-      shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+      choices: ['1', '2'],
+      shapes: ['img/circle.png', 'img/square.png'],
       show_end_rest_button: false,
       trial_duration: 2000,
       data: {

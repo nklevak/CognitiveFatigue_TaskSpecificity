@@ -10,12 +10,12 @@ var dsstWithEndRestPlugin = (function (jspsych) {
       },
       choices: {
         type: jspsych.ParameterType.KEYS,
-        default: ['1', '2', '3'],
+        default: ['1', '2'],
       },
       shapes: {
         type: jspsych.ParameterType.STRING,
         array: true,
-        default: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
+        default: ['img/circle.png', 'img/square.png'],
       },
       show_end_rest_button: {
         type: jspsych.ParameterType.BOOL,
@@ -52,7 +52,7 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           <div class="shapes-container">
             ${shapes_html}
           </div>
-          <p>What is the number under the <strong>${trial.stimulus}</strong>?</p>
+          <p style="font-size: 1.3rem"><strong>${trial.stimulus}</strong></p>
         </div>
       `;
 
