@@ -1,6 +1,7 @@
 // EXPERIMENT SET UP VARIABLES
 var ds_trials_per_block = 1 // make it 12 
 var ds_practice_trial_num = 1 // make it 6
+// also includes 200 ms between each digit flash
 var ds_digit_duration = 275
 var ds_digits_to_mem = 4
 

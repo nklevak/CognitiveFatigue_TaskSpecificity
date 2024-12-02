@@ -1,5 +1,7 @@
-var max_num_rest_trials_per_block = 20;
+var max_num_rest_trials_per_block = 20; // make it 40?
 var rest_num_practice_trials = 6;
+var num_groups = 10
+var num_blocks_per_group = 3
 
 const rt_instructions_01 = {
   type: jsPsychHtmlKeyboardResponse,
@@ -20,6 +22,7 @@ const rt_instructions_01 = {
 
 // REST BREAK INSTRUCTIONS
 var rest_ended = false;
+var overall_rest_left = num_groups * num_blocks_per_group * max_num_rest_trials_per_block
 
 function shouldTrialRun() {
   console.log('in function')
@@ -31,44 +34,10 @@ function rest_task_createTrials(num_rt_trials) {
   const shapes = ['circle', 'diamond', 'square'];
   const trials = [];
 
-  var count_without_button = 0 // makes first 5 trials not have option to end rest
-
+  var count_without_button = 0;
   for (let i = 0; i < num_rt_trials; i++) {
     const targetShape = jsPsych.randomization.sampleWithoutReplacement(shapes, 1)[0];
-    if (count_without_button < 5) {
-      trials.push({
-        timeline: [{
-          type: dsstWithEndRestPlugin,
-          stimulus: targetShape,
-          choices: ['1', '2', '3'],
-          shapes: ['img/circle.png', 'img/diamond.png', 'img/square.png'],
-          show_end_rest_button: false,
-          trial_duration: 2000,
-          data: {
-            target_shape: targetShape,
-            correct_response: shapes.indexOf(targetShape) + 1,
-            option_to_end: false,
-            rest_trial_num: count_without_button
-          },
-          on_finish: function(data) {
-            console.log("end_rest: " + data.end_rest.toString());
-            if (data.end_rest == false && rest_ended == false) {
-              data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
-              rest_ended = false;
-            } else {
-              rest_ended = true;
-            }
-          },
-        }],
-        conditional_function: function() {
-          console.log("Evaluating conditional function for trial " + (i + 1));
-          const shouldRun = shouldTrialRun();
-          console.log("shouldTrialRun() returned: " + shouldRun);
-          return shouldRun;
-        }
-      });
-    } else {
-      trials.push({
+    trials.push({
         timeline: [{
           type: dsstWithEndRestPlugin,
           stimulus: targetShape,
@@ -90,6 +59,8 @@ function rest_task_createTrials(num_rt_trials) {
             } else {
               rest_ended = true;
             }
+
+            overall_rest_left = overall_rest_left - 1
           },
         }],
         conditional_function: function() {
@@ -99,10 +70,9 @@ function rest_task_createTrials(num_rt_trials) {
           return shouldRun;
         }
       });
-    }
 
-    count_without_button = count_without_button + 1
-  }
+      count_without_button = count_without_button + 1
+    }
 
   return trials;
 }

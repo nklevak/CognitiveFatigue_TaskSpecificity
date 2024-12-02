@@ -393,7 +393,7 @@ temp %>%
   group_by(subj_id, game_type) %>%
   summarise(avg_correct = mean(correct)) %>%
   ggplot(mapping = aes(x=game_type,y=avg_correct)) +
- geom_point(alpha = 0.5,position = position_jitter(width = 0.4,
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
                               height = 0.01)) +
   stat_summary(fun.data = "mean_cl_boot",
                geom = "pointrange",
@@ -402,14 +402,14 @@ temp %>%
                shape = 21,
                size = 1)+
   stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
-  labs(x="Game Type",y="Average accuracy on all trials of this game, per subject")+
-  ggtitle("Average of subject mean performance on each game (pre-exclusion)")
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", title = "Average of subject mean performance on each game (pre-exclusion)",size = 30) +
+  theme(text = element_text(size = 13))
 
 temp %>%
   group_by(subj_id, game_type) %>%
   summarise(avg_correct = mean(correct)) %>%
   ggplot(mapping = aes(x=game_type,y=avg_correct)) +
- geom_point(alpha = 0.5,position = position_jitter(width = 0.4,
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
                               height = 0.01)) +
   stat_summary(fun.data = "mean_cl_boot",
                geom = "pointrange",
@@ -418,8 +418,13 @@ temp %>%
                shape = 21,
                size = 1)+
   stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
-  labs(x="Game Type",y="Average accuracy on all trials of this game, per subject")+
-  ggtitle("Median of subject mean performance on each game (pre-exclusion)")
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", title = "Median of subject mean performance on each game (pre-exclusion)", size = 30) +
+  theme(
+    text = element_text(size = 12),        # Base text size
+    axis.title = element_text(size = 13),  # Axis titles
+    axis.text = element_text(size = 13),   # Axis labels
+    plot.title = element_text(size = 13)   # Plot title
+  )
 ```
 
 Excluding participants specified above: 
@@ -494,11 +499,51 @@ temp %>%
                color = "black",
                fill = "yellow",
                shape = 21,
-               size = 1)+
-  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
-  labs(x="Game Type",y="Average accuracy on all trials of this game, per subject")+
-  ggtitle("Average of subject mean performance on each game (post-exclusion)")
+               size = 1,
+               fatten = 3)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)),fontface = "bold",fill = "white",               label.padding = unit(0.2, "lines"), # Padding around text
+ hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject")+
+  ggtitle("Average of subject mean performance on each game (post-exclusion)") +
+  theme(
+      text = element_text(size = 16),        # Base text size
+      axis.title = element_text(size = 13),  # Axis titles
+      axis.text = element_text(size = 16),   # Axis labels
+      plot.title = element_text(size = 13)   # Plot title
+    )
 
+temp %>%
+  group_by(subj_id, game_type) %>%
+  summarise(avg_correct = mean(correct)) %>%
+  ggplot(mapping = aes(x = game_type, y = avg_correct)) +
+  geom_point(alpha = 0.6, position = position_jitter(width = 0.3, height = 0.01), color = "black") +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1.2,
+               fatten = 3) +
+  stat_summary(fun = mean, 
+               geom = "label", 
+               aes(label = round(..y.., 2)), 
+               fontface = "bold", 
+               color = "black", 
+               fill = "white", 
+               label.size = 0.2,    # Border thickness
+               label.r = unit(0.15, "lines"), # Rounded corners
+               label.padding = unit(0.3, "lines"), # Text padding
+               hjust = -0.5) +
+  labs(x = "Game Type", y = "Average Accuracy per subject", 
+       title = "Mean Performance Per Game (Post-Exclusion)") +
+  theme_minimal(base_size = 16) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 18, face = "bold")
+  )
+# 
+# 
 temp %>%
   group_by(subj_id, game_type) %>%
   summarise(avg_correct = mean(correct)) %>%
@@ -510,10 +555,48 @@ temp %>%
                color = "black",
                fill = "yellow",
                shape = 21,
-               size = 1)+
-  stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
-  labs(x="Game Type",y="Average accuracy on all trials of this game, per subject")+
-  ggtitle("Median of subject mean performance on each game (post-exclusion)")
+               size = 1,
+               fatten = 3)+
+  stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)),fontface = "bold",  fill = "white"  ,             label.padding = unit(0.2, "lines"), # Padding around text
+hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject")+
+  ggtitle("Median of subject mean performance on each game (post-exclusion)") +
+  theme(
+    text = element_text(size = 16),        # Base text size
+    axis.title = element_text(size = 13),  # Axis titles
+    axis.text = element_text(size = 16),   # Axis labels
+    plot.title = element_text(size = 13)   # Plot title
+  )
+temp %>%
+  group_by(subj_id, game_type) %>%
+  summarise(avg_correct = mean(correct)) %>%
+  ggplot(mapping = aes(x = game_type, y = avg_correct)) +
+  geom_point(alpha = 0.6, position = position_jitter(width = 0.3, height = 0.01), color = "black") +
+  stat_summary(fun = median, 
+               geom = "point", 
+               color = "black", 
+               size = 4, 
+               shape = 21, 
+               fill = "yellow") +
+  stat_summary(fun = median, 
+               geom = "label", 
+               aes(label = round(..y.., 2)), 
+               fontface = "bold", 
+               color = "black", 
+               fill = "white", 
+               label.size = 0.2, 
+               label.r = unit(0.15, "lines"), 
+               label.padding = unit(0.3, "lines"),
+               hjust = -0.5) +
+  labs(x = "Game Type", y = "Average Accuracy per subject", 
+       title = "Median Performance Per Game (Post-Exclusion)") +
+  theme_minimal(base_size = 16) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 18, face = "bold")
+  )
+
 ```
 
 # PLOTTING
@@ -1160,7 +1243,13 @@ data_to_plot %>%
   labs(x = "Average block accuracy, z-scored by subject",
        y = "Following bid to switch, z-scored by subject",
        color = "Block Number") +
-  ggtitle("Predicting bid from performance")
+  ggtitle("Predicting bid from performance") +
+  theme_minimal(base_size = 16) +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 18, face = "bold")
+  )
 
 
 
@@ -1462,9 +1551,9 @@ temp %>%
   theme_bw() +
   theme(
     panel.spacing.x = unit(2, "lines"),
-    strip.text = element_text(size = 12),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10)
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
   ) +
   geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
   stat_summary(fun.data = "mean_cl_boot",
@@ -1714,9 +1803,9 @@ temp %>%
   theme_bw() +
   theme(
     panel.spacing.x = unit(2, "lines"),
-    strip.text = element_text(size = 12),
-    axis.title = element_text(size = 12),
-    axis.text = element_text(size = 10)
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
   ) +
   geom_point(alpha=0.15, 
              position = position_jitter(width=0.3, height=0), 
@@ -2764,6 +2853,9 @@ summary(model_4)
 ```
 
 ```{r}
+
+model_performance(model_4)
+
 # Coefficient plot
 # Extract and plot model coefficients
 coef_data <- data.frame(
@@ -2908,11 +3000,11 @@ ggplot(coef_data, aes(x = estimate, y = term_clean)) +
        subtitle = "Error bars show 95% confidence intervals\n* indicates significant effect") +
   theme_minimal() +
   theme(
-    axis.text.y = element_text(size = 12, color = "black"),
-    axis.text.x = element_text(size = 10, color = "black"),
-    axis.title.x = element_text(size = 12, face = "bold", margin = margin(t = 10)),
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 10)),
     plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 10, color = "gray30"),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank(),
     plot.margin = margin(1, 1, 1, 1, "cm")
@@ -2994,11 +3086,11 @@ ggplot(coef_data, aes(x = estimate, y = term_clean)) +
        subtitle = "Error bars show 95% confidence intervals\n* indicates p < .05; Effect sizes shown as Cohen's d (except for intercept)") +
   theme_minimal() +
   theme(
-    axis.text.y = element_text(size = 12, color = "black"),
-    axis.text.x = element_text(size = 10, color = "black"),
-    axis.title.x = element_text(size = 12, face = "bold", margin = margin(t = 10)),
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 10)),
     plot.title = element_text(size = 14, face = "bold"),
-    plot.subtitle = element_text(size = 10, color = "gray30"),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
     panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank(),
     plot.margin = margin(1, 1, 1, 1, "cm")
@@ -3010,11 +3102,28 @@ ggplot(coef_data, aes(x = estimate, y = term_clean)) +
   )
 
 
+model_performance(model_5)
+
 
 ```
 ## LOOK AT HOW LONG EACH BLOCK WAS ON AVERAGE, pER TASK
 ``` {r}
-
+## add in the instruction trials, etc
+# copy_time <- for_time_calcs %>%
+#   arrange(subj_id, curr_block_num, trial_count) %>%
+#   select(subj_id, curr_block_num, trial_count, game_type, time_elapsed)
+# 
+# num_trials_vs = 30
+vs_stim_presentation_time = 400 + 1450
+#   
+# vs_copy_time <- copy_time %>%
+#   group_by(subj_id, curr_block_num) %>%
+#   arrange(subj_id, curr_block_num, trial_count) %>%
+#   mutate(block_length = as.numeric(last(time_elapsed)) - as.numeric(first(time_elapsed))) %>%
+# 
+# num_trials_sr = 12
+sr_stim_presentation_time = 400 + 675*4
+  
 ## this is specifically focusing on response trials
 head(for_time_calcs)
 
@@ -3026,7 +3135,7 @@ vs_time <- time_calcs %>%
   filter(game_type == "vs") %>%
   group_by(subj_id, curr_block_num) %>%
   arrange(subj_id, curr_block_num, trial_count) %>%
-  mutate(block_length = as.numeric(last(time_elapsed)) - as.numeric(first(time_elapsed))) %>%
+  mutate(block_length = (as.numeric(last(time_elapsed)) - as.numeric(first(time_elapsed)) + vs_stim_presentation_time) / 1000) %>%
   select(subj_id, curr_block_num, trial_count, time_elapsed, block_length, game_type) %>%
   filter(trial_count == 1) %>%
   select(-trial_count) %>%
@@ -3039,7 +3148,7 @@ sr_time <- time_calcs %>%
   filter(game_type != "vs") %>%
   group_by(subj_id, curr_block_num) %>%
   arrange(subj_id, curr_block_num, trial_count) %>%
-  mutate(block_length = as.numeric(last(time_elapsed)) - as.numeric(first(time_elapsed))) %>%
+  mutate(block_length = (as.numeric(last(time_elapsed)) - as.numeric(first(time_elapsed)) + sr_stim_presentation_time) / 1000) %>%
   select(subj_id, curr_block_num, trial_count, time_elapsed, block_length, game_type) %>%
   filter(trial_count == 1) %>%
   select(-trial_count) %>%
@@ -3062,6 +3171,6 @@ ggplot(total_type, aes(x=game_type, y=avg_length)) +
                 fill = "light blue",
                 shape = 21,
                 size = 0.75) +
-  labs(title="Average response time length of each game", x="Block game type", y="Average length of response trials per subject (ms)", size=14)
+  labs(title="Average length of each block by game type", x="Block game type", y="Average length of block per subject (s)", size=18)
 
 ```

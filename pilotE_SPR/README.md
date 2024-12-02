@@ -53,7 +53,7 @@ ABABBABAABABAABABB
 1 normal block is maximum:
 - 20 trials * 2 = **40 seconds maximum** ?????
 
-**FOR PRACTICE AND 18 BLOCKS:**
+**FOR PRACTICE AND 10 BLOCKS:**
 practice: 49.8 + 49.8 + 12 = 112 seconds = 1.87 minutes = 2 minutes
 main exp: 18 * 87.6 = 1576.8 seconds = 26.28 minutes = 27 minutes max
 + 5 minutes for instructions 

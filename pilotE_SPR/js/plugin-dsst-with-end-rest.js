@@ -1,4 +1,3 @@
-// Custom plugin for DSST with hidden "End Rest" button
 var dsstWithEndRestPlugin = (function (jspsych) {
   "use strict";
 
@@ -22,6 +21,10 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         type: jspsych.ParameterType.BOOL,
         default: false,
       },
+      clear_duration: {
+        type: jspsych.ParameterType.INT,
+        default: 100, // Duration in ms for the clear screen
+      }
     }
   }
 
@@ -38,20 +41,21 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         </div>
       `).join('');
       const end_rest_button_html = trial.show_end_rest_button ?
-      `<button id="end-rest-btn" class="modern-button">End Rest</button>` :
-      `<button id="end-rest-btn" style="display: none; pointer-events: none;">End Rest</button>`;
-  
-  display_element.innerHTML = `
-      <div class="experiment-container">
+        `<button id="end-rest-btn" class="modern-button">End Rest</button>` :
+        `<button id="end-rest-btn" style="display: none; pointer-events: none;">End Rest</button>`;
+    
+      display_element.innerHTML = `
+        <div class="experiment-container">
           <div class="button-container">
-              ${end_rest_button_html}
+            ${end_rest_button_html}
           </div>
           <div class="shapes-container">
-              ${shapes_html}
+            ${shapes_html}
           </div>
           <p>What is the number under the <strong>${trial.stimulus}</strong>?</p>
-      </div>
-  `;
+        </div>
+      `;
+
       const end_trial = (response) => {
         this.jsPsych.pluginAPI.cancelAllKeyboardResponses();
         display_element.innerHTML = '';
@@ -59,11 +63,17 @@ var dsstWithEndRestPlugin = (function (jspsych) {
       };
 
       const after_key_response = (info) => {
-        end_trial({
-          rt: info.rt,
-          response: info.key,
-          end_rest: false
-        });
+        // Clear the display immediately after response
+        display_element.innerHTML = '';
+        
+        // Wait for the specified duration before ending the trial
+        setTimeout(() => {
+          end_trial({
+            rt: info.rt,
+            response: info.key,
+            end_rest: false
+          });
+        }, trial.clear_duration);
       };
 
       this.jsPsych.pluginAPI.getKeyboardResponse({

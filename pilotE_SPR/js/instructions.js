@@ -16,7 +16,7 @@ var welcome_practice_instructions = {
   type: jsPsychInstructions,
   pages: [
     `<div class="instructions-container">
-      <h1 class="instructions-heading">Welcome to the Experiment!</h1>
+      <h1 class="instructions-heading">Welcome to the experiment!</h1>
       <p class="instructions-text">In this experiment, you will be playing two games&mdash;<b>Game A</b> and <b>Game B</b>.</p>
       <p class="instructions-text">You will also be given rest breaks, during which you will do the <b>Rest Game</b>.</p>
       <p class="instructions-text">You will be paid 10 dollars / hour, plus a bonus of up to 5 dollars.</p>
@@ -72,7 +72,7 @@ rest_practice = [
     <div class="shape-container"><img src="img/square.png" style="width: 50px;"><br>3</div>
   </div>
   <p class="instructions-text">Press the corresponding number key when asked about a specific shape.</p>
-  <p class="instructions-text">You can end the rest at any time by clicking the "End Rest" button.</p>
+  <p class="instructions-text"><b>In the actual experiment, you will be able to end the rest at any time by clicking the "End Rest" button that will appear in the top right corner.<b></p>
   <p class="instructions-text">Press Next to begin the practice.</p>
 </div>`
 ]
@@ -101,8 +101,8 @@ show_clickable_nav: true,
 button_label_previous: 'Prev',
 button_label_next: 'Next',
 on_finish: function(){
-  document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
-  jsPsych.setProgressBar(0);
+  document.getElementById("jspsych-progressbar-container").style.visibility = "hidden";
+  //jsPsych.setProgressBar(0);
 }
 }
 
@@ -116,16 +116,12 @@ pages: [
     <p class="instructions-text">Great work on completing the practice! We will now go into instructions for the main experiment.</p>
   </div>`,
   `<div class="instructions-container">
-    <h1 class="instructions-heading">Your Bonus</h1>
-    <p class="instructions-text">Please do your best to understand the games and experiment, and try your best on the two games. 
-    As long as you adhere to the instructions and do your best, you will receive a bonus at the end of the experiment.</p>
-  </div>`,
-  `<div class="instructions-container">
-    <h1 class="instructions-heading">Point System</h1>
-    <p class="instructions-text">You will get an endowment of 300 points to begin with, which you can use as currency in this experiment.
-    These points are valuable, and they represent your ability to choose to rest during the experiment.
-    At the end of the game, the proportion remaining of your endowment will be converted to an additional bonus.
-    However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>
+    <h1 class="instructions-heading">Point system and bonus</h1>
+    <p class="instructions-text">You will get an endowment of <b>300 points</b> to begin with, which you can use as currency in this experiment.
+    These points are valuable, and <b>they represent your ability to rest for longer during the experiment.</b> During the rest game, \
+    every second you stay in the rest game will use some points from your endowment and at the end of the game, the proportion remaining of your endowment will be converted to an additional bonus.
+    However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong>\
+    Also, please try your best each trial of each game; as long as you do your best, you will get a bonus of at least 3 dollars.</p>
   </div>`,
   `<div class="instructions-container">
     <h1 class="instructions-heading">Experiment Structure</h1>
@@ -134,16 +130,13 @@ pages: [
     about to enter a <strong>rest period</strong></p>
     <p class="instructions-text">Before the rest period, you will be told which game you will play after the rest is over
     (you might switch to the other game, or remain in the game you were playing before the rest).
-    You will then enter the rest period, during which you will play the rest game for at least 5 seconds. 
-    After that, you can keep playing for however long you want, but every extra second
-    you stay in rest will cost you 1 point from your endowment. You should still stay in the rest game for as long as you need or want, 
-    but be aware that staying too long may be costly.
-    When you are ready to continue with the experiment, press the "end rest" button that will appear during the rest game.</p>
+    You will then enter the rest period, during which you will play the rest game for up to 40 seconds (pressing the "end rest" button when you want to move on). 
+    You should stay in the rest game for as long as you need or want, but be aware that staying longer uses endowment points.</p>
   </div>`,
   `<div class="instructions-container">
     <h1 class="instructions-heading">Important Notes</h1>
     <p class="instructions-text">Even though the bonus at the end is based on a combination of completion and what's left of your endowment, please do your best
-    on all of the games and make sure to try on every trial of the games and the rest game. As long as you do that, you will receive a bonus.</p>
+    on all of the games and make sure to try on every trial of the games and the rest game (but don't worry about going as fast as posisble). As long as you do that, you will receive a bonus.</p>
     <p class="instructions-text">Additionally, the game is set to be exactly 50 minutes long (no matter how much time is spent on the rest game vs the two games), so please
     feel free to extend rest whenever you feel you need to.</p>
   </div>`,
@@ -175,6 +168,6 @@ stimulus:
     <h1 class="instructions-heading">Thank You!</h1>
     <p class="instructions-text">Thanks for participating! This experiment sought to understand how cognitive fatigue, 
     effort, errors, and task switching interact. Your final completion bonus is
-    <strong>3</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>
+    <strong>4</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>
   </div>`
 }
