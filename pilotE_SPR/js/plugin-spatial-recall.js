@@ -33,7 +33,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
         tile_duration: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Tile duration',
-          default: 375, // was originally 750
+          default: 275, // was originally 750
           description: 'How long to show a tile.'
         },
         iti_duration: {
@@ -45,13 +45,13 @@ var jsPsychSpatialRecall = (function (jspsych) {
         stimulus_duration: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Stimulus duration',
-          default: 350,
+          default: 100,// this is at the beginning, how long before the tiles show up ?
           description: 'How long to hide the stimulus.'
         },
         response_duration: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Response duration',
-          default: 5000,
+          default: 3000,
           description: 'How long to collect responses.'
         },
       }
@@ -470,6 +470,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
           var score_ls = longest_subsequence(copy, trial.sequence);
           var score_pc = partial_credit(copy, trial.sequence);
           var score_an = (score_pc == trial.sequence.length) ? 1 : 0;
+          var is_correct = (score_pc == trial.sequence.length)
   
           // gather the data to store for the trial
           var trial_data = {
@@ -480,6 +481,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
             score_an: score_an,
             score_pc: score_pc,
             score_ls: score_ls,
+            is_correct: is_correct,
             rt: rt,
             event_history: event_history,
             game_type:"sr"

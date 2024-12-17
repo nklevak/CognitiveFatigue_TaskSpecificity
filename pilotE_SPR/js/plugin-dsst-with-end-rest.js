@@ -64,14 +64,23 @@ var dsstWithEndRestPlugin = (function (jspsych) {
 
       const after_key_response = (info) => {
         // Clear the display immediately after response
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // TODO make this wait until the trial_duration is completed
         display_element.innerHTML = '';
+
+        // check to see if they answered anything, if not then set the info.key as []
+        if (!info.key) {
+          info.key = -1
+        }
         
         // Wait for the specified duration before ending the trial
         setTimeout(() => {
           end_trial({
             rt: info.rt,
             response: info.key,
-            end_rest: false
+            end_rest: false,
+            end_rest_button_clicked: false
           });
         }, trial.clear_duration);
       };
@@ -89,7 +98,8 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           end_trial({
             rt: null,
             response: null,
-            end_rest: true
+            end_rest: true,
+            end_rest_button_clicked: true
           });
         });
       }

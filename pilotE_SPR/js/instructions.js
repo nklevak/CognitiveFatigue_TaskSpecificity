@@ -68,7 +68,7 @@ rest_practice = [
   <p class="instructions-text">You will be asked about the number under one of the shapes.</p>
   <div style="display: flex; justify-content: space-around; margin: 2rem 0;">
     <div class="shape-container"><img src="img/circle.png" style="width: 50px;"><br>1</div>
-    <div class="shape-container"><img src="img/square.png" style="width: 50px;"><br>3</div>
+    <div class="shape-container"><img src="img/square.png" style="width: 50px;"><br>2</div>
   </div>
   <p class="instructions-text">Press the corresponding number key when a specific shape is listed.</p>
   <p class="instructions-text"><b>In the actual experiment, you will be able to end the rest at any time by clicking the "End Rest" button that will appear in the top right corner.<b></p>

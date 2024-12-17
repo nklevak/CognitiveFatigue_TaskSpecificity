@@ -37,12 +37,12 @@ var sr_recall_forwards_practice = {
       min_width: 258,
       min_height: 364
     },
-    {
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: '<p style="font-size: 48px;">+</p>',
-      choices: 'NO_KEYS',
-      trial_duration: 400,
-    },
+//    {
+//      type: jsPsychHtmlKeyboardResponse,
+//      stimulus: '<p style="font-size: 48px;">+</p>',
+//      choices: 'NO_KEYS',
+//      trial_duration: 400,
+//    },
     {
       type: jsPsychSpatialRecall,
       grid_size: grid_size_constant,
@@ -52,6 +52,7 @@ var sr_recall_forwards_practice = {
       on_finish: function(data){
         data.practice = "true"
         data.game_type = "spatial_recall"
+        data.trial_type = "sr_practice_response"
       }
     },
     {
@@ -65,9 +66,13 @@ var sr_recall_forwards_practice = {
           return "<p>Incorrect! Please try to focus on the order in which the squares appear.</p>"; // the parameter value has to be returned from the function
         }
       },
+      choices: 'NO_KEYS',
       on_start: function(){
-        var update_to = jsPsych.getProgressBarCompleted() + sr_practice_prop_added
-        jsPsych.setProgressBar(update_to);
+//        var update_to = jsPsych.getProgressBarCompleted() + sr_practice_prop_added
+//        jsPsych.setProgressBar(update_to);
+      },
+      on_finish: function(data){
+        data.trial_type = "sr_practice_feedback"
       }
     }
   ],
@@ -86,12 +91,12 @@ function sr_getBlock() {
       min_height: 364
     }
   
-    var response_key = {
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: '<p style="font-size: 48px;">+</p>',
-      choices: 'NO_KEYS',
-      trial_duration: 400,
-    }
+    //var response_key = {
+    //  type: jsPsychHtmlKeyboardResponse,
+    //  stimulus: '<p style="font-size: 48px;">+</p>',
+    //  choices: 'NO_KEYS',
+    //  trial_duration: 400,
+    //}
   
     var recall_sr = {
       type: jsPsychSpatialRecall,
@@ -105,13 +110,15 @@ function sr_getBlock() {
       on_finish: function(data){
         data.practice = "false"
         data.game_type = "spatial_recall"
+        data.trial_type = "sr_main_response"
 
         //var progressbar_update = jsPsych.getProgressBarCompleted() + proportion_per_trial
         //jsPsych.setProgressBar(progressbar_update);
       }
     }
 
-    timeline_sr_block.push(screenCheck,response_key,recall_sr)
+    //timeline_sr_block.push(screenCheck,response_key,recall_sr)
+    timeline_sr_block.push(screenCheck,recall_sr)
   }
 
   return timeline_sr_block

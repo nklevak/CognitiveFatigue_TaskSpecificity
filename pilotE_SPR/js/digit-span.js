@@ -1,6 +1,7 @@
 // EXPERIMENT SET UP VARIABLES
 var ds_trials_per_block = 1 // make it 12 
 var ds_practice_trial_num = 1 // make it 6
+
 // also includes 200 ms between each digit flash
 var ds_digit_duration = 275
 var ds_digits_to_mem = 4
@@ -85,13 +86,13 @@ function createDigitDisplayTimeline(sequence) {
 }
 
 // Response phase with keypad
-function createResponsePhase(sequence) {
+function createResponsePhase(sequence, is_practice) {
     return {
         type: jsPsychHtmlButtonResponse,
         stimulus: keypadHTML,
         choices: ['Continue'],
         button_html: '<button style="display:none" class="jspsych-btn">%choice%</button>',
-        trial_duration: 5000,  // 5 second timeout
+        trial_duration: 3000,  // 5 second timeout
         data: {
             sequence: sequence
         },
@@ -101,6 +102,12 @@ function createResponsePhase(sequence) {
         },
         on_finish: function(data) {
             data.game_type = "digit_span"
+
+            data.trial_type = "ds_main_response"
+            if (is_practice) {
+                data.trial_type = "ds_practice_response"
+            }
+
             // If response is empty (timed out), set it to an empty array
             if (!data.response) {
                 data.response = [];
@@ -125,7 +132,7 @@ function ds_getMainBlock(num_trials = ds_trials_per_block, num_d = ds_digits_to_
         trials.push(...createDigitDisplayTimeline(sequence));
 
         // Add response phase
-        trials.push(createResponsePhase(sequence));
+        trials.push(createResponsePhase(sequence, false));
     }
 
     return trials;
@@ -141,7 +148,7 @@ function ds_getPracticeBlock(num_practice, num_d) {
         trials.push(...createDigitDisplayTimeline(sequence));
 
         // Add response phase
-        trials.push(createResponsePhase(sequence));
+        trials.push(createResponsePhase(sequence, true));
 
         // Add feedback
         trials.push({
@@ -177,8 +184,11 @@ function ds_getPracticeBlock(num_practice, num_d) {
                     `;
                 }
             },
-            choices: "ALL_KEYS",
-            trial_duration: 1000
+            choices: "NO_KEYS",
+            trial_duration: 1000,
+            on_finish: function(data) {
+                data.trial_type = "ds_practice_feedback"
+            }
         });
     }
 
