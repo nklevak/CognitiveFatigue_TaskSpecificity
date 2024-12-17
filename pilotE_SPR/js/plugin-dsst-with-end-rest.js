@@ -24,6 +24,10 @@ var dsstWithEndRestPlugin = (function (jspsych) {
       clear_duration: {
         type: jspsych.ParameterType.INT,
         default: 100, // Duration in ms for the clear screen
+      },
+      trial_duration: {
+        type: jspsych.ParameterType.INT,
+        default: 900, // Total trial duration in ms
       }
     }
   }
@@ -56,6 +60,9 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         </div>
       `;
 
+      // Record the start time of the trial
+      const start_time = performance.now();
+
       const end_trial = (response) => {
         this.jsPsych.pluginAPI.cancelAllKeyboardResponses();
         display_element.innerHTML = '';
@@ -64,9 +71,6 @@ var dsstWithEndRestPlugin = (function (jspsych) {
 
       const after_key_response = (info) => {
         // Clear the display immediately after response
-
-        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        // TODO make this wait until the trial_duration is completed
         display_element.innerHTML = '';
 
         // check to see if they answered anything, if not then set the info.key as []
@@ -74,7 +78,11 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           info.key = -1
         }
         
-        // Wait for the specified duration before ending the trial
+        // Calculate remaining time
+        const elapsed_time = performance.now() - start_time;
+        const remaining_time = Math.max(0, trial.trial_duration - elapsed_time) + trial.clear_duration;
+        
+        // Wait for the remaining time before ending the trial
         setTimeout(() => {
           end_trial({
             rt: info.rt,
@@ -82,10 +90,10 @@ var dsstWithEndRestPlugin = (function (jspsych) {
             end_rest: false,
             end_rest_button_clicked: false
           });
-        }, trial.clear_duration);
+        }, remaining_time);
       };
 
-      this.jsPsych.pluginAPI.getKeyboardResponse({
+      const keyboard_listener = this.jsPsych.pluginAPI.getKeyboardResponse({
         callback_function: after_key_response,
         valid_responses: trial.choices,
         rt_method: 'performance',
@@ -93,8 +101,22 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         allow_held_key: false
       });
 
+      // Set a timeout to end the trial if no response is given
+      var max_trial_length = trial.trial_duration + trial.clear_duration
+      const trial_timeout = setTimeout(() => {
+        this.jsPsych.pluginAPI.cancelKeyboardResponse(keyboard_listener);
+        end_trial({
+          rt: null,
+          response: null,
+          end_rest: false,
+          end_rest_button_clicked: false
+        });
+      }, max_trial_length);
+
       if (trial.show_end_rest_button) {
         display_element.querySelector('#end-rest-btn').addEventListener('click', () => {
+          clearTimeout(trial_timeout);
+          this.jsPsych.pluginAPI.cancelKeyboardResponse(keyboard_listener);
           end_trial({
             rt: null,
             response: null,
