@@ -51,7 +51,7 @@ var jsPsychSpatialRecall = (function (jspsych) {
         response_duration: {
           type: jspsych.ParameterType.INT,
           pretty_name: 'Response duration',
-          default: 3000,
+          default: 4000,
           description: 'How long to collect responses.'
         },
       }

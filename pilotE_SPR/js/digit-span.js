@@ -92,7 +92,7 @@ function createResponsePhase(sequence, is_practice) {
         stimulus: keypadHTML,
         choices: ['Continue'],
         button_html: '<button style="display:none" class="jspsych-btn">%choice%</button>',
-        trial_duration: 3000,  // 5 second timeout
+        trial_duration: 4000,  // 4 second timeout
         data: {
             sequence: sequence
         },

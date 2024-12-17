@@ -19,40 +19,40 @@ ABABBABAAB
 
 
 ## TIMINGS OF EXPERIMENT
-max time right now: 51 minutes
+max time right now: 52 minutes
 
 #### DIGIT SPAN
 
 **Digit span task block:**
-- trials per block (*ds_trials_per_block*) = 12
+- trials per block (*ds_trials_per_block*) = 10
 - one trial = 
 	- 4 digits (275 ms each + 200 empty flash each) = 1900 ms = 1.9 seconds
 	- keyboard entry time = maximum 3000 ms = 0 to 3 seconds
 - in total =
-	- minimum: 12 * (1.9 + 0) = 22.8 seconds
-	- maximum: 12 * (1.9 + 3) = **58.8 seconds**
+	- minimum: 10 * (1.9 + 0) = 19 seconds
+	- **maximum: 10 * (1.9 + 4) = 59 seconds**
 
 **Digit span practice task block:**
 - trials per block (*ds_practice_trial_num*) = 6
 - one practice trial = 
 	- 4 digits (275 ms each + 200 empty flash before each) = 1900 ms = 1.9 seconds
-	-  keyboard entry time = maximum 3000 ms = 0 to 3 seconds
+	-  keyboard entry time = maximum 4000 ms = 0 to 4 seconds
 	- feedback = 1000 ms = 1s
 - in total = 
 	- minimum: 6 * (1.9 + 0 + 1) = 17.4 seconds
-	- maximum: 6 * (1.9 + 3 + 1) = **35.4 seconds**
+	- maximum: 6 * (1.9 + 4 + 1) = **41.4 seconds**
 
 #### SPATIAL RECALL
 
 Spatial recall task block:
-- trials per block (*sr_trials_per_block*) = 12
+- trials per block (*sr_trials_per_block*) = 10
 - one trial = 
 	- 4 squares (275 ms each + 200 empty flash each) = 1900 ms = 1.9 seconds
-	- keyboard entry time = maximum 3000 ms = 0 to 3 seconds
+	- keyboard entry time = maximum 3000 ms = 0 to 4 seconds
 	- initial stimulus duration = 100 ms = 0.1 s
 - in total =
-	- minimum: 12 * (1.9 + 0 + 0.1) = 24 seconds
-	- maximum: 12 * (1.9 + 3 + 0.1) = **60 seconds**
+	- minimum: 10 * (1.9 + 0 + 0.1) = 20 seconds
+	- maximum: 10 * (1.9 + 4 + 0.1) = **60 seconds**
 
 Spatial recall practice task block:
 - trials per block (*sr_practice_trial_num*) = 6
@@ -63,7 +63,7 @@ Spatial recall practice task block:
 	- feedback = 1000 ms = 1 s
 - in total = 
 	- minimum: 6 * (1.9 + 0 + 0.1 + 1) = 18
-	- maximum: 6 * (1.9 + 3 + 0.1 + 1) = 36
+	- maximum: 6 * (1.9 + 4 + 0.1 + 1) = 42
 
 #### REST TASK
 
@@ -100,7 +100,7 @@ Spatial recall practice task block:
 	
 #### digit span group:
 - digit span block + rest + digit span block + rest + digit span block 
-	- maximum: 3 * 58.8 + 2 * max_rest_length =  3 * 58.8 + 2 * 32 = **240.4 seconds**
+	- maximum: 3 * 59 + 2 * max_rest_length =  3 * 59+ 2 * 32 = **241 seconds**
 
 
 *****************
@@ -118,11 +118,14 @@ Order of groups:
  - all of the rests: 900 seconds
  - all of the cues: 50 seconds
  - rest practice: 12 seconds
- - spatial recall practice: max 36 seconds
- - digit span practice: max 35.4 seconds
+ - spatial recall practice: max 42 seconds
+ - digit span practice: max 41.4 seconds
  - 3 * 5  = 15 blocks of spatial recall (not including rests) = 15 * 60 = max 900 seconds
- - 3 * 5  = 15 blocks of digit span (not including rests) = 15 * 58.8 = max 882 seconds
+ - 3 * 5  = 15 blocks of digit span (not including rests) = 15 * 59 = max 885 seconds
 - instructions: approximately 5 minutes max = 300 seconds
 
 
-**TOTAL**: 900 + 50 + 12 + 36 + 35.4 + 900 + 882 + 300 = **51.9 minutes maximum**
+**TOTAL**: 900 + 50 + 12 + 42 + 41.4 + 900 + 885 + 300 = **52.2 minutes maximum**
+
+
+# credit to Sam Zorowitz from jspsych-demos for most of the spatial recall code, and Experiment Factory from the Poldrack Lab for inspiration on the digit span task
