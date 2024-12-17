@@ -11,18 +11,18 @@ const keypadHTML = `
 <div id="custom-keypad-container" style="width: 100%; max-width: 500px; margin: 0 auto; position: static; transform: none;">
     <div id="response-display" style="font-size: 32px; margin-bottom: 2rem; height: 48px; text-align: center; position: static; transform: none;"></div>
     <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; width: 100%; position: static; transform: none;">
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(1)">1</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(2)">2</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(3)">3</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(4)">4</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(5)">5</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(6)">6</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(7)">7</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(8)">8</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(9)">9</button>
-        <button style="padding: 1rem; font-size: 24px; background-color: #94a3b8; border-radius: 0.5rem; width: 100%; height: 64px; border: none; color: white;" onclick="handleClear()">Clear</button>
-        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: none;" onclick="handleDigit(0)">0</button>
-        <button style="padding: 1rem; font-size: 24px; background-color: #0ea5e9; border-radius: 0.5rem; width: 100%; height: 64px; border: none; color: white;" onclick="handleSubmit()">Submit</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black" onclick="handleDigit(1)">1</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(2)">2</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(3)">3</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(4)">4</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(5)">5</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(6)">6</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(7)">7</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(8)">8</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(9)">9</button>
+        <button style="padding: 1rem; font-size: 24px; background-color: #94a3b8; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black; color: white;" onclick="handleClear()">Clear</button>
+        <button class="digit-btn" style="padding: 1rem; font-size: 24px; background-color: #f3f4f6; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black;" onclick="handleDigit(0)">0</button>
+        <button style="padding: 1rem; font-size: 24px; background-color: #0ea5e9; border-radius: 0.5rem; width: 100%; height: 64px; border: 2px solid black; color: white;" onclick="handleSubmit()">Submit</button>
     </div>
 </div>
 `;
