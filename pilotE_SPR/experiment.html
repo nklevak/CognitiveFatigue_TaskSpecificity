@@ -162,21 +162,29 @@ timeline.push(gameA_practice_instructions, gameA_practice, practice_transition, 
 // 10 blocks in total
 
 // create rest timelines
-var rest_stay = createSelfPacedRestTimeline("stay")
-var rest_switch = createSelfPacedRestTimeline("switch")
+//var rest_stay = createSelfPacedRestTimeline("stay")
+//var rest_switch = createSelfPacedRestTimeline("switch")
 
 // create A and B main blocks
 var sr_block_trials = {
   timeline: sr_getBlock()
 }
 var sr_group = {
-  timeline: [sr_block_trials, rest_stay, sr_block_trials, rest_stay, sr_block_trials]
+  timeline: [sr_block_trials, 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type="block_same_same"), 
+  sr_block_trials, 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type="block_same_same"), 
+  sr_block_trials]
 }
 //var ds_block_trials = {
 //  timeline: ds_getBlock(ds_trials_per_block, ds_digits_to_mem)
 //}
 var ds_group = {
-  timeline: [ds_getBlock(ds_trials_per_block, ds_digits_to_mem), rest_stay, ds_getBlock(ds_trials_per_block, ds_digits_to_mem), rest_stay, ds_getBlock(ds_trials_per_block, ds_digits_to_mem)]
+  timeline: [ds_getBlock(ds_trials_per_block, ds_digits_to_mem), 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type="block_same_same"), 
+  ds_getBlock(ds_trials_per_block, ds_digits_to_mem), 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type="block_same_same"), 
+  ds_getBlock(ds_trials_per_block, ds_digits_to_mem)]
 }
 
 // assign A and B main blocks
@@ -188,11 +196,32 @@ if (gameA_SR == 0) {// this means game A is actually digit span
 }
 
 // NEW ORDER: ABABBABAAB
-timeline.push(A_block_group, rest_switch, B_block_group, rest_switch, 
-A_block_group, rest_switch, B_block_group, rest_stay, 
-B_block_group, rest_switch, A_block_group, rest_switch,
-B_block_group, rest_switch, A_block_group, rest_stay,
-A_block_group, rest_switch, B_block_group, rest_switch)
+timeline.push(
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=1, follows_internal_block_num = 3, type="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=2, follows_internal_block_num = 3, type="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=3, follows_internal_block_num = 3, type="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("stay", follows_group_num=4, follows_internal_block_num = 3, type="group_B_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=5, follows_internal_block_num = 6, type="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=6, follows_internal_block_num = 3, type="group_A_B"),
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=7, follows_internal_block_num = 3, type="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("stay", follows_group_num=8, follows_internal_block_num = 3, type="group_A_A"),
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=9, follows_internal_block_num = 6, type="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=10, follows_internal_block_num = 3, type="group_B_A")
+  )
+
+var overall_debrief = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: 
+    `<div class="instructions-container">
+      <h1 class="instructions-heading">Thank You!</h1>
+      <p class="instructions-text">Thanks for participating! This experiment sought to understand how cognitive fatigue, 
+      effort, errors, and task switching interact. Your final completion bonus is
+      <strong>${getPropRestUsed(bonus_minimum, dependent_bonus)}</strong> dollars. The experiment is over now, press any button to continue to be redirected.</p>
+    </div>`,
+  on_finish: function(data) {
+    data.final_bonus = getPropRestUsed(bonus_minimum, dependent_bonus)
+  }
+}
 
 // CONCLUSION
 timeline.push(rest_leftovers_transition, rt_leftovers, overall_debrief, exitFullscreen)

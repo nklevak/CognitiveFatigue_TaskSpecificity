@@ -15,12 +15,6 @@ Current ordering (18 blocks): ABABBABAABABAABABB (9 As and 9 Bs)
 **Main Experiment**
 ABABBABAAB
 
-
-
-
-## TIMINGS OF EXPERIMENT
-max time right now: 52 minutes
-
 #### DIGIT SPAN
 
 **Digit span task block:**
@@ -68,29 +62,29 @@ Spatial recall practice task block:
 #### REST TASK
 
 **Rest task block:** 
-- trials per block (*max_num_rest_trials_per_block*) = 1 to 30
+- trials per block (*max_num_rest_trials_per_block*) = 1 to 20
 - one trial = 
-	- show the two shapes and the prompt = 900 ms = 0.9 seconds
+	- show the two shapes and the prompt = 1400 ms = 1.4 seconds
 	- clear screen after each trial (*clear_duration*)= 100 ms = 0.1 seconds
-	- total per trial: **1 second**
-	- length of cue: 2000 ms = 2 second
-	- minimum in a rest block: 1 second + 2 seconds = 3 seconds
-	- maximum in a rest block: 40 seconds + 2 seconds = 42 seconds
+	- total per trial: **1.5 seconds**
+	- length of cue: 2000 ms = 2 seconds
+	- minimum in a rest block: 1.5 second + 2 seconds = 3.5 seconds
+	- maximum in a rest block: 30 seconds + 2 seconds = 32 seconds
 
 **Total time of rest trials (since it is a fixed amount)**
 - number rest trials = 
-	- *num_groups * num_blocks_per_group * max_num_rest_trials_per_block* = 10 groups * 3 blocks * 30 rest trials = 900
+	- *num_groups * num_blocks_per_group * max_num_rest_trials_per_block* = 10 groups * 3 blocks * 20 rest trials = 600
 - total time of all rest trials = 
-	- number rest trials * length per trial = 900 * 1 second = **900 seconds**
+	- number rest trials * length per trial = 600 * 1.5 second = **900 seconds**
 
 **Rest practice task block:**
 - trials per block (*rest_num_practice_trials*) = 6
 - one trial = 
-	- show the two shapes and the prompt = 900 ms = 0.9 seconds
+	- show the two shapes and the prompt = 1400 ms = 1.4 seconds
 	- clear screen after each trial (*clear_duration*)= 100 ms = 0.1 seconds
 	- show feedback = 1000 ms = 1 s
-	- total: **2 seconds**
-- a whole practice block: 6 * 2 = 12 seconds
+	- total: **2.5 seconds**
+- a whole practice block: 6 * 2.5 = 15 seconds
 
 ### Group timing
 
@@ -126,6 +120,5 @@ Order of groups:
 
 
 **TOTAL**: 900 + 50 + 12 + 42 + 41.4 + 900 + 885 + 300 = **52.2 minutes maximum**
-
 
 # credit to Sam Zorowitz from jspsych-demos for most of the spatial recall code, and Experiment Factory from the Poldrack Lab for inspiration on the digit span task
