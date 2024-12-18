@@ -1,9 +1,14 @@
+// MAIN EXPERIMENT SET UP VARIABLES
 var max_num_rest_trials_per_block = 5; // before it was 20; make it 30?
 var rest_num_practice_trials = 6;
 var num_groups = 10
 var num_blocks_per_group = 3
 var bonus_minimum = 2
 var dependent_bonus = 2
+
+
+// Rest specific set up variables:
+
 
 const rt_instructions_01 = {
   type: jsPsychHtmlKeyboardResponse,

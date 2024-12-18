@@ -55,6 +55,9 @@ var fullscreen = {
   fullscreen_mode: true,
 };
 
+
+// MAIN EXPERIMENT SET UP VARIABLES
+
 // IMPORTANT INITIALIZATION VARIABLES
 // decides if spatial recall is game A; if gameA_SR = false, then digit span is game A and SR is game B
 var gameA_SR = (jsPsych.randomization.randomInt(0,1) == 0)
@@ -101,7 +104,9 @@ var gameA_practice_instructions = {
   show_clickable_nav: true,
   button_label_previous: 'Prev',
   button_label_next: 'Next',
-  on_finish: function(){
+  on_finish: function(data){
+    data.game_A = gameA
+    data.game_B = gameB
     //document.getElementById("jspsych-progressbar-container").style.visibility = "visible";
     //jsPsych.setProgressBar(0);
   }
@@ -121,6 +126,7 @@ var gameB_practice_instructions = {
     //jsPsych.setProgressBar(0);
   }
 }
+
 // preload external html file and images for rest task
 var preload = {
   type: jsPsychPreload,
@@ -130,6 +136,16 @@ var preload = {
   show_progress_bar: true,
   max_load_time: 30000,
   images: ['./img/circle.png','./img/square.png']
+};
+
+var preload_with_consent = {
+  type: jsPsychPreload,
+  message: 'Loading images. This may take a moment depending on your internet connection.',
+  error_message: '<p>The experiment failed to load. Please try restarting your browser.</p><p>If this error persists after 2-3 tries, please contact the experimenter.</p>',
+  continue_after_error: false,
+  show_progress_bar: true,
+  max_load_time: 30000,
+  images: ['./js/poldrack_consent_form.html','./img/circle.png','./img/square.png']
 };
 
 // consent form
@@ -149,8 +165,9 @@ var consent_form = {
 var timeline = [];
 
 // INTRUCTIONS AND PRACTICE SESSION
+
 timeline.push(preload,fullscreen, prolific_id_insert,welcome_practice_instructions)
-//timeline.push(preload,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
+//timeline.push(preload_with_consent,fullscreen,consent_form,prolific_id_insert,welcome_practice_instructions)
 
 // A and B and rest practice
 timeline.push(gameA_practice_instructions, gameA_practice, practice_transition, gameB_practice_instructions, gameB_practice, rest_practice_instructions, rt_practice, main_exp_instructions)
@@ -223,8 +240,28 @@ var overall_debrief = {
   }
 }
 
-// CONCLUSION
-timeline.push(rest_leftovers_transition, rt_leftovers, overall_debrief, exitFullscreen)
+// CONCLUSION AND DEBRIEFS
+// final debrief survey here 
+var rest_debrief = {
+  type: jsPsychSurveyText,
+  preamble: `<p>Great work! We will now do a short debrief. <br><br> In this experiment you were asked to end the rest whenever you wanted.</p>`,
+  questions: [
+    {prompt: 'How did you decide how when to end the rest trials?', rows: 5,name: 'rest_decision'},
+    {prompt: 'Did your strategy change over time?', rows: 5,name: 'rest_strategy'},
+    {prompt: 'Were you trying to conserve endowment points?', rows: 5,name: 'rest_conserve'}
+  ]
+}
+
+var task_debrief = {
+  type: jsPsychSurveyText,
+  preamble: `<p>In this experiment you played two games.</p>`,
+  questions: [
+    {prompt: 'Did you prefer one over the other? Why?', rows: 5,name: 'game_description'},
+    {prompt: 'Did you find the rest task easier than the two main games? Please leave any feedback about this that you have!', rows: 5,name: 'game_description'},
+  ]
+}
+
+timeline.push(rest_leftovers_transition, rt_leftovers, rest_debrief, task_debrief, overall_debrief, exitFullscreen)
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);
