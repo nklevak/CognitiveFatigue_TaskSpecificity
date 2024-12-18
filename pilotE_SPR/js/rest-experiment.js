@@ -1,6 +1,6 @@
 // MAIN EXPERIMENT SET UP VARIABLES
-var max_num_rest_trials_per_block = 5; // before it was 20; make it 30?
-var rest_num_practice_trials = 6;
+var max_num_rest_trials_per_block = 20; // before it was 20; make it 30?
+var rest_num_practice_trials = 4;
 var num_groups = 10
 var num_blocks_per_group = 3
 var bonus_minimum = 2
@@ -104,7 +104,7 @@ var cue_stay = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: '<p  class="instructions-text"> You will now begin the rest break. <br>At the end of this rest break, <strong>you will continue with the same game.</strong> </p>',
   choices: "NO_KEYS",
-  trial_duration: 2000,
+  trial_duration: 1500,
   on_finish: function(data){
     data.transition_type = "stay"
     rest_ended = false
@@ -117,7 +117,7 @@ var cue_switch = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: '<p  class="instructions-text"> You will now begin the rest break. <br>At the end of this rest break, <strong>you will switch to the other game.</strong> </p>',
   choices: "NO_KEYS",
-  trial_duration: 2000,
+  trial_duration: 1500,
   on_finish: function(data){
     data.transition_type = "switch"
     rest_ended = false
@@ -196,21 +196,18 @@ function practice_rest_task_createTrials(num_rt_trials) {
               return `
                 <div class="flex flex-col items-center justify-center">
                     <p>Incorrect! Please answer faster.</p>
-                    <p>Press any key to continue</p>
                 </div>
               `;
             } else if (last_trial.is_correct) {
                 return `
                   <div class="flex flex-col items-center justify-center">
                       <p>Correct!</p>
-                      <p>Press any key to continue</p>
                   </div>
                 `;
             } else {
                 return `
                   <div class="flex flex-col items-center justify-center">
                       <p>Incorrect, please click the number corresponding to the shape in bold.</p>
-                      <p>Press any key to continue</p>
                   </div>
                 `;
             }

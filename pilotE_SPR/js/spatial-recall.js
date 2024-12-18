@@ -1,6 +1,6 @@
 // MAIN EXPERIMENT SET UP VARIABLES
-var sr_trials_per_block = 1 // make it 12
-var sr_practice_trial_num = 1 // make it 6
+var sr_trials_per_block = 10
+var sr_practice_trial_num = 4
 
 
 // SR specific set up variables:

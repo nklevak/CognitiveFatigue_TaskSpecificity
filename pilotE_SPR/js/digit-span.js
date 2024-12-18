@@ -1,6 +1,6 @@
 // MAIN EXPERIMENT SET UP VARIABLES
-var ds_trials_per_block = 1 // make it 12 
-var ds_practice_trial_num = 1 // make it 6
+var ds_trials_per_block = 10
+var ds_practice_trial_num = 4
 
 // DS specific setups:
 // also includes 200 ms between each digit flash
@@ -161,7 +161,6 @@ function ds_getPracticeBlock(num_practice, num_d) {
                         <div class="flex flex-col items-center justify-center">
                             <p class="text-2xl text-red-500 mb-4">Respond faster!</p>
                             <p class="text-xl">The sequence was: ${last_trial.sequence.join(' ')}</p>
-                            <p class="mt-8">Press any key to continue</p>
                         </div>
                     `;
                 }
@@ -171,7 +170,6 @@ function ds_getPracticeBlock(num_practice, num_d) {
                             <p class="text-2xl text-green-500 mb-4">Correct!</p>
                             <p class="text-xl">The sequence was: ${last_trial.sequence.join(' ')}</p>
                             <p class="text-xl">Your response was: ${last_trial.response.join(' ')}</p>
-                            <p class="mt-8">Press any key to continue</p>
                         </div>
                     `;
                 } else {
@@ -180,7 +178,6 @@ function ds_getPracticeBlock(num_practice, num_d) {
                             <p class="text-2xl text-red-500 mb-4">Incorrect</p>
                             <p class="text-xl">The correct sequence was: ${last_trial.sequence.join(' ')}</p>
                             <p class="text-xl">Your response was: ${last_trial.response.join(' ')}</p>
-                            <p class="mt-8">Press any key to continue</p>
                         </div>
                     `;
                 }
