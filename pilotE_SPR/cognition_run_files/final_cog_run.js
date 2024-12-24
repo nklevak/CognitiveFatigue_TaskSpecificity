@@ -1,7 +1,5 @@
 // link: https://jub9l0zavv.cognition.run
 
-// link: https://jub9l0zavv.cognition.run
-
 // MAIN EXPERIMENT SET UP VARIABLES
 var sr_trials_per_block = 10
 var sr_practice_trial_num = 4
@@ -571,7 +569,7 @@ function shouldTrialRun() {
   return !rest_ended
 }
 
-function rest_task_createTrials(num_rt_trials) {
+function rest_task_createTrials(num_rt_trials, follows_group_num=null,follows_internal_block_num = null, type_desc) {
   const shapes = ['Circle', 'Square'];
   const trials = [];
 
@@ -590,7 +588,10 @@ function rest_task_createTrials(num_rt_trials) {
             correct_response: shapes.indexOf(targetShape) + 1,
             option_to_end: true, //whether the end rest button is visible
             rest_trial_num: rest_trial_number,
-            overall_num_rest_used: num_rest_used
+            overall_num_rest_used: num_rest_used,
+            follows_group_num: follows_group_num,
+            follows_internal_block_num: follows_internal_block_num,
+            type_desc: type_desc
           },
           on_finish: function(data) {
             console.log("end_rest: " + data.end_rest.toString());
@@ -674,27 +675,17 @@ var rest_to_game_transition= {
   }
 
 // Create self-paced rest timeline
-function createSelfPacedRestTimeline(cue,follows_group_num=null,follows_internal_block_num) {
+function createSelfPacedRestTimeline(cue,follows_group_num=null,follows_internal_block_num, type_desc) {
   var cue_timeline = cue === "switch" ? cue_switch : cue_stay;
-  var rest_timeline = rest_task_createTrials(max_num_rest_trials_per_block);
+  var rest_timeline = rest_task_createTrials(max_num_rest_trials_per_block, follows_group_num, follows_internal_block_num, type_desc);
   
   var self_paced_rest_procedure = {
     timeline: rest_timeline,
     on_finish: function(data) {
-      var rest_duration = data.last(1).time_elapsed - data.first(1).time_elapsed;
-      jsPsych.data.addProperties({
-        rest_duration: rest_duration, 
-        game_type: "rest_task", 
-        trial_type:"rt_main_trials", 
-        follows_group_num: follows_group_num,// group number
-        follows_internal_block_num: follows_internal_block_num,// block within the group
-        rest_type: cue,
-        transition: type, 
-        //for type: make it either 
-        //"group_A_A", "group_B_B", "group_A_B", "group_B_A" (group-wide) or "block_same_same" (block-wide)
-    });
-      console.log("in on finish")
-      rest_ended = false
+    var rest_duration = data.last(1).time_elapsed - data.first(1).time_elapsed;
+    data.rest_duration = rest_duration
+    console.log("in on finish of createSelfPacedRestTimeline")
+    rest_ended = false
     }
   };
 
@@ -963,9 +954,9 @@ var sr_block_trials = {
 }
 var sr_group = {
   timeline: [sr_block_trials, 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type_desc="block_same_same"), 
   sr_block_trials, 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type_desc="block_same_same"), 
   sr_block_trials]
 }
 //var ds_block_trials = {
@@ -973,9 +964,9 @@ var sr_group = {
 //}
 var ds_group = {
   timeline: [ds_getBlock(ds_trials_per_block, ds_digits_to_mem), 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type_desc="block_same_same"), 
   ds_getBlock(ds_trials_per_block, ds_digits_to_mem), 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type_desc="block_same_same"), 
   ds_getBlock(ds_trials_per_block, ds_digits_to_mem)]
 }
 
@@ -989,16 +980,16 @@ if (gameA_SR == 0) {// this means game A is actually digit span
 
 //NEW ORDER: ABABBABAAB
 timeline.push(
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=1, follows_internal_block_num = 3, type="group_A_B"), 
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=2, follows_internal_block_num = 3, type="group_B_A"), 
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=3, follows_internal_block_num = 3, type="group_A_B"), 
-  B_block_group, createSelfPacedRestTimeline("stay", follows_group_num=4, follows_internal_block_num = 3, type="group_B_B"), 
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=5, follows_internal_block_num = 6, type="group_B_A"), 
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=6, follows_internal_block_num = 3, type="group_A_B"),
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=7, follows_internal_block_num = 3, type="group_B_A"), 
-  A_block_group, createSelfPacedRestTimeline("stay", follows_group_num=8, follows_internal_block_num = 3, type="group_A_A"),
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=9, follows_internal_block_num = 6, type="group_A_B"), 
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=10, follows_internal_block_num = 3, type="group_B_A")
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=1, follows_internal_block_num = 3, type_desc="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=2, follows_internal_block_num = 3, type_desc="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=3, follows_internal_block_num = 3, type_desc="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("stay", follows_group_num=4, follows_internal_block_num = 3, type_desc="group_B_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=5, follows_internal_block_num = 6, type_desc="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=6, follows_internal_block_num = 3, type_desc="group_A_B"),
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=7, follows_internal_block_num = 3, type_desc="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("stay", follows_group_num=8, follows_internal_block_num = 3, type_desc="group_A_A"),
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=9, follows_internal_block_num = 6, type_desc="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=10, follows_internal_block_num = 3, type_desc="group_B_A")
 )
   
 var overall_debrief = {

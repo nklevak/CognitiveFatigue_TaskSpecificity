@@ -16,8 +16,8 @@ const rt_instructions_01 = {
     <p>In this task, you will see two shapes with numbers underneath them.</p>
     <p>You will be asked about the number under one of the shapes.</p>
     <div style="display: flex; justify-content: space-around; margin: 20px;">
-      <div><img src="img/circle.png" style="width: 50px;"><br>1</div>
-      <div><img src="img/square.png" style="width: 50px;"><br>2</div>
+      <div><img src="Circle.png" style="width: 50px;"><br>1</div>
+      <div><img src="Square.png" style="width: 50px;"><br>2</div>
     </div>
     <p>Press the corresponding number key when asked about a specific shape.</p>
     <p>You can end the rest at any time by clicking the "End Rest" button.</p>
@@ -36,8 +36,8 @@ function shouldTrialRun() {
   return !rest_ended
 }
 
-function rest_task_createTrials(num_rt_trials) {
-  const shapes = ['circle', 'square'];
+function rest_task_createTrials(num_rt_trials, follows_group_num=null,follows_internal_block_num = null, type_desc) {
+  const shapes = ['Circle', 'Square'];
   const trials = [];
 
   var rest_trial_number = 0; // records how many trials have been added
@@ -48,14 +48,17 @@ function rest_task_createTrials(num_rt_trials) {
           type: dsstWithEndRestPlugin,
           stimulus: targetShape,
           choices: ['1', '2'],
-          shapes: ['img/circle.png', 'img/square.png'],
+          shapes: ['Circle.png', 'Square.png'],
           show_end_rest_button: true,
           data: {
             target_shape: targetShape,
             correct_response: shapes.indexOf(targetShape) + 1,
             option_to_end: true, //whether the end rest button is visible
             rest_trial_num: rest_trial_number,
-            overall_num_rest_used: num_rest_used
+            overall_num_rest_used: num_rest_used,
+            follows_group_num: follows_group_num,
+            follows_internal_block_num: follows_internal_block_num,
+            type_desc: type_desc
           },
           on_finish: function(data) {
             console.log("end_rest: " + data.end_rest.toString());
@@ -93,9 +96,13 @@ function rest_task_createTrials(num_rt_trials) {
 // bonus max = 
 // make endownment = max num rest possible so that 1 point = 1 rest trial taken = 1 second of rest
 function getPropRestUsed(default_bonus,bonus_max) {
+  console.log("calculating bonus: num used, num possible")
   var num_used = num_rest_used
+  console.log(num_used)
   var num_possible = num_groups * num_blocks_per_group * max_num_rest_trials_per_block
+  console.log(num_possible)
   var final_bonus = bonus_max * (1 - num_used/num_possible) + default_bonus
+  console.log(final_bonus)
   return final_bonus.toFixed(2)
 }
 
@@ -135,34 +142,24 @@ var rest_to_game_transition= {
   }
 
 // Create self-paced rest timeline
-function createSelfPacedRestTimeline(cue,follows_group_num=null,follows_internal_block_num) {
+function createSelfPacedRestTimeline(cue,follows_group_num=null,follows_internal_block_num, type_desc) {
   var cue_timeline = cue === "switch" ? cue_switch : cue_stay;
-  var rest_timeline = rest_task_createTrials(max_num_rest_trials_per_block);
+  var rest_timeline = rest_task_createTrials(max_num_rest_trials_per_block, follows_group_num, follows_internal_block_num, type_desc);
   
   var self_paced_rest_procedure = {
     timeline: rest_timeline,
     on_finish: function(data) {
-      var rest_duration = data.last(1).time_elapsed - data.first(1).time_elapsed;
-      jsPsych.data.addProperties({
-        rest_duration: rest_duration, 
-        game_type: "rest_task", 
-        trial_type:"rt_main_trials", 
-        follows_group_num: follows_group_num,// group number
-        follows_internal_block_num: follows_internal_block_num,// block within the group
-        rest_type: cue,
-        transition: type, 
-        //for type: make it either 
-        //"group_A_A", "group_B_B", "group_A_B", "group_B_A" (group-wide) or "block_same_same" (block-wide)
-    });
-      console.log("in on finish")
-      rest_ended = false
+    var rest_duration = data.last(1).time_elapsed - data.first(1).time_elapsed;
+    data.rest_duration = rest_duration
+    console.log("in on finish of createSelfPacedRestTimeline")
+    rest_ended = false
     }
   };
 
   return {timeline: [cue_timeline, self_paced_rest_procedure, rest_to_game_transition]};
 }
 function practice_rest_task_createTrials(num_rt_trials) {
-  const shapes = ['circle', 'square'];
+  const shapes = ['Circle', 'Square'];
   const trials = [];
 
   for (let i = 0; i < num_rt_trials; i++) {
@@ -174,7 +171,7 @@ function practice_rest_task_createTrials(num_rt_trials) {
           type: dsstWithEndRestPlugin,
           stimulus: targetShape,
           choices: ['1', '2'],
-          shapes: ['img/circle.png', 'img/square.png'],
+          shapes: ['Circle.png', 'Square.png'],
           show_end_rest_button: false,
           data: {
             target_shape: targetShape,
@@ -231,7 +228,7 @@ function practice_rest_task_createTrials(num_rt_trials) {
 
 
 function leftover_rest_task_createTrials(num_rt_trials) {
-  const shapes = ['circle', 'square'];
+  const shapes = ['Circle', 'Square'];
   const trials = [];
 
   for (let i = 0; i < num_rt_trials; i++) {
@@ -241,7 +238,7 @@ function leftover_rest_task_createTrials(num_rt_trials) {
       type: dsstWithEndRestPlugin,
       stimulus: targetShape,
       choices: ['1', '2'],
-      shapes: ['img/circle.png', 'img/square.png'],
+      shapes: ['Circle.png', 'Square.png'],
       show_end_rest_button: false,
       data: {
         target_shape: targetShape,
