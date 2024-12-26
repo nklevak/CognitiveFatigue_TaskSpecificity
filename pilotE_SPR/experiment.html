@@ -188,9 +188,9 @@ var sr_block_trials = {
 }
 var sr_group = {
   timeline: [sr_block_trials, 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_group_num = null, follows_internal_block_num = 1, type_desc="block_same_same"), 
   sr_block_trials, 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_group_num = null, follows_internal_block_num = 2, type_desc="block_same_same"), 
   sr_block_trials]
 }
 //var ds_block_trials = {
@@ -198,9 +198,9 @@ var sr_group = {
 //}
 var ds_group = {
   timeline: [ds_getBlock(ds_trials_per_block, ds_digits_to_mem), 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 1, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_group_num = null, follows_internal_block_num = 1, type_desc="block_same_same"), 
   ds_getBlock(ds_trials_per_block, ds_digits_to_mem), 
-  createSelfPacedRestTimeline("stay", follows_internal_block_num = 2, type="block_same_same"), 
+  createSelfPacedRestTimeline("stay", follows_group_num = null, follows_internal_block_num = 2, type_desc="block_same_same"), 
   ds_getBlock(ds_trials_per_block, ds_digits_to_mem)]
 }
 
@@ -212,39 +212,39 @@ if (gameA_SR == 0) {// this means game A is actually digit span
   B_block_group = sr_group
 }
 
-// NEW ORDER: ABABBABAAB
+//NEW ORDER: ABABBABAAB
 timeline.push(
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=1, follows_internal_block_num = 3, type="group_A_B"), 
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=2, follows_internal_block_num = 3, type="group_B_A"), 
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=3, follows_internal_block_num = 3, type="group_A_B"), 
-  B_block_group, createSelfPacedRestTimeline("stay", follows_group_num=4, follows_internal_block_num = 3, type="group_B_B"), 
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=5, follows_internal_block_num = 6, type="group_B_A"), 
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=6, follows_internal_block_num = 3, type="group_A_B"),
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=7, follows_internal_block_num = 3, type="group_B_A"), 
-  A_block_group, createSelfPacedRestTimeline("stay", follows_group_num=8, follows_internal_block_num = 3, type="group_A_A"),
-  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=9, follows_internal_block_num = 6, type="group_A_B"), 
-  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=10, follows_internal_block_num = 3, type="group_B_A")
-  )
-
-  var overall_debrief = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: function() {
-      var current_bonus = getPropRestUsed(bonus_minimum, dependent_bonus); // calculate right here
-      return `
-        <div class="instructions-container">
-          <h1 class="instructions-heading">Thank You!</h1>
-          <p class="instructions-text">
-            Thanks for participating! This experiment sought to understand how cognitive fatigue, 
-            effort, errors, and task switching interact. Your final completion bonus is
-            <strong>${current_bonus}</strong> dollars. The experiment is over now, press any button to continue to be redirected.
-          </p>
-        </div>
-      `;
-    },
-    on_finish: function(data) {
-      data.final_bonus = getPropRestUsed(bonus_minimum, dependent_bonus); // Store in data as well
-    }
-  };
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=1, follows_internal_block_num = 3, type_desc="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=2, follows_internal_block_num = 3, type_desc="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=3, follows_internal_block_num = 3, type_desc="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("stay", follows_group_num=4, follows_internal_block_num = 3, type_desc="group_B_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=5, follows_internal_block_num = 6, type_desc="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=6, follows_internal_block_num = 3, type_desc="group_A_B"),
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=7, follows_internal_block_num = 3, type_desc="group_B_A"), 
+  A_block_group, createSelfPacedRestTimeline("stay", follows_group_num=8, follows_internal_block_num = 3, type_desc="group_A_A"),
+  A_block_group, createSelfPacedRestTimeline("switch", follows_group_num=9, follows_internal_block_num = 6, type_desc="group_A_B"), 
+  B_block_group, createSelfPacedRestTimeline("switch", follows_group_num=10, follows_internal_block_num = 3, type_desc="group_B_A")
+)
+  
+var overall_debrief = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: function() {
+    var current_bonus = getPropRestUsed(bonus_minimum, dependent_bonus); // calculate right here
+    return `
+      <div class="instructions-container">
+        <h1 class="instructions-heading">Thank You!</h1>
+        <p class="instructions-text">
+          Thanks for participating! This experiment sought to understand how cognitive fatigue, 
+          effort, errors, and task switching interact. Your final completion bonus is
+          <strong>${current_bonus}</strong> dollars. The experiment is over now, press any button to continue to be redirected.
+        </p>
+      </div>
+    `;
+  },
+  on_finish: function(data) {
+    data.final_bonus = getPropRestUsed(bonus_minimum, dependent_bonus); // Store in data as well
+  }
+};
 
 // CONCLUSION AND DEBRIEFS
 // final debrief survey here 
@@ -271,6 +271,5 @@ timeline.push(rest_leftovers_transition, rt_leftovers, rest_debrief, task_debrie
 
 // RUN THE EXPERIMENT
 jsPsych.run(timeline);
-
 </script>
 </html>
