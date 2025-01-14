@@ -7,15 +7,14 @@ var bonus_minimum = 2
 var dependent_bonus = 2
 
 
-// Rest specific set up variables:
 const rt_instructions_01 = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: `
     <p>In this task, you will see two shapes with numbers underneath them.</p>
     <p>You will be asked about the number under one of the shapes.</p>
     <div style="display: flex; justify-content: space-around; margin: 20px;">
-      <div><img src="Circle.png" style="width: 50px;"><br>1</div>
-      <div><img src="Square.png" style="width: 50px;"><br>2</div>
+      <div><img src="./img/Circle.png" style="width: 50px;"><br>1</div>
+      <div><img src="./img/Square.png" style="width: 50px;"><br>2</div>
     </div>
     <p>Press the corresponding number key when asked about a specific shape.</p>
     <p>You can end the rest at any time by clicking the "End Rest" button.</p>
@@ -50,7 +49,7 @@ function rest_task_createTrials(num_rt_trials, follows_group_num,follows_interna
           type: dsstWithEndRestPlugin,
           stimulus: targetShape,
           choices: ['1', '2'],
-          shapes: ['Circle.png', 'Square.png'],
+          shapes: ['./img/Circle.png', './img/Square.png'],
           show_end_rest_button: true,
           data: {
             target_shape: targetShape,
@@ -66,6 +65,7 @@ function rest_task_createTrials(num_rt_trials, follows_group_num,follows_interna
             console.log("end_rest: " + data.end_rest.toString());
 
             data.game_type = "rest_task"
+            data.trial_type = "rt_main_trials";
 
             if (data.end_rest == false && rest_ended == false) {
               data.is_correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response.toString());
@@ -173,7 +173,7 @@ function practice_rest_task_createTrials(num_rt_trials) {
           type: dsstWithEndRestPlugin,
           stimulus: targetShape,
           choices: ['1', '2'],
-          shapes: ['Circle.png', 'Square.png'],
+          shapes: ['./img/Circle.png', './img/Square.png'],
           show_end_rest_button: false,
           data: {
             target_shape: targetShape,
@@ -240,7 +240,7 @@ function leftover_rest_task_createTrials(num_rt_trials) {
       type: dsstWithEndRestPlugin,
       stimulus: targetShape,
       choices: ['1', '2'],
-      shapes: ['Circle.png', 'Square.png'],
+      shapes: ['./img/Circle.png', './img/Square.png'],
       show_end_rest_button: false,
       data: {
         target_shape: targetShape,

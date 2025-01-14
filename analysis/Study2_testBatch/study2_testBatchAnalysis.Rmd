@@ -1,0 +1,144 @@
+---
+title: "study2_testBatchAnalysis"
+output: html_document
+date: "2024-12-31"
+---
+This is the first analysis for study 2, to ensure the data of the first 7 people are correct. Subject 13 and 14 have the final data correctly written down (the additional columns), but the other subjects all have the same experiment just not some additional cols.
+
+Goal for this simple analysis: 
+- make sure that for subj 13 and 14, the additional columns are correct and can be analyzable
+- plot the distribution of rt for both tasks
+- plot the distribution of correctness for both tasks
+
+The setup was:
+4 spatial recall practice
+4 digit span practice
+4 rest practice
+
+10 groups, 13 blocks per group
+- 10 digit span per block
+- 10 visual search per block
+- up to 20 rest per rest period
+
+group ordering: ABABBABAAB
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+##library(jsonlite)
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+**reading in the data**
+``` {r data_wrangling}
+setwd("../../data/pilotE_SPR_testBatch")
+
+csv_files <- list.files(pattern = "\\.csv$")
+
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+
+df_all <- bind_rows(lapply(csv_files,read_csv_as_character))
+```
+
+**pre-processing the data**
+
+Anonymize the data and remove unneccesary columns:
+``` {r data_wrangling_anon}
+anonymize_clean <- function(df) {
+  df <- df %>%
+    select(-recorded_at,-url,-ip,-user_agent,-referer,-sequence_length,
+         -accept_language,-device,-internal_node_id,-view_history,
+         -source_code_version, -contains("browser"),-contains("platform"),
+         -contains("screen"),-contains("width"),-contains("height"),
+         -contains("failed"),-condition,-success,-event_history)
+  return(df)
+}
+df_all <- anonymize_clean(df_all)
+```
+
+
+Take the two subjects that have the most updated data (subj 13 and 14)
+``` {r data_wrangling_anon}
+df_all <- df_all %>%
+  mutate(subj_id = as.integer(run_id)) %>%
+  select(-run_id)
+
+df_recent_subset <- df_all %>%
+  filter(subj_id == 13 | subj_id == 14)
+```
+
+Save the practice runs in a separate df, and also change is_correct into a true/false, calculate avg performance on each task, get rid of unnecessary columns
+``` {r data_wrangling_anon}
+df_recent_subset <- df_recent_subset %>%
+  mutate(is_correct_numeric = ifelse(is_correct=="true", 1, 0)) %>%
+  filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials" | trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "dsst-with-end-rest") %>%
+  mutate(trial_type_name = ifelse(trial_type == "dsst-with-end-rest", "rt_main_trials", trial_type)) %>%
+  mutate(trial_type = trial_type_name) %>%
+  select(-c(trial_type_name, gameA_name, gameB_name, gameA_isSR, game_A, game_B, backwards, score_an, score_pc, score_ls, is_correct, stimulus, target_shape, final_bonus)) %>%
+  arrange(subj_id)
+
+practice_runs_subset_df <- df_recent_subset %>%
+  filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials") %>%
+  group_by(subj_id, trial_type) %>%
+  summarize(avg_accuracy = mean(is_correct_numeric))
+
+all_runs_avg_subset <- df_recent_subset %>%
+  filter(trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "rt_main_trials") %>%
+  group_by(subj_id, trial_type) %>%
+  summarize(avg_accuracy = mean(is_correct_numeric))
+```
+
+
+Add block labels to each block, and group numbers to each group
+Will do: 1,2,3,4,5,6,etc so up to 30 for the blocks
+``` {r data_wrangling_anon}
+# make sure its arranged in order
+df_recent_subset_analyze <- df_recent_subset %>%
+  filter(trial_type != "sr_practice_response" & trial_type != "ds_practice_response" & trial_type != "rt_practice_trials") %>%
+  mutate(trial_index_num = as.numeric(trial_index)) %>%
+  mutate(trial_index = trial_index_num) %>%
+  select(-trial_index_num) %>%
+  arrange(subj_id, trial_index) %>%
+  ungroup()
+
+# add overall trial counts of each task
+df_recent_subset_analyze <- df_recent_subset_analyze %>%
+  group_by(subj_id, trial_type) %>%
+  arrange(trial_index) %>%
+  mutate(overall_type_count = row_number()) %>%
+  ungroup() %>%
+  arrange(subj_id, trial_index)
+
+# add block number to each block
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+## TODOOO
+df_recent_subset_fin <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  group_by(subj_id) %>%
+  ############### TODO ############################
+
+```

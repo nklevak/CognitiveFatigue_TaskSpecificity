@@ -1,6 +1,7 @@
 // MAIN EXPERIMENT SET UP VARIABLES
 var ds_trials_per_block = 10
 var ds_practice_trial_num = 4
+var response_time_max = 4000 // in ms
 
 // DS specific setups:
 // also includes 200 ms between each digit flash
@@ -31,6 +32,7 @@ const keypadHTML = `
 // Global variables to store response
 let currentResponse = [];
 let currentTrial = null;
+let startTime = null;
 
 // Handler functions
 function handleDigit(digit) {
@@ -50,6 +52,7 @@ function handleSubmit() {
         // Store response before ending trial
         if (currentTrial) {
             currentTrial.data.response = currentResponse.slice();
+            currentTrial.data.rt = performance.now() - startTime;
         }
         // Find and click the hidden jsPsych button
         document.querySelector('#jspsych-html-button-response-button-0').click();
@@ -93,18 +96,21 @@ function createResponsePhase(sequence, is_practice) {
         stimulus: keypadHTML,
         choices: ['Continue'],
         button_html: '<button style="display:none" class="jspsych-btn">%choice%</button>',
-        trial_duration: 4000,  // 4 second timeout
+        trial_duration: response_time_max,  // 4 second timeout
         data: {
             sequence: sequence
         },
         on_start: function(trial) {
             currentResponse = [];
             currentTrial = trial;
+            startTime = performance.now();
         },
         on_finish: function(data) {
             data.game_type = "digit_span"
-
             data.trial_type = "ds_main_response"
+            data.practice = is_practice
+            data.timed_out = 0 // assume it is not timed out
+
             if (is_practice) {
                 data.trial_type = "ds_practice_response"
             }
@@ -114,11 +120,13 @@ function createResponsePhase(sequence, is_practice) {
                 data.response = [];
                 data.is_correct = 0;
                 data.timed_out = 1;
+                data.rt = response_time_max; // timeout duration
             }
             data.is_correct = JSON.stringify(data.response) === JSON.stringify(data.sequence);
-            data.timed_out = data.response.length === 0;  // Add flag for timeout
             console.log(JSON.stringify(data.response) === JSON.stringify(data.sequence));
+
             currentTrial = null;
+            startTime = null;
         }
     };
 }

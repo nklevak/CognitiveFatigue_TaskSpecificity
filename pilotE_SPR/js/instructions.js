@@ -69,8 +69,8 @@ rest_practice = [
   <p class="instructions-text">In this game, you will see two shapes with numbers underneath them. \
   You will be asked about the number under one of the shapes.</p>
   <div style="display: flex; justify-content: center; gap: 10px; margin: 0;">
-    <div class="shape-container"><img src="img/circle.png" style="width: 50px;"><br>1</div>
-    <div class="shape-container"><img src="img/square.png" style="width: 50px;"><br>2</div>
+    <div class="shape-container"><img src="./img/Circle.png" style="width: 50px;"><br>1</div>
+    <div class="shape-container"><img src="./img/Square.png" style="width: 50px;"><br>2</div>
 </div>
   <p class="instructions-text">Press the <b>corresponding number key</b> when a specific shape is listed.</p>
   <p class="instructions-text"><b>In the actual experiment, you will be able to end the rest at any time by clicking the \
