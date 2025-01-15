@@ -1,14 +1,16 @@
 ---
 title: "study2_testBatchAnalysis"
 output: html_document
-date: "2024-12-31"
+date: "2025-01-14"
 ---
-This is the first analysis for study 2, to ensure the data of the first 7 people are correct. Subject 13 and 14 have the final data correctly written down (the additional columns), but the other subjects all have the same experiment just not some additional cols.
+This is the first analysis for study 2, to ensure the data of the first 9 people are correct. Subject 13 and 14 have the final data correctly written down (the additional columns), but the other subjects all have the same experiment just not some additional cols; also 13,14, and all before did not have RT for digit span. Only subjects 20 and 22 have all of the necessary columns, even though all 9 have the same experiment.
 
 Goal for this simple analysis: 
-- make sure that for subj 13 and 14, the additional columns are correct and can be analyzable
-- plot the distribution of rt for both tasks
-- plot the distribution of correctness for both tasks
+- make sure that for subj 20 and 22, rt is analyzable and correct
+- make sure that for subj 13,14,20,22 the additional columns are correct and can be analyzable
+- plot the distribution of rt for both tasks for the 2 subjects whose data got captured properly
+- plot the distribution of correctness for both tasks for the 4 subjects whose data got captured properly
+- plot rest length over time per participant 
 
 The setup was:
 4 spatial recall practice
@@ -72,21 +74,21 @@ df_all <- anonymize_clean(df_all)
 ```
 
 
-Take the two subjects that have the most updated data (subj 13 and 14)
+Take the two subjects that have the most updated data (subj 13 and 14) and the two with the added digit span RT (subj 20 and 22)
 ``` {r data_wrangling_anon}
 df_all <- df_all %>%
   mutate(subj_id = as.integer(run_id)) %>%
   select(-run_id)
 
 df_recent_subset <- df_all %>%
-  filter(subj_id == 13 | subj_id == 14)
+  filter(subj_id == 13 | subj_id == 14 | subj_id == 20 | subj_id == 22)
 ```
 
 Save the practice runs in a separate df, and also change is_correct into a true/false, calculate avg performance on each task, get rid of unnecessary columns
 ``` {r data_wrangling_anon}
 df_recent_subset <- df_recent_subset %>%
   mutate(is_correct_numeric = ifelse(is_correct=="true", 1, 0)) %>%
-  filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials" | trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "dsst-with-end-rest") %>%
+  filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials" | trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "dsst-with-end-rest" | trial_type == "rt_main_trials") %>%
   mutate(trial_type_name = ifelse(trial_type == "dsst-with-end-rest", "rt_main_trials", trial_type)) %>%
   mutate(trial_type = trial_type_name) %>%
   select(-c(trial_type_name, gameA_name, gameB_name, gameA_isSR, game_A, game_B, backwards, score_an, score_pc, score_ls, is_correct, stimulus, target_shape, final_bonus)) %>%
@@ -101,6 +103,8 @@ all_runs_avg_subset <- df_recent_subset %>%
   filter(trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "rt_main_trials") %>%
   group_by(subj_id, trial_type) %>%
   summarize(avg_accuracy = mean(is_correct_numeric))
+
+# write.csv(df_recent_subset, "cleaned_data_test.csv") # for reference/brainstorming -> delete before github
 ```
 
 
