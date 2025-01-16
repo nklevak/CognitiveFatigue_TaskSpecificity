@@ -1,4 +1,4 @@
-This is the December 2024 iteration of this experiment, with self-paced rest periods. SPR = self-paced rest
+This is the January 2025 iteration of this experiment, with self-paced rest periods. SPR = self-paced rest
 The rest task and spatial recall are based off of the dsst task in the niv lab demos site
 The digit span task was inspired by experiment factory digit span
 
@@ -7,119 +7,118 @@ Currently:
 Game A and Game B are counterbalanced to be either spatial recall or digit span
 Current ordering (18 blocks): ABABBABAABABAABABB (9 As and 9 Bs)
 
-## OVERALL PARAMETERS CURRENTLY:
+# Experiment Timing and Parameters Documentation
+## Quick Summary
+- **Total Duration**: 50.59 minutes maximum
+- **Structure**: ABABBABAAB pattern (10 groups, 3 blocks per group)
+- **Trials per Block**: 10 trials (both games)
+- **Rest Periods**: Up to 20 trials (30 seconds) between blocks
+- **Bonus Structure**: $2 base + up to $2 additional based on rest usage
 
-ds_trials_per_block = 10
-ds_practice_trial_num = 4
+## Core Parameters
 
-sr_trials_per_block = 10
-sr_practice_trial_num = 4
+### General Setup
+- Group Order: ABABBABAAB
+- Each Group: 3 blocks with 2 rest periods between them
+- Total Groups: 10 (5 of A, 5 of B)
+- Total Blocks: 30 (15 of each game)
 
-max_num_rest_trials_per_block = 20
-rest_num_practice_trials = 4
+### Task Parameters
+- Digits in Digit Span: 4
+- Squares in Spatial Recall: 4
+- Rest Trial Length: 1.5 seconds
+- Maximum Response Time: 4 seconds (both games)
 
-length of 1 rest trial: 1.5 seconds
-digits in digit span: 4
-squares in spatial recall: 4
-total number of rest trials: 10 groups * 3 blocks per group * 20 max rest per rest period = 600 rest trials 
+### Practice Parameters
+- Digit Span Practice Trials: 4
+- Spatial Recall Practice Trials: 4
+- Rest Practice Trials: 4
 
-GROUP ORDER: ABABBABAAB (where each group is block + rest + block + rest + block)
+## Detailed Task Timings
 
-endowment: 600 points (1 point per one rest trial taken)
-basic bonus: 2 dollars
-additional bonus: up to 2 dollars (actual = prop of rest left unused * 2)
+### 1. Digit Span Task
 
-#### DIGIT SPAN
+#### Main Block (10 trials)
+- Sequence Presentation: 1.9 seconds
+  - 4 digits × (275ms display + 200ms gap)
+- Response Window: 4 seconds maximum
+- **Total per Block**: 59 seconds maximum
+  - Calculation: 10 × (1.9s + 4s)
 
-**Digit span task block:**
-- trials per block (*ds_trials_per_block*) = 10
-- one trial = 
-	- 4 digits (275 ms each + 200 empty flash each) = 1900 ms = 1.9 seconds
-	- keyboard entry time = maximum 4000 ms = 0 to 4 seconds
-- in total =
-	- minimum: 10 * (1.9 + 0) = 19 seconds
-	- **maximum: 10 * (1.9 + 4) = 59 seconds**
+#### Practice Block (4 trials)
+- Same timing as main block plus 1s feedback
+- **Total**: 27.6 seconds maximum
+  - Calculation: 4 × (1.9s + 4s + 1s)
 
-**Digit span practice task block:**
-- trials per block (*ds_practice_trial_num*) = 4
-- one practice trial = 
-	- 4 digits (275 ms each + 200 empty flash before each) = 1900 ms = 1.9 seconds
-	-  keyboard entry time = maximum 4000 ms = 0 to 4 seconds
-	- feedback = 1000 ms = 1s
-- in total = 
-	- minimum: 4 * (1.9 + 0 + 1) = 11.6 seconds
-	- maximum: 4 * (1.9 + 4 + 1) = **27.6 seconds**
+### 2. Spatial Recall Task
 
-#### SPATIAL RECALL
+#### Main Block (10 trials)
+- Initial Stimulus: 100ms
+- Sequence Presentation: 1.9 seconds
+  - 4 squares × (275ms display + 200ms gap)
+- Response Window: 4 seconds maximum
+- **Total per Block**: 60 seconds maximum
+  - Calculation: 10 × (2.0s + 4s)
 
-Spatial recall task block:
-- trials per block (*sr_trials_per_block*) = 10
-- one trial = 
-	- 4 squares (275 ms each + 200 empty flash each) = 1900 ms = 1.9 seconds
-	- keyboard entry time = maximum 3000 ms = 0 to 4 seconds
-	- initial stimulus duration = 100 ms = 0.1 s
-- in total =
-	- minimum: 10 * (1.9 + 0 + 0.1) = 20 seconds
-	- maximum: 10 * (1.9 + 4 + 0.1) = **60 seconds**
+#### Practice Block (4 trials)
+- Same timing as main block plus 1s feedback
+- **Total**: 28 seconds maximum
+  - Calculation: 4 × (2.0s + 4s + 1s)
 
-Spatial recall practice task block:
-- trials per block (*sr_practice_trial_num*) = 4
-- one practice trial = 
-	- 4 squares (275 ms each + 200 empty flash each) = 1900 ms = 1.9 seconds
-	- keyboard entry time = maximum 3000 ms = 0 to 3 seconds
-	- initial stimulus duration = 100 ms = 0.1 s
-	- feedback = 1000 ms = 1 s
-- in total = 
-	- minimum: 4 * (1.9 + 0 + 0.1 + 1) = 12
-	- maximum: 4 * (1.9 + 4 + 0.1 + 1) = 28
+### 3. Rest Task
 
-#### REST TASK
+#### Main Rest Periods
+- Single Trial: 1.5 seconds
+  - Display: 1350ms
+  - Clear Screen: 150ms
+- Trials per Rest Period: 1-20 trials
+- Maximum Rest Duration: 30 seconds
+- Total Possible Rest Trials: 600
+  - Calculation: 10 groups × 3 blocks × 20 trials
 
-**Rest task block:** 
-- trials per block (*max_num_rest_trials_per_block*) = 1 to 20
-- one trial = 
-	- show the two shapes and the prompt = 1400 ms = 1.35 seconds
-	- clear screen after each trial (*clear_duration*)= 100 ms = 0.15 seconds
-	- total per trial: **1.5 seconds**
-	- length of cue: 1500 ms = 1.5 seconds
-	- minimum in a rest block: 1.5 second + 1.5 seconds = 3 seconds
-	- maximum in a rest block: 30 seconds + 1.5 seconds = 31.5 seconds
+#### Practice Block
+- 4 trials × 2.5 seconds (including feedback)
+- **Total**: 10 seconds
 
-**Total time of rest trials (since it is a fixed amount)**
-- number rest trials (there is a rest block after every task block) = 
-	- *num_groups * num_blocks_per_group * max_num_rest_trials_per_block* = 10 groups * 3 blocks per group * 20 rest trials = 600
-- total time of all rest trials = 
-	- number rest trials * length per trial = 600 * 1.5 second = **900 seconds**
+## Total Time Breakdown
 
-**Rest practice task block:**
-- trials per block (*rest_num_practice_trials*) = 4
-- one trial = 
-	- show the two shapes and the prompt = 1350 ms = 1.35 seconds
-	- clear screen after each trial (*clear_duration*)= 150 ms = 0.15 seconds
-	- show feedback = 1000 ms = 1 s
-	- total: **2.5 seconds**
-- a whole practice block: 4 * 2.5 = 10 seconds
+### Active Task Time
+1. Main Experimental Blocks
+   - Spatial Recall: 900 seconds (15 blocks × 60s)
+   - Digit Span: 885 seconds (15 blocks × 59s)
 
-*****************
+2. Practice Blocks
+   - Spatial Recall: 28 seconds
+   - Digit Span: 27.6 seconds
+   - Rest Task: 10 seconds
 
-# Block numbers and organization
+### Additional Components
+- Rest Periods: 900 seconds maximum
+- Transition Cues: 45 seconds (30 cues × 1.5s)
+- Instructions/Debrief: 240 seconds
 
-Order of groups: 
-### ABABBABAAB
-- 5 A, 5 B groups
-	- each group is block + rest + block + rest + block, so 3 blocks and 2 rests
-- A cue before every rest block so num_groups * num_blocks_per_group cues, so 10 * 3 = 30 cues, 30 * 1.5 seconds = 45 seconds of cues
+### Final Calculation
+```
+900s (rests) + 
+45s (cues) + 
+10s (rest practice) + 
+28s (SR practice) + 
+27.6s (DS practice) + 
+900s (SR blocks) + 
+885s (DS blocks) + 
+240s (instructions) 
+= 3035.6 seconds 
+= 50.59 minutes
+```
 
+## Bonus Structure
+- Base Bonus: $1
+- Additional Bonus: Up to $2
+  - Calculated as: (unused rest trials ÷ 600) × $2
+- Endowment: 600 points (1 point = 1 rest trial)
 
-## total timing:
- - all of the rests: 900 seconds
- - all of the cues: 45 seconds
- - rest practice: 10 seconds
- - spatial recall practice: max 28 seconds
- - digit span practice: max 27.6 seconds
- - 3 * 5  = 15 blocks of spatial recall (not including rests) = 15 * 60 = max 900 seconds
- - 3 * 5  = 15 blocks of digit span (not including rests) = 15 * 59 = max 885 seconds
-- instructions and debrief: approximately 4 minutes max = 240 seconds
-
-
-**TOTAL**: 900 + 45 + 10 + 28 + 27.6 + 900 + 885 + 240 = **50.59 minutes maximum**
+# other notes:
+For spatial recall, rest, and digit span:
+- the timed_out value = 0 when it hasn't timed out and 1 if it has
+- when this happens, the rt is set to the max response time
+	- make sure to filter out whenever timed_out = 1

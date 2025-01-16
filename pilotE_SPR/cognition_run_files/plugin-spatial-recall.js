@@ -329,8 +329,10 @@ var jsPsychSpatialRecall = (function (jspsych) {
         clear_responses();
       });
       display_element.querySelector('#submit').addEventListener('click', function(e){
-        end_trial();
-      });
+        if (responses.length === trial.sequence.length) {
+            end_trial();
+        }
+    });
 
       // ---------------------------------- //
       // Section 2: Sequence presentation   //
@@ -451,48 +453,56 @@ var jsPsychSpatialRecall = (function (jspsych) {
       }
 
       // function to end trial when it is time
-      function end_trial() {
+      // In plugin-spatial-recall.js, update the end_trial function:
+    function end_trial() {
+      // kill any remaining setTimeout handlers
+      jsPsych.pluginAPI.clearAllTimeouts();
 
-        // kill any remaining setTimeout handlers
-        jsPsych.pluginAPI.clearAllTimeouts();
+      // measure response time
+      var end_time = performance.now();
+      var rt = end_time - start_time;
 
-        // measure response time
-        var end_time = performance.now();
-        var rt = end_time - start_time;
+      // copy responses
+      const copy = trial.backwards ? [...responses].reverse() : [...responses];
 
-        // store event
-        event_history.push({button: 'submit', time: rt});
+      // score responses
+      var score_ls = longest_subsequence(copy, trial.sequence);
+      var score_pc = partial_credit(copy, trial.sequence);
+      var score_an = (score_pc == trial.sequence.length) ? 1 : 0;
+      var is_correct = (score_pc == trial.sequence.length);
 
-        // copy responses
-        const copy = trial.backwards ? [...responses].reverse() : [...responses];
+      // Set timed_out using 0/1
+      var timed_out = 0;  // default to not timed out
+      
+      // Check various conditions for timeout:
+      // 1. If RT exceeds response duration
+      // 2. If no response was given
+      if (rt >= trial.response_duration || responses.length === 0) {
+        timed_out = 1;
+      }
 
-        // score responses
-        var score_ls = longest_subsequence(copy, trial.sequence);
-        var score_pc = partial_credit(copy, trial.sequence);
-        var score_an = (score_pc == trial.sequence.length) ? 1 : 0;
-        var is_correct = (score_pc == trial.sequence.length)
-
-        // gather the data to store for the trial
-        var trial_data = {
-          sequence: trial.sequence,
-          sequence_length: trial.sequence.length,
-          backwards: trial.backwards,
-          responses: responses,
-          score_an: score_an,
-          score_pc: score_pc,
-          score_ls: score_ls,
-          is_correct: is_correct,
-          rt: rt,
-          event_history: event_history,
-          game_type:"sr"
-        };
-
-        // clear the display
-        display_element.innerHTML = '';
-
-        // move on to the next trial
-        jsPsych.finishTrial(trial_data);
+      // gather the data to store for the trial
+      var trial_data = {
+        sequence: trial.sequence,
+        sequence_length: trial.sequence.length,
+        backwards: trial.backwards,
+        responses: responses,
+        score_an: score_an,
+        score_pc: score_pc,
+        score_ls: score_ls,
+        is_correct: is_correct,
+        rt: rt,
+        event_history: event_history,
+        game_type: "spatial_recall",
+        timed_out: timed_out  // Add timed_out to data
       };
+
+      // clear the display
+      display_element.innerHTML = '';
+
+      // move on to the next trial
+      jsPsych.finishTrial(trial_data);
+    }
 
       // ---------------------------------- //
       // Section 4: Scoring functions       //

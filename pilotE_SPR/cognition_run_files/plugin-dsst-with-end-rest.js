@@ -23,11 +23,11 @@ var dsstWithEndRestPlugin = (function (jspsych) {
       },
       clear_duration: {
         type: jspsych.ParameterType.INT,
-        default: 150, // Duration in ms for the blank screen after trial ends
+        default: 150,
       },
       trial_duration: {
         type: jspsych.ParameterType.INT,
-        default: 1350, // Total trial duration in ms (before blank screen)
+        default: 1350,
       }
     }
   }
@@ -74,12 +74,16 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         response: null,
         end_rest: false,
         end_rest_button_clicked: false,
-        timed_out: false
+        timed_out: 0  // Initialize timed_out to 0
       };
 
       // Function to actually finish the trial after blank screen
       const finishAfterBlank = () => {
         display_element.innerHTML = '';
+        // If no response was made or response was too late, mark as timed out
+        if (!response_info.response || (response_info.rt && response_info.rt >= trial.trial_duration)) {
+          response_info.timed_out = 1;
+        }
         this.jsPsych.finishTrial(response_info);
       };
 
@@ -100,7 +104,7 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         if (!end_rest_early) {
           // If no response was made, mark timed_out
           if (!response_recorded) {
-            response_info.timed_out = true;
+            response_info.timed_out = 1;
           }
           endTrialWithBlank();
         }
@@ -112,7 +116,10 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           response_recorded = true;
           response_info.rt = info.rt;
           response_info.response = info.key;
-          response_info.timed_out = false;
+          // Check if response was too late
+          if (info.rt >= trial.trial_duration) {
+            response_info.timed_out = 1;
+          }
         }
       };
 

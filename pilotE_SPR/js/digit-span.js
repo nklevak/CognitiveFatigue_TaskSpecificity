@@ -116,7 +116,7 @@ function createResponsePhase(sequence, is_practice) {
             }
 
             // If response is empty (timed out), set it to an empty array
-            if (!data.response) {
+            if (!data.response || data.response.length === 0) {
                 data.response = [];
                 data.is_correct = 0;
                 data.timed_out = 1;

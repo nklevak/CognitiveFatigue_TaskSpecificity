@@ -158,45 +158,45 @@ on_finish: function(){
 // POST PRACTICE INSTRUCTIONS
 // main experiment instructions
 var main_exp_instructions = {
-  type: jsPsychInstructions,
-  pages: [
-    `<div class="instructions-container">
-      <h1 class="instructions-heading">Main Experiment</h1>
-      <p class="instructions-text">Great work on completing the practice! We will now go into instructions for the main experiment.</p>
-    </div>`,
-    `<div class="instructions-container">
-      <h1 class="instructions-heading">Experiment Structure</h1>
-      <p class="instructions-text">In this experiment, you will be switched between playing Game A and Game B, \
-      with some rest periods in between (during which you will play the rest game).
-      You will start off by playing Game A. At certain points of the experiment, you will be notified that you are 
-      about to enter a <strong>rest period</strong>, and will be told which game (A or B) will occur after the rest period is over.</p>
-      <p class="instructions-text">When you enter the rest period, you will be able to remain in rest and play the rest game for up \
-      to 30 seconds. <b>Once you're ready to leave rest, you can press the "End Rest" button in the top right corner</b>. /
-      You should stay in the rest game for as long as you need or want, but be aware that staying longer will be costly.</p>
-    </div>`,
-    `<div class="instructions-container">
-      <h1 class="instructions-heading">The point system and bonus</h1>
-  
-      <p class="instructions-test">Please try your best each trial of each game; as long as it is clear you did your best, you will get an initial bonus of at least 1 dollar.</p>
-      <p class="instructions-text">You can gain an extra bonus of 2 additional dollars (bringing the total up to 3). \
-      To do so: you will get an endowment of <b>600 points</b> to begin with, which you can use as currency in this experiment.\
-      These points are valuable, and <b>they represent your ability to rest for longer during the experiment.</b> \
-      During the rest game, <b>every rest trial you use will use 1 point from your endowment</b> and at the end of the game, \
-      the proportion remaining of your endowment will be converted to the extra 2 dollar bonus. \
-      However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>
-    </div>`,
-    `<div class="instructions-container">
-      <h1 class="instructions-heading">Important Notes</h1>
-      <p class="instructions-text">1) The experiment is set to be exactly 55 minutes long (no matter how much time is spent on the rest game vs the two games), so please
-      feel free to extend rest whenever you feel you need to--taking into consideration that it will take away points from your endowment. \
-      <br><br>2) Your base bonus is not tied to your accuracy performance, but you will receive it as long as it is \
-      clear that you tried your best on the experiment. </p>
-    </div>`,
-    `<div class="instructions-container">
-      <h1 class="instructions-heading">Ready to Begin</h1>
-      <p class="instructions-text">Re-read the instructions if necessary, and press continue when you are ready to begin the main experiment!</p>
-    </div>`
-  ],
+    type: jsPsychInstructions,
+    pages: [
+      `<div class="instructions-container">
+        <h1 class="instructions-heading">Main Experiment</h1>
+        <p class="instructions-text">Great work on completing the practice! We will now go into instructions for the main experiment.</p>
+      </div>`,
+      `<div class="instructions-container">
+        <h1 class="instructions-heading">Experiment Structure</h1>
+        <p class="instructions-text">In this experiment, you will be switched between playing Game A and Game B, \
+        with some rest periods in between (during which you will play the rest game).
+        You will start off by playing Game A. At certain points of the experiment, you will be notified that you are 
+        about to enter a <strong>rest period</strong>, and will be told which game (A or B) will occur after the rest period is over.</p>
+        <p class="instructions-text">When you enter the rest period, you will be able to remain in rest and play the rest game for up \
+        to 30 seconds. <b>Once you're ready to leave rest, you can press the "End Rest" button in the top right corner</b>. /
+        You should stay in the rest game for as long as you need or want, but be aware that staying longer will be costly.</p>
+      </div>`,
+      `<div class="instructions-container">
+        <h1 class="instructions-heading">The point system and bonus</h1>
+    
+        <p class="instructions-test">Please try your best each trial of each game; as long as it is clear you did your best, you will get an initial bonus of at least 1 dollar.</p>
+        <p class="instructions-text">You can gain an extra bonus of 2 additional dollars (bringing the total up to 3). \
+        To do so: you will get an endowment of <b>600 points</b> to begin with, which you can use as currency in this experiment.\
+        These points are valuable, and <b>they represent your ability to rest for longer during the experiment.</b> \
+        During the rest game, <b>every rest trial you use will use 1 point from your endowment</b> and at the end of the game, \
+        the proportion remaining of your endowment will be converted to the extra 2 dollar bonus. \
+        However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>
+      </div>`,
+      `<div class="instructions-container">
+        <h1 class="instructions-heading">Important Notes</h1>
+        <p class="instructions-text">1) The experiment is set to be exactly 55 minutes long (no matter how much time is spent on the rest game vs the two games), so please
+        feel free to extend rest whenever you feel you need to--taking into consideration that it will take away points from your endowment. \
+        <br><br>2) Your base bonus is not tied to your accuracy performance, but you will receive it as long as it is \
+        clear that you tried your best on the experiment. </p>
+      </div>`,
+      `<div class="instructions-container">
+        <h1 class="instructions-heading">Ready to Begin</h1>
+        <p class="instructions-text">Re-read the instructions if necessary, and press continue when you are ready to begin the main experiment!</p>
+      </div>`
+    ],
 key_forward: 'ArrowRight',
 key_backward: 'ArrowLeft',
 allow_keys: true,

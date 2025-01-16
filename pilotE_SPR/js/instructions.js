@@ -17,10 +17,15 @@ var welcome_practice_instructions = {
   pages: [
     `<div class="instructions-container">
       <h1 class="instructions-heading">Welcome to the experiment!</h1>
+      <p class="instructions-text">Important: This experiment must be completed in fullscreen mode. 
+      Please do not exit fullscreen mode during the experiment as this will break the experiment 
+      and you will need to start over. It might help to put your computer/laptop on do not disturb.</p>
+    </div>`,
+    `<div class="instructions-container">
       <p class="instructions-text">In this experiment, you will be playing two games&mdash;<b>Game A</b> and <b>Game B</b>. <br>\
       You will also be given rest breaks, during which you will do the <b>Rest Game</b>.</p>
       <p class="instructions-text">You will be paid 12 dollars / hour, plus a bonus of up to 4 dollars, and \
-      regardless of your choices during this experiment, it will be approximately 50 minutes. </p>
+      regardless of your choices during this experiment, it will be approximately 54 minutes. </p>
       <p class="instructions-text">Before we begin, let's do some practice of the games. We will begin with <b>Game A</b></p>
     </div>`
   ],
@@ -129,9 +134,9 @@ pages: [
   </div>`,
   `<div class="instructions-container">
     <h1 class="instructions-heading">The point system and bonus</h1>
-    
-    <p class="instructions-test">Please try your best each trial of each game; as long as you do your best, you will get an initial bonus of at least 2 dollars.</p>
-    <p class="instructions-text">You can gain an extra bonus of 2 additional dollars (bringing the total up to 4). \
+
+    <p class="instructions-test">Please try your best each trial of each game; as long as it is clear you did your best, you will get an initial bonus of at least 1 dollar.</p>
+    <p class="instructions-text">You can gain an extra bonus of 2 additional dollars (bringing the total up to 3). \
     To do so: you will get an endowment of <b>600 points</b> to begin with, which you can use as currency in this experiment.\
     These points are valuable, and <b>they represent your ability to rest for longer during the experiment.</b> \
     During the rest game, <b>every rest trial you use will use 1 point from your endowment</b> and at the end of the game, \
@@ -139,9 +144,11 @@ pages: [
     However, <strong>do not worry too much about holding onto every single point; they are meant to be used to make your experience more enjoyable.</strong></p>
   </div>`,
   `<div class="instructions-container">
-    <h1 class="instructions-heading">Important Note</h1>
-    <p class="instructions-text">The experiment is set to be exactly 50 minutes long (no matter how much time is spent on the rest game vs the two games), so please
-    feel free to extend rest whenever you feel you need to.</p>
+    <h1 class="instructions-heading">Important Notes</h1>
+    <p class="instructions-text">1) The experiment is set to be exactly 55 minutes long (no matter how much time is spent on the rest game vs the two games), so please
+    feel free to extend rest whenever you feel you need to--taking into consideration that it will take away points from your endowment. \
+    <br><br>2) Your base bonus is not tied to your accuracy performance, but you will receive it as long as it is \
+    clear that you tried your best on the experiment. </p>
   </div>`,
   `<div class="instructions-container">
     <h1 class="instructions-heading">Ready to Begin</h1>
