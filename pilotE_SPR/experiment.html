@@ -242,17 +242,23 @@
     preamble: `<p>Great work! We will now do a short debrief. <br><br> In this experiment you were asked to end the rest whenever you wanted.</p>`,
     questions: [
       {prompt: 'How did you decide how when to end the rest trials?', rows: 5,name: 'rest_decision'},
+      {prompt: 'Did you take which game will happen next into consideration?', rows: 5,name: 'cue_read'},
       {prompt: 'Did your strategy change over time?', rows: 5,name: 'rest_strategy'},
-      {prompt: 'Were you trying to conserve endowment points?', rows: 5,name: 'rest_conserve'}
+      {prompt: 'Were you trying to conserve endowment points?', rows: 5,name: 'rest_conserve'},
     ]
   }
   
   var task_debrief = {
     type: jsPsychSurveyText,
-    preamble: `<p>In this experiment you played two games.</p>`,
+    preamble: `<p>In this experiment you played two main games.</p>`,
     questions: [
-      {prompt: 'Did you prefer one over the other? Why?', rows: 5,name: 'game_description'},
-      {prompt: 'Did you find the rest task easier than the two main games? Please leave any feedback about this that you have!', rows: 5,name: 'game_description'},
+      {prompt: 'Did you prefer one over the other? Why?', rows: 3,name: 'game_description'},
+      {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find the <strong>digit</strong> game? 100 is very boring, 1 is not boring at all.',name: 'ds_boring'},
+      {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find the <strong>flashing squares</strong> game? 100 is very boring, 1 is not boring at all.',name: 'sr_boring'},
+      {prompt: 'On a scale of 1 to 100, how <strong>boring</strong> did you find the <strong>rest</strong> game? 100 is very boring, 1 is not boring at all.',name: 'rt_boring'},
+      {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find the <strong>digit</strong> game? 100 is very boring, 1 is not boring at all.',name: 'ds_difficult'},
+      {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find the <strong>flashing squares</strong> game? 100 is very boring, 1 is not boring at all.',name: 'sr_difficult'},
+      {prompt: 'On a scale of 1 to 100, how <strong>difficult</strong> did you find the <strong>rest</strong> game? 100 is very boring, 1 is not boring at all.',name: 'rt_difficult'},
     ]
   }
   

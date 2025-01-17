@@ -111,7 +111,7 @@ function getPropRestUsed(default_bonus,bonus_max) {
 // cue that task will stay
 var cue_stay = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p  class="instructions-text"> You will now begin the rest break. <br>At the end of this rest break, <strong>you will continue with the same game.</strong> </p>',
+  stimulus: '<p  class="instructions-text"> At the end of this rest break, <br><strong>you will stay with the same game.</strong> </p>',
   choices: "NO_KEYS",
   trial_duration: 1500,
   on_finish: function(data){
@@ -124,7 +124,7 @@ var cue_stay = {
 // cue that task will switch
 var cue_switch = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p  class="instructions-text"> You will now begin the rest break. <br>At the end of this rest break, <strong>you will switch to the other game.</strong> </p>',
+  stimulus: '<p  class="instructions-text"> At the end of this rest break, <br><strong>you will switch to the other game.</strong> </p>',
   choices: "NO_KEYS",
   trial_duration: 1500,
   on_finish: function(data){

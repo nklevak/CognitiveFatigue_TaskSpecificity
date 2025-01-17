@@ -2,6 +2,8 @@ This is the January 2025 iteration of this experiment, with self-paced rest peri
 The rest task and spatial recall are based off of the dsst task in the niv lab demos site
 The digit span task was inspired by experiment factory digit span
 
+This is run with JSPsych v 7.3, and hosted on cognition.run: link *here* (will insert once data is collected)
+
 Currently: 
 
 Game A and Game B are counterbalanced to be either spatial recall or digit span
@@ -122,3 +124,6 @@ For spatial recall, rest, and digit span:
 - the timed_out value = 0 when it hasn't timed out and 1 if it has
 - when this happens, the rt is set to the max response time
 	- make sure to filter out whenever timed_out = 1
+- for rest when time out happens the rt is null
+	- timeout for rest is always 1 for last row when they selected to end rest
+		- real time out = rt == null AND timeout = 1
