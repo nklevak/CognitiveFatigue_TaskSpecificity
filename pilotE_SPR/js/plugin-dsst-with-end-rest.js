@@ -60,7 +60,7 @@ var dsstWithEndRestPlugin = (function (jspsych) {
           <div class="shapes-container">
             ${shapes_html}
           </div>
-          <p style="font-size: 1.3rem"><strong>${trial.stimulus}</strong></p>
+          <p style="font-size: 1.6rem"><strong>${trial.stimulus}</strong></p>
         </div>
       `;
 
@@ -137,6 +137,7 @@ var dsstWithEndRestPlugin = (function (jspsych) {
         display_element.querySelector('#end-rest-btn').addEventListener('click', () => {
           if (trial_ended) return;
           end_rest_early = true;
+          rest_ended = true // added this here
           this.jsPsych.pluginAPI.clearAllTimeouts();
           this.jsPsych.pluginAPI.cancelKeyboardResponse(keyboard_listener);
           response_info.end_rest = true;

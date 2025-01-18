@@ -1,7 +1,7 @@
 // MAIN EXPERIMENT SET UP VARIABLES
 var ds_trials_per_block = 10
 var ds_practice_trial_num = 4
-var response_time_max = 4000 // in ms
+var response_time_max = 4200 // in ms
 
 // DS specific setups:
 // also includes 200 ms between each digit flash
@@ -96,7 +96,7 @@ function createResponsePhase(sequence, is_practice) {
         stimulus: keypadHTML,
         choices: ['Continue'],
         button_html: '<button style="display:none" class="jspsych-btn">%choice%</button>',
-        trial_duration: response_time_max,  // 4 second timeout
+        trial_duration: response_time_max,  // 4.2 second timeout
         data: {
             sequence: sequence
         },

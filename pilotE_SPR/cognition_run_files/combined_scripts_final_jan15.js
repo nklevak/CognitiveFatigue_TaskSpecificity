@@ -6,7 +6,7 @@ var sr_practice_trial_num = 4
 // MAIN EXPERIMENT SET UP VARIABLES
 var ds_trials_per_block = 10
 var ds_practice_trial_num = 4
-var response_time_max = 4000 // in ms
+var response_time_max = 4200 // in ms
 // MAIN EXPERIMENT SET UP VARIABLES
 var max_num_rest_trials_per_block = 20
 var rest_num_practice_trials = 4
@@ -67,7 +67,7 @@ var welcome_practice_instructions = {
         <p class="instructions-text">In this experiment, you will be playing two games&mdash;<b>Game A</b> and <b>Game B</b>. <br>\
         You will also be given rest breaks, during which you will do the <b>Rest Game</b>.</p>
         <p class="instructions-text">You will be paid 12 dollars per hour, plus a bonus of up to 3 dollars, and \
-        regardless of your choices during this experiment, it will be approximately 55 minutes. </p>
+        regardless of your choices during this experiment, it will be approximately 56 minutes. </p>
         <p class="instructions-text">Before we begin, let's do some practice of the games. We will begin with <b>Game A</b></p>
       </div>`
     ],
@@ -105,26 +105,26 @@ DS_practice = [
 ]
 
 rest_practice = [
-`<div class="instructions-container">
-  <h1 class="instructions-heading">Rest Game</h1>
-  <p class="instructions-text">You have completed the practice for the two main games, Game A and Game B!</p>
-  <p class="instructions-text">Now, you will practice the rest game, which will be shown to you during rest breaks.</p>
-  <p class="instructions-text">Unlike Game A and Game B, do not worry about getting everything correct in the Rest Game. \
-  As long as make an attempt to answer most of the trials, you will get credit.</p>
-</div>`,
-`<div class="instructions-container">
-  <p class="instructions-text">In this game, you will see two shapes with numbers underneath them. \
-  You will be asked about the number under one of the shapes.</p>
-  <div style="display: flex; justify-content: center; gap: 10px; margin: 0;">
-    <div class="shape-container"><img src="Circle.png" style="width: 50px;"><br>1</div>
-    <div class="shape-container"><img src="Square.png" style="width: 50px;"><br>2</div>
-</div>
-  <p class="instructions-text">Press the <b>corresponding number key</b> when a specific shape is listed.</p>
-  <p class="instructions-text"><b>In the actual experiment, you will be able to end the rest at any time by clicking the \
-  "End Rest" button that will appear in the top right corner, but for the practice it will not be visible.<b></p>
-  <p class="instructions-text">Press Next to begin the practice.</p>
-</div>`
-]
+  `<div class="instructions-container">
+    <h1 class="instructions-heading">Rest Game</h1>
+    <p class="instructions-text">You have completed the practice for the two main games, Game A and Game B!</p>
+    <p class="instructions-text">Now, you will practice the <strong>rest game</strong>, which will be shown to you during rest breaks.</p>
+    <p class="instructions-text">Unlike Game A and Game B, do not worry about getting everything correct in the Rest Game. \
+    As long as make an attempt to answer most of the trials, you will get credit.</p>
+  </div>`,
+  `<div class="instructions-container">
+    <p class="instructions-text">In this game, you will see two shapes with numbers underneath them. \
+    You will be asked about the number under one of the shapes.</p>
+    <div style="display: flex; justify-content: center; gap: 10px; margin: 0;">
+      <div class="shape-container"><img src="./img/Circle.png" style="width: 50px;"><br>1</div>
+      <div class="shape-container"><img src="./img/Square.png" style="width: 50px;"><br>2</div>
+  </div>
+    <p class="instructions-text">Press the <b>corresponding number key on your keyboard (1 or 2)</b> when a specific shape is listed.</p>
+    <p class="instructions-text"><b>In the actual experiment, you will be able to end the rest at any time</b> by clicking the \
+    <b>"End Rest" button</b> that will appear in the top right corner, but for the practice it will not be visible.</p>
+    <p class="instructions-text">Press Next to begin the practice.</p>
+  </div>`
+  ]  
 
 // practice transition between A and B
 var practice_transition = {
@@ -166,6 +166,7 @@ var main_exp_instructions = {
       </div>`,
       `<div class="instructions-container">
         <h1 class="instructions-heading">Experiment Structure</h1>
+
         <p class="instructions-text">In this experiment, you will be <strong>switched between playing Game A and Game B</strong>, \
         with some rest periods in between (during which you will play the rest game).
         <br><br>You will start off by playing Game A. At certain points of the experiment, you will be notified that you are 
@@ -177,7 +178,7 @@ var main_exp_instructions = {
       `<div class="instructions-container">
         <h1 class="instructions-heading">The point system and bonus</h1>
     
-        <p class="instructions-test">Please try your best each trial of each game; as long as it is clear you did your best, you will get an base bonus of at least 1 dollar.</p>
+        <p class="instructions-test">Please try your best on the main games; as long as it is clear you tried on every trial, you will get an base bonus of at least 1 dollar.</p>
         <p class="instructions-text">You can gain an extra bonus of 2 additional dollars (bringing the total up to 3). \
         To do so: you will get an endowment of <b>600 points</b> to begin with, which you can use as currency in this experiment.\
         These points are valuable, and <b>they represent your ability to rest for longer during the experiment.</b> \
@@ -187,11 +188,9 @@ var main_exp_instructions = {
       </div>`,
       `<div class="instructions-container">
         <h1 class="instructions-heading">Important Notes</h1>
-        <p class="instructions-text">1) The experiment is set to be exactly 55 minutes long (no matter how much time is spent on the rest game vs the two games), so please
+        <p class="instructions-text">1) The experiment is set to be exactly 56 minutes long (no matter how much time is spent on the rest game vs the two games), so please
         feel free to extend rest whenever you feel you need to--taking into consideration that it will take away points from your endowment. \
-        <br><br>2) Your base bonus is not tied to your accuracy performance, but you will receive it as long as it is \
-        clear that you tried your best on the experiment. \
-        <br><br>3) Please stay in fullscreen the entire time, or the experiment will break and you will have to start over.</p>
+        <br><br>2) Please stay in fullscreen the entire time, or the experiment will break and you will have to start over.</p>
       </div>`,
       `<div class="instructions-container">
         <h1 class="instructions-heading">Ready to Begin</h1>
@@ -567,10 +566,10 @@ const rt_instructions_01 = {
     <p>In this task, you will see two shapes with numbers underneath them.</p>
     <p>You will be asked about the number under one of the shapes.</p>
     <div style="display: flex; justify-content: space-around; margin: 20px;">
-      <div><img src="Circle.png" style="width: 50px;"><br>1</div>
-      <div><img src="Square.png" style="width: 50px;"><br>2</div>
+      <div><img src="./img/Circle.png" style="width: 50px;"><br>1</div>
+      <div><img src="./img/Square.png" style="width: 50px;"><br>2</div>
     </div>
-    <p>Press the corresponding number key when asked about a specific shape.</p>
+    <p>Press the corresponding <strong>number key (1 or 2) on your keyboard</strong> when asked about a specific shape.</p>
     <p>You can end the rest at any time by clicking the "End Rest" button.</p>
     <p>Press any key to begin.</p>
   `,
@@ -662,12 +661,20 @@ function getPropRestUsed(default_bonus,bonus_max) {
   return final_bonus.toFixed(2)
 }
 
-// cue that task will stay
+// Cue that task will stay
 var cue_stay = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p  class="instructions-text"> At the end of this rest break, <br><strong>you will stay with the same game.</strong> </p>',
+  stimulus: `
+    <div class="instructions-container" style="text-align: center;">
+      <p class="instructions-text" style="font-size: 24px;">
+        After rest:<br><br>
+        <strong style="font-size: 48px; padding: 10px;">
+          You will STAY with the SAME game
+        </strong>
+      </p>
+    </div>`,
   choices: "NO_KEYS",
-  trial_duration: 1500,
+  trial_duration: 3000,
   on_finish: function(data){
     data.transition_type = "stay"
     rest_ended = false
@@ -675,12 +682,20 @@ var cue_stay = {
   }
 }
 
-// cue that task will switch
+// Cue that task will switch
 var cue_switch = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p  class="instructions-text"> At the end of this rest break, <br><strong>you will switch to the other game.</strong> </p>',
+  stimulus: `
+    <div class="instructions-container" style="text-align: center;">
+      <p class="instructions-text" style="font-size: 24px;">
+        After rest:<br><br>
+        <strong style="font-size: 48px; padding: 10px;">
+          You will SWITCH to the OTHER game
+        </strong>
+      </p>
+    </div>`,
   choices: "NO_KEYS",
-  trial_duration: 1500,
+  trial_duration: 3000,
   on_finish: function(data){
     data.transition_type = "switch"
     rest_ended = false

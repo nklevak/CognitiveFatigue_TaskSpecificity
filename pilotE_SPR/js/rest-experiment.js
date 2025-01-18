@@ -6,7 +6,6 @@ var num_blocks_per_group = 3
 var bonus_minimum = 1
 var dependent_bonus = 2
 
-
 const rt_instructions_01 = {
   type: jsPsychHtmlKeyboardResponse,
   stimulus: `
@@ -16,7 +15,7 @@ const rt_instructions_01 = {
       <div><img src="./img/Circle.png" style="width: 50px;"><br>1</div>
       <div><img src="./img/Square.png" style="width: 50px;"><br>2</div>
     </div>
-    <p>Press the corresponding number key when asked about a specific shape.</p>
+    <p>Press the corresponding <strong>number key (1 or 2) on your keyboard</strong> when asked about a specific shape.</p>
     <p>You can end the rest at any time by clicking the "End Rest" button.</p>
     <p>Press any key to begin.</p>
   `,
@@ -108,12 +107,21 @@ function getPropRestUsed(default_bonus,bonus_max) {
   return final_bonus.toFixed(2)
 }
 
-// cue that task will stay
+// Cue that task will stay
 var cue_stay = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p  class="instructions-text"> At the end of this rest break, <br><strong>you will stay with the same game.</strong> </p>',
+  stimulus: `
+    <div class="instructions-container" style="text-align: center;">
+      <h2 style="font-size: 28px; margin-bottom: 20px;"><strong>Important Notice</strong></h2>
+      <p class="instructions-text" style="font-size: 24px;">
+        After rest:<br><br>
+        <strong style="font-size: 48px; padding: 10px;">
+          You will STAY with the SAME game
+        </strong>
+      </p>
+    </div>`,
   choices: "NO_KEYS",
-  trial_duration: 1500,
+  trial_duration: 3000,
   on_finish: function(data){
     data.transition_type = "stay"
     rest_ended = false
@@ -121,12 +129,21 @@ var cue_stay = {
   }
 }
 
-// cue that task will switch
+// Cue that task will switch
 var cue_switch = {
   type: jsPsychHtmlKeyboardResponse,
-  stimulus: '<p  class="instructions-text"> At the end of this rest break, <br><strong>you will switch to the other game.</strong> </p>',
+  stimulus: `
+    <div class="instructions-container" style="text-align: center;">
+      <h2 style="font-size: 28px; margin-bottom: 20px;"><strong>Important Notice</strong></h2>
+      <p class="instructions-text" style="font-size: 24px;">
+        After rest:<br><br>
+        <strong style="font-size: 48px; padding: 10px;">
+          You will SWITCH to the OTHER game
+        </strong>
+      </p>
+    </div>`,
   choices: "NO_KEYS",
-  trial_duration: 1500,
+  trial_duration: 3000,
   on_finish: function(data){
     data.transition_type = "switch"
     rest_ended = false

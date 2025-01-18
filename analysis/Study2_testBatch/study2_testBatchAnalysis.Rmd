@@ -43,7 +43,8 @@ theme_set(theme_classic())
 
 **reading in the data**
 ``` {r data_wrangling}
-setwd("../../data/pilotE_SPR_testBatch")
+# setwd("../../data/pilotE_SPR_testBatch")
+setwd("../../data/pilotE_SPR_testBatch2")
 
 csv_files <- list.files(pattern = "\\.csv$")
 
@@ -80,8 +81,10 @@ df_all <- df_all %>%
   mutate(subj_id = as.integer(run_id)) %>%
   select(-run_id)
 
-df_recent_subset <- df_all %>%
-  filter(subj_id == 13 | subj_id == 14 | subj_id == 20 | subj_id == 22)
+df_recent_subset <- df_all 
+
+# df_recent_subset <- df_all %>%
+#   filter(subj_id == 13 | subj_id == 14 | subj_id == 20 | subj_id == 22)
 ```
 
 Save the practice runs in a separate df, and also change is_correct into a true/false, calculate avg performance on each task, get rid of unnecessary columns
@@ -194,17 +197,18 @@ Plot average RT per task per person:
 ``` {r avg_rt_pre_exclusion}
 df_recent_subset_analyze <- df_recent_subset_analyze %>%
   mutate(timed_out = ifelse(timed_out == "true" | timed_out == 1, TRUE, FALSE)) %>%
-  mutate(rt = ifelse(timed_out == TRUE | game_type=="rest_task",-1,rt)) %>%
+  mutate(rt = ifelse(timed_out == TRUE & game_type == "rest_task",5000,rt)) %>%
+  # mutate(rt = ifelse(timed_out == TRUE,-1,rt)) %>%
   mutate(rt_num = as.numeric(rt)) %>%
   mutate(rt = rt_num) %>%
   select(-rt_num)
 
 df_recent_subset_analyze %>%
-  filter(rt > 4000)
+  filter(rt >= 4000 & response != "null" & response != "[]")
 
 rt_overall_avgs <- df_recent_subset_analyze %>%
   ungroup() %>%
-  filter(game_type != "rest_task") %>%
+  filter(timed_out == FALSE) %>%
   group_by(subj_id, game_type) %>%
   summarize(rt_avg = mean(rt))
 
@@ -353,8 +357,6 @@ df_recent_subset_analyze %>%
                size = 1)+
   labs(x="Game type",y="Proportion of trials timed out")+
   ggtitle("Proportion of trials timed out, per game type: pre-exclusion")
-
-
 ```
 
 
