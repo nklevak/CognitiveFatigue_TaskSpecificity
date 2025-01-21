@@ -1,0 +1,66 @@
+---
+title: "basic_modeling"
+output: html_document
+date: "2025-01-20"
+---
+This is the initial modeling analyses for study 2.
+
+The setup was:
+4 spatial recall practice
+4 digit span practice
+4 rest practice
+
+10 groups, 13 blocks per group
+- 10 digit span per block
+- 10 visual search per block
+- up to 20 rest per rest period
+
+group ordering: ABABBABAAB
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+library(jsonlite)
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+# READ IN DATA (these are all post-exclusion files from both batches)
+``` {r data_wrangling}
+# exp vars
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+df_all <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv",stringsAsFactors = FALSE)
+df_practice <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv",stringsAsFactors = FALSE)
+df_survey <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv", stringsAsFactors = FALSE)
+```
+
+# QUESTION 1:
+
+
+
+
+# QUESTION 2:
+
+
+
+
+# QUESTION 3:
+
