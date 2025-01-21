@@ -326,14 +326,14 @@ df_bonus_id %>%
 
 # save the timed out data which you can save in the anonymous folder
 prop_timed_out <- df_bonus_id %>%
-  filter(!(subj_id %in% c(35))) %>% # exclude for now
+  # filter(!(subj_id %in% c(35))) %>% # exclude for now
   select(-prolific_id, -final_bonus, -max_timed_out_sr_ds)
 write.csv(prop_timed_out, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/SPR_main_timed_out_data_cleaned.csv")
 
 # clean the bonus_id df which you will then use for paying bonuses (DO NOT UPLOAD THIS FILE TO data_anonymized FOLDER) but can update to data/ because it's hidden with gitignore (can then upload this to prolific for an easy way to pay bonuses)
 
 # for batch 1
-subj_to_exclude = c(35) #TODO here can add specific subj_id from people who timed out too much / did not participate (12,17,31 are fine)
+subj_to_exclude = c() #TODO here can add specific subj_id from people who timed out too much / did not participate (12,17,31 are fine)
 df_bonus_id_b1 <- df_bonus_id %>%
   select(subj_id, prolific_id, final_bonus) %>%
   filter(subj_id < 500) %>%

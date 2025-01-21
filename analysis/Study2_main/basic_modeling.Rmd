@@ -53,14 +53,17 @@ df_survey <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_T
 ```
 
 # QUESTION 1:
+1) Is there a post-error increase in fatigue? i.e. is accuracy a significant negative estimator for subsequent rest time?
+
 
 
 
 
 # QUESTION 2:
-
+2) When does task switching reduce fatigue, if ever? i.e. how does performance differ in the block following a switch vs a non-switch, and how long is the subsequent self-paced rest (in comparison)
 
 
 
 # QUESTION 3:
+3) Is task switching acted upon as rejuvenating? i.e. will rest time when cued that the next block will be a switch be less than when cued the next block will be a stay
 
