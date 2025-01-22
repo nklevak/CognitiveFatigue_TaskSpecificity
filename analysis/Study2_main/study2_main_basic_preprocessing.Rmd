@@ -86,13 +86,13 @@ df_all <- bind_rows(df_all_batch1, df_all_batch2)
 
 # LEAVE COMMENTED OUT UNTIL YOU GET MORE PARTICIPANTS THEN RUN THIS ONCE AND COMMENT OUT AGAIN
 # # read in previous subj_ids that you've already approved/paid so you don't double do it
-
-# already_paid_1 <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch1.txt",header = FALSE,
-#                         col.names = "prolific_id",# Names the single column
-#                         stringsAsFactors = FALSE)
-# already_paid_2 <- read.csv("SPR_main_approvals_batch2.txt",header = FALSE,           
-#                         col.names = "prolific_id",# Names the single column
-#                         stringsAsFactors = FALSE)
+# 
+already_paid_1 <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch1.txt",header = FALSE,
+                        col.names = "prolific_id",# Names the single column
+                        stringsAsFactors = FALSE)
+already_paid_2 <- read.csv("SPR_main_approvals_batch2.txt",header = FALSE,
+                        col.names = "prolific_id",# Names the single column
+                        stringsAsFactors = FALSE)
 ```
 
 **pre-processing the data**
@@ -138,15 +138,21 @@ Do basic cleaning and data wrangling:
 df_recent_subset <- df_all %>%
   mutate(subj_id = as.integer(run_id)) %>%
   mutate(is_correct_numeric = ifelse(is_correct=="false" | timed_out == "1" | timed_out == "true", 0, 1)) %>%
+  group_by(subj_id) %>%
+  mutate(
+    gameA = ifelse(all(is.na(gameA_name)), NA, 
+                   first(gameA_name[!is.na(gameA_name) & !(gameA_name=="")])),
+    SR_isGameA = ifelse(all(is.na(gameA_isSR)), NA,
+                        first(gameA_isSR[!is.na(gameA_isSR) & !(gameA_isSR == "")]))
+  ) %>%
+  mutate(gameA_isSR = ifelse(SR_isGameA == "true", TRUE, FALSE), gameA_name = gameA) %>%
+  ungroup() %>%
   filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials" | trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "rt_main_trials") %>%
   select(-c(run_id, transition_type, gameB_name, game_A, game_B, backwards, score_an, score_pc, score_ls, is_correct, stimulus, target_shape, final_bonus)) %>%
-  group_by(subj_id) %>%
-  # spread the game A value in the whole column per subject
-  mutate(gameA_name = first(na.omit(gameA_name)), gameA_isSR = first(na.omit(gameA_isSR)), gameA_isSR = ifelse(gameA_isSR == "true", TRUE, FALSE)) %>%
   ungroup() %>%
   mutate(trial_index_num = as.numeric(trial_index)) %>%
   mutate(trial_index = trial_index_num) %>%
-  select(-trial_index_num) %>%
+  select(-trial_index_num, -SR_isGameA, -gameA) %>%
   arrange(subj_id, trial_index)
 ```
 
@@ -314,15 +320,20 @@ df_bonus_id <- final_participant_data %>%
 # print the ones who you should look into more
 df_bonus_id %>%
   filter(flagged_time_outs == TRUE | flagged_few_trials == TRUE) %>%
-  # filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved/looked at most recently (will need to figure out better system later)
+  filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved (did everyone in batch 1)
   # filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
   print() %>%
   select(subj_id, prolific_id, flagged_time_outs, max_timed_out_sr_ds, flagged_few_trials) %>%
   distinct()
+
 # 
 # df_bonus_id %>%
 #   filter(prolific_id == "") %>%
 #   print()
+
+```
+
+``` {r data_wrangling_bonus}
 
 # save the timed out data which you can save in the anonymous folder
 prop_timed_out <- df_bonus_id %>%
@@ -354,7 +365,7 @@ df_bonus_id_b2 <- df_bonus_id %>%
   filter(subj_id >= 500) %>%
   distinct() %>%
   filter(!(subj_id %in% subj_to_exclude)) %>%
-  # filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
+  filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
   select(prolific_id, final_bonus)
 write.table(df_bonus_id_b2, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_bonus_payments_batch2.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE)
 
@@ -372,6 +383,7 @@ df_bonus_id_b1 <- df_bonus_id_b1 %>%
   select(-prolific_id)
 df_bonus_id_b2 <- df_bonus_id_b2 %>%
   select(-prolific_id)
+
 ```
 
 ## Basic Plots and Checks:
@@ -606,6 +618,7 @@ write.csv(survey_cleaned, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatig
 write.csv(practice_runs_subset_df, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv")
 write.csv(df_recent_subset_analyze, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv")
 ```
+
 
 ``` {r post_exclusion_plots}
 # average of all subj averages

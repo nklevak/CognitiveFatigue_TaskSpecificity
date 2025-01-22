@@ -719,7 +719,6 @@ final_df_excluded %>%
   ggtitle("Predicting bid from performance")
 
 
-
 # adding the r squared value to the plot
 
 # First create the linear model to get R-squared
