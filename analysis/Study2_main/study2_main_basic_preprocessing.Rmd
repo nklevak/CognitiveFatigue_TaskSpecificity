@@ -90,7 +90,7 @@ df_all <- bind_rows(df_all_batch1, df_all_batch2)
 already_paid_1 <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch1.txt",header = FALSE,
                         col.names = "prolific_id",# Names the single column
                         stringsAsFactors = FALSE)
-already_paid_2 <- read.csv("SPR_main_approvals_batch2.txt",header = FALSE,
+already_paid_2 <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch2.txt",header = FALSE,
                         col.names = "prolific_id",# Names the single column
                         stringsAsFactors = FALSE)
 ```
@@ -137,7 +137,7 @@ Do basic cleaning and data wrangling:
 ``` {r data_wrangling}
 df_recent_subset <- df_all %>%
   mutate(subj_id = as.integer(run_id)) %>%
-  mutate(is_correct_numeric = ifelse(is_correct=="false" | timed_out == "1" | timed_out == "true", 0, 1)) %>%
+  mutate(is_correct_numeric = ifelse(is_correct=="false" | timed_out == "1" | timed_out == "true" | timed_out == 1, 0, 1)) %>%
   group_by(subj_id) %>%
   mutate(
     gameA = ifelse(all(is.na(gameA_name)), NA, 
@@ -212,8 +212,9 @@ df_recent_subset_analyze <- df_recent_subset %>%
 #   filter(rt >= 4200 & response != "null" & response != "[]") %>%
 #   print()
 df_recent_subset_analyze <- df_recent_subset_analyze %>%
-  mutate(timed_out = ifelse(timed_out == "true" | timed_out == 1, TRUE, FALSE)) %>%
-  mutate(rt = ifelse(timed_out == TRUE & game_type == "rest_task",5000,rt)) %>% # for all tasks, if timed out rt = 4200 or 5000 ms; for SR sometimes it's slightly above 4200 if it didn't catch it in time
+  mutate(na_trial = ifelse(is.na(timed_out), 1,0),
+        timed_out = ifelse(timed_out == "true" | timed_out == 1 | timed_out == "1", TRUE, FALSE)) %>%
+  mutate(rt = ifelse(timed_out == TRUE,NA,rt)) %>% # for all tasks, if timed out rt = 4200 or 5000 ms; for SR sometimes it's slightly above 4200 if it didn't catch it in time
   mutate(rt_num = as.numeric(rt)) %>%
   mutate(rt = rt_num) %>%
   select(-rt_num)
@@ -242,7 +243,7 @@ write.csv(df_recent_subset_analyze, "/Users/nastasiaklevak/Desktop/FYP_2024/Cogn
 prop_timed_out <- df_recent_subset_analyze %>%
   ungroup() %>%
   group_by(subj_id, game_type) %>%
-  summarize(num_timed_out = sum(timed_out == TRUE), num_not_timed_out = sum(timed_out == FALSE)) %>%
+  summarize(num_timed_out = sum(timed_out == TRUE), num_not_timed_out = sum(timed_out == FALSE), num_NA = sum(na_trial == 1)) %>%
   mutate(total_trials = num_not_timed_out + num_timed_out,
          prop_timed_out = num_timed_out / total_trials)
 
@@ -315,41 +316,43 @@ write.csv(survey_cleaned, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatig
 df_bonus_id <- final_participant_data %>%
   ungroup() %>%
   mutate(flagged_time_outs = ifelse(max_timed_out_sr_ds > 0.85, TRUE, FALSE),
-         flagged_few_trials = ifelse(game_type != "rest_task" & total_trials < 150, TRUE, FALSE))
+         flagged_few_trials = ifelse(game_type != "rest_task" & total_trials < 150, TRUE, FALSE),
+         flagged_has_nas = ifelse(num_NA != 0, TRUE, FALSE)) # figure out whats happening w 539 subj
 
 # print the ones who you should look into more
 df_bonus_id %>%
-  filter(flagged_time_outs == TRUE | flagged_few_trials == TRUE) %>%
-  filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved (did everyone in batch 1)
+  filter(flagged_time_outs == TRUE | flagged_few_trials == TRUE | flagged_has_nas == TRUE) %>%
+  # filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved (did everyone in batch 1)
   # filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
   print() %>%
-  select(subj_id, prolific_id, flagged_time_outs, max_timed_out_sr_ds, flagged_few_trials) %>%
+  select(subj_id, prolific_id, flagged_time_outs, max_timed_out_sr_ds, flagged_few_trials, flagged_has_nas) %>%
   distinct()
 
-# 
-# df_bonus_id %>%
-#   filter(prolific_id == "") %>%
-#   print()
+# filter out/exclude those who have na trials????
+exclude_has_nas <- df_bonus_id%>%
+  filter(flagged_has_nas == TRUE) %>%
+  select(subj_id)
+
+exclude_has_nas
 
 ```
 
 ``` {r data_wrangling_bonus}
-
 # save the timed out data which you can save in the anonymous folder
 prop_timed_out <- df_bonus_id %>%
-  # filter(!(subj_id %in% c(35))) %>% # exclude for now
+  # filter(!(subj_id %in% exclude_has_nas)) %>% # exclude for now
   select(-prolific_id, -final_bonus, -max_timed_out_sr_ds)
 write.csv(prop_timed_out, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/SPR_main_timed_out_data_cleaned.csv")
 
 # clean the bonus_id df which you will then use for paying bonuses (DO NOT UPLOAD THIS FILE TO data_anonymized FOLDER) but can update to data/ because it's hidden with gitignore (can then upload this to prolific for an easy way to pay bonuses)
 
 # for batch 1
-subj_to_exclude = c() #TODO here can add specific subj_id from people who timed out too much / did not participate (12,17,31 are fine)
+subj_to_exclude =  exclude_has_nas$subj_id #excluding the ones with incomplete data
 df_bonus_id_b1 <- df_bonus_id %>%
   select(subj_id, prolific_id, final_bonus) %>%
   filter(subj_id < 500) %>%
   distinct() %>%
-  filter(!(subj_id %in% subj_to_exclude)) %>%
+  # filter(!(subj_id %in% subj_to_exclude)) %>%
   # filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved/looked at
   select(prolific_id, final_bonus)
 write.table(df_bonus_id_b1, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_bonus_payments_batch1.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE)
@@ -359,13 +362,13 @@ df_bonus_id_b1 <- df_bonus_id_b1 %>%
 write.table(df_bonus_id_b1, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch1.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE,eol = ",")
 
 # for batch 2
-subj_to_exclude = c() #TODO here can add specific subj_id from people who timed out too much / did not participate (12,17,31 are fine)
+subj_to_exclude = exclude_has_nas$subj_id #excluding the ones with incomplete data
 df_bonus_id_b2 <- df_bonus_id %>%
   select(subj_id, prolific_id, final_bonus) %>%
   filter(subj_id >= 500) %>%
   distinct() %>%
-  filter(!(subj_id %in% subj_to_exclude)) %>%
-  filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
+  # filter(!(subj_id %in% subj_to_exclude)) %>%
+  # filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
   select(prolific_id, final_bonus)
 write.table(df_bonus_id_b2, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_bonus_payments_batch2.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE)
 
@@ -550,9 +553,8 @@ df_recent_subset_analyze %>%
 
 # DO EXCLUSION CRITERIA:
 - excluding participants based on:
-1. accuracy below 30% on both tasks (digit span and spatial recall) or above 95% on both tasks
-2. if they said they didn't read the cues (????? not sure about this one)
-3. if they never used more than 1 rest (???? not sure)
+1. accuracy below 30% on both tasks (digit span and spatial recall) (signifying a lack of attention/trying) or above 95% on both tasks
+2. those with incomplete data (had some glithc; only one; saved in: exclude_has_nas)
 
 ``` {r pre_exclusion_plots}
 # average of all subj averages
@@ -606,13 +608,17 @@ subjects_high_low_accuracy <- all_runs_avg_subset %>%
 # DO OTHER EXCLUSION HERE
 # remove these subjects from final datasets
 all_runs_avg_subset <-  all_runs_avg_subset%>%
-  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id))
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
 survey_cleaned <- survey_cleaned %>%
-  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id))
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
 practice_runs_subset_df <- practice_runs_subset_df %>%
-  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id))
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
 df_recent_subset_analyze <- df_recent_subset_analyze %>%
-  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id))
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
 
 write.csv(survey_cleaned, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv")
 write.csv(practice_runs_subset_df, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv")
@@ -657,3 +663,71 @@ all_runs_avg_subset %>%
     plot.title = element_text(size = 13)   # Plot title
   )
 ```
+``` {r rests_over_time_pre_exclusion}
+df_recent_subset_analyze %>%
+  filter(game_type == "rest_task") %>%
+  select(subj_id, rest_chunk, num_rest_in_chunk) %>%
+  group_by(subj_id, rest_chunk, num_rest_in_chunk) %>%
+  distinct() %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x=rest_chunk, y=num_rest_in_chunk, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  geom_smooth(method = "lm", se = TRUE,formula = y ~ x) +
+  labs(x="Rest period number",y="Number of rests taken")+
+  ggtitle("Average number of rests taken over time: post-exclusion")
+
+
+
+
+rt_overall_avgs <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  filter(timed_out == FALSE) %>%
+  group_by(subj_id, game_type) %>%
+  summarize(rt_avg = mean(rt))
+
+rt_overall_avgs %>%
+  ggplot(aes(x=game_type,y=rt_avg,color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  # facet_wrap(~trial_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game types",y="Average rt per participant on given game type")+
+  ggtitle("Average participant rt on each game: post-exclusion")
+  
+```
+
+``` {r prop_skipped_post_exclusion}
+df_recent_subset_analyze %>%
+  ungroup() %>%
+  group_by(subj_id, game_type) %>%
+  summarize(num_timed_out = sum(timed_out == TRUE), num_not_timed_out = sum(timed_out == FALSE)) %>%
+  mutate(total_trials = num_not_timed_out + num_timed_out,
+         prop_timed_out = num_timed_out / total_trials) %>%
+  ggplot(mapping = aes(x=game_type, y=prop_timed_out, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  labs(x="Game type",y="Proportion of trials timed out")+
+  ggtitle("Proportion of trials timed out, per game type: post-exclusion")
+
+```
+
+IN THE END: excluded 6 so far (1 for incomplete data, 5 for the accuracy exclusion criteria)
