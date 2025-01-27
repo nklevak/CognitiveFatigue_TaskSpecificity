@@ -725,6 +725,7 @@ df_recent_subset_analyze %>%
                fill = "yellow",
                shape = 21,
                size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
   labs(x="Game type",y="Proportion of trials timed out")+
   ggtitle("Proportion of trials timed out, per game type: post-exclusion")
 

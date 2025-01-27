@@ -966,7 +966,6 @@ testDispersion(simulateResiduals(fittedModel = fit.rest_glm_11)) #very overdispe
 	2. account for game_type, block_num, group_num, 1|subj_id
 	3. can use "switched" or "stayed" as a predictor (create this variable after isolating those blocks)
 
-
 ``` {r data_loading}
 df_all_blockwise_q2 <- df_all_blockwise %>%
   group_by(subj_id) %>%

@@ -210,6 +210,12 @@ compare_performance(fit.mixed_1_nb, fit.mixed_2_nb, fit.mixed_3_nb, fit.mixed_4_
 
 check_model(fit.mixed_5_nb)
 summary(fit.mixed_5_nb) # 5 looks pretty good; better than poisson (improved overdispersion); later try to also include a preference variable (i.e. control for if participants pref sr or ds); and also try to include a variable for if they read the cues or not
+
+fit.mixed_6_nb <- glmer.nb(num_rest_in_chunk ~ group_num + rest_type + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data)
+summary(fit.mixed_6_nb) # adding rest type didn't really make a big difference; worse model than 5
+
+compare_performance(fit.mixed_5_nb, fit.mixed_6_nb)
 ```
 
 # JOINT PLOTS
@@ -382,6 +388,10 @@ p2 <- ggplot(data = model_data, aes(x = avg_block_accuracy, y = num_rest_in_chun
 (p1 + p2) &
   guides(color = guide_legend(override.aes = list(size = 1))) &
   theme(legend.position = "right")
+
+
+p1
+p2
 ```
 
 Plot the raw data in bar graph form:
@@ -422,6 +432,21 @@ ggplot(model_data, aes(x = acc_bin, y = num_rest_in_chunk, fill = cue_type)) +
                     method = "t.test",
                     label = "p.signif",
                     label.y = 15)
+
+
+ggplot(model_data, mapping = aes(x=cue_type, y=num_rest_in_chunk, fill=cue_type)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge()) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", position = position_dodge(width = 0.9), width = 0.2) +
+  theme_minimal() +
+  labs(x = "Cue Type", 
+       y = "Average Number of Rests",
+       fill = "Cue Type") +
+    scale_fill_manual(values = c("salmon", "turquoise3")) +
+  stat_compare_means(aes(group = cue_type), 
+                    method = "t.test",
+                    label = "p.signif",
+                    label.y = 15)
+
 ```
 
 
@@ -471,6 +496,30 @@ df_all_blockwise %>%
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 10)
   )
+
+
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  # scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following rests taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance (fixed effects only)") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
 ```
 
 # Q3 SPECIFIC PLOTS
@@ -478,33 +527,25 @@ df_all_blockwise %>%
 ``` {r rest_acc_plot}
 # look at switch vs stay overall
 breaks <- c(-Inf, -1, 0, 1, Inf)
-labels <- c(' << avg',' < avg', ' > avg', ' >> avg')
+labels <- c('prev acc << avg','prev acc < avg', 'prev acc > avg', 'prev acc >> avg')
 
-df_all_blockwise_q3 <- df_all_blockwise %>%
+temp <- df_all_blockwise %>%
   group_by(subj_id) %>%
-  arrange(subj_id, block_num) %>%
-  mutate(following_avg_accuracy = lead(avg_block_accuracy, default = NA),
-         scale_following_avg_accuracy = lead(scale_accuracy, default = NA),
-         scale_following_block_rest = lead(scale_rest)) %>%
-  ungroup()
-
-temp <- df_all_blockwise_q3 %>%
-  filter(block_num!=30) %>%
   mutate(accuracy_bin_preceding = cut(scale_accuracy, breaks = breaks, labels = labels, right = FALSE)) %>%
   ungroup() %>%
-  filter(!is.na(accuracy_bin_preceding), !is.na(scale_rest), !is.na(scale_following_block_rest))
+  filter(!is.na(scale_accuracy))
+
+temp <- temp %>%
+  select(subj_id, cue_type, num_rest_in_chunk, accuracy_bin_preceding)
 
 temp %>%
-  select(block_num, cue_type, scale_following_block_rest, accuracy_bin_preceding) %>%
-  distinct() %>%
-  filter(block_num != 30) %>%
-  ggplot(mapping = aes(x=cue_type, y=scale_following_block_rest)) +
+  ggplot(mapping = aes(x=cue_type, y=num_rest_in_chunk)) +
   facet_wrap(~accuracy_bin_preceding, ncol=4) +
   theme_bw() +
   theme(
     panel.spacing.x = unit(2, "lines"),
-    strip.text = element_text(size = 14),
-    axis.title = element_text(size = 14),
+    strip.text = element_text(size = 13),
+    axis.title = element_text(size = 13),
     axis.text = element_text(size = 12)
   ) +
   geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
@@ -514,9 +555,43 @@ temp %>%
                fill = "light blue",
                shape = 21,
                size = 0.75) +
-  labs(x = "Did the task switch?",
-       y = "Scaled rest amount following this cue") +
-  ggtitle("Relationship between prior block performance, switch status, and rest time") +
-  ylim(0, 1.1)
+  labs(x = "What did the cue say?",
+       y = "Rest amount following this cue") +
+  ggtitle("Relationship between prior block performance, switch status, and rest time")
+
+
+
+
+
+
+temp <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  mutate(accuracy_bin_preceding = cut(scale_accuracy, breaks = breaks, labels = labels, right = FALSE)) %>%
+  ungroup() %>%
+  filter(!is.na(scale_accuracy), !is.na(scale_rest))
+
+temp <- temp %>%
+  select(subj_id, cue_type, scale_rest, accuracy_bin_preceding)
+
+temp %>%
+  ggplot(mapping = aes(x=cue_type, y=scale_rest)) +
+  facet_wrap(~accuracy_bin_preceding, ncol=4) +
+  theme_bw() +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    strip.text = element_text(size = 13),
+    axis.title = element_text(size = 13),
+    axis.text = element_text(size = 12)
+  ) +
+  geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "light blue",
+               shape = 21,
+               size = 0.75) +
+  labs(x = "What did the cue say?",
+       y = "Scale rest amount following this cue") +
+  ggtitle("Relationship between prior block performance, switch status, and rest time")
 ```
 
