@@ -29,6 +29,7 @@ library(ggpubr)
 library(patchwork)  # For combining plots
 library(broom.mixed)
 library(effects)
+library(emmeans)
 
 
 
@@ -265,14 +266,136 @@ temp %>%
 
 
 ```
-
-
 Rest follows same trend as accuracy; when worse previous performance OR less previous rest switching is beneficial; when better previous performance OR more previous rest then switch hurts
 Suggests that for people performing poorly, switching helps
 For people performing better, switching hurts
 Suggests that for people resting less, switching helps
 For people resting more, switching hurts -> PROBABLY BECAUSE THEY RESTED MORE BECAUSE THEY KNEW IT WAS A SWITCH
 
+# BETTER RAW DATA PLOTS
+
+Plotting the switch, previous performance interaction from the raw data:
+``` {r data_loading}
+plot_data_q2 <- df_all_blockwise_q2 %>%
+  mutate(acc_category = cut(avg_block_accuracy, 
+                           breaks = c(-Inf, 0.33, 0.66, Inf),
+                           labels = c("Low", "Medium", "High"))) %>%
+  filter(block_num != 30)
+
+# raw data: Examine effects in different accuracy ranges
+acc_summary <- plot_data_q2 %>%
+  group_by(acc_category, cue_type) %>%
+  summarize(
+    mean_post_cue_rate = mean(post_cue_avg_accuracy),
+    se = sd(post_cue_avg_accuracy)/sqrt(n()),
+    n = n()
+  )
+
+ggplot(plot_data_q2, aes(x = acc_category, y = post_cue_avg_accuracy, fill = cue_type)) +
+  stat_summary(
+    fun = mean,
+    geom = "bar",
+    position = position_dodge(0.9),
+    width = 0.8
+  ) +
+  stat_summary(
+    fun.data = mean_se,
+    geom = "errorbar",
+    position = position_dodge(0.9),
+    width = 0.25
+  ) +
+  scale_fill_manual(values = c("black", "#E69F00"),
+                   labels = c("Stay", "Switch")) +
+  labs(x = "Previous Block Accuracy",
+       y = "Following Block Accuracy",
+       fill = "Trial Type") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  ) + 
+  ggtitle("Following block accuracy by previous block accuracy and switch type", 
+          "raw data")
+
+# line plot with mean points
+ggplot(plot_data_q2, aes(x = acc_category, y = post_cue_avg_accuracy, color = cue_type, group = cue_type)) +
+  geom_point(alpha = 0.1, position = position_jitter(0.4)) +
+  # Summary stats
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    size = 1
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    size = 3
+  ) +
+  stat_summary(
+    fun.data = mean_se,
+    geom = "errorbar",
+    width = 0.2
+  ) +
+  scale_color_manual(values = c("black", "#E69F00"),
+                    labels = c("Stay", "Switch")) +
+  labs(x = "Previous Block Accuracy",
+       y = "Following Block Accuracy",
+       color = "Trial Type") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  ) +
+  ggtitle("Following block accuracy by previous block accuracy and switch type", 
+          "raw data")
+
+# Violin plot 
+ggplot(plot_data_q2, aes(x = acc_category, y = post_cue_avg_accuracy, fill = cue_type)) +
+  # Violin plot for distribution
+  geom_violin(position = position_dodge(0.9), alpha = 0.3) +
+  # Summary statistics
+  stat_summary(
+    aes(color = cue_type),
+    fun = mean,
+    geom = "point",
+    position = position_dodge(0.9),
+    size = 3
+  ) +
+  stat_summary(
+    aes(color = cue_type),
+    fun.data = mean_se,
+    geom = "errorbar",
+    position = position_dodge(0.9),
+    width = 0.2
+  ) +
+  scale_fill_manual(values = c("black", "#E69F00"),
+                   labels = c("Stay", "Switch")) +
+  scale_color_manual(values = c("black", "#E69F00"),
+                    labels = c("Stay", "Switch")) +
+  labs(x = "Previous Block Accuracy",
+       y = "Following Block Accuracy",
+       fill = "Trial Type",
+       color = "Trial Type") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  ) +
+  ggtitle("Following block accuracy by previous block accuracy and switch type", 
+          "raw data")
+``` 
 
 # MODELS
 Keeping it simple; looking specifically at the effect of avg_block_accuracy and cue_type on the following rests per chunk; looking to see what breaks the effect as we make it more complicated (but don't add an unnecessary number of predictors and overfit)
@@ -318,70 +441,56 @@ fit.mixed_simple_1 <- glmer(cbind(next_block_successes, next_block_failures) ~ (
 fit.mixed_simple_2 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_2)
 # model 3: avg_block_accuracy is a significant positive predictor
 fit.mixed_simple_3 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + num_rest_in_chunk + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_3)
 # model 4: avg_block_accuracy is a significant positive predictor
 fit.mixed_simple_4 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + cue_type + num_rest_in_chunk + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_4)
 # model 5: avg_block_accuracy is a significant positive predictor; cue_typeswitch is a significant positive predictor;
 # avg_block_accuracy:cue_typeswitch is a significant negative predicter
 fit.mixed_simple_5 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_5)
 # model 6: same as 5
 fit.mixed_simple_6 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_6)
 # model 7: same as 5
 fit.mixed_simple_7 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_7)
 # model 8: same as 5 but spatial recall also sig neg predictor
 fit.mixed_simple_8 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + game_type + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_8)
 # model 9: same as 5 but spatial recall also sig neg predictor
 fit.mixed_simple_9 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + game_type + (1 + game_type|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_9)
 # model 10: cue type switch is a sig pos predictor, rest are same as above
 fit.mixed_simple_10 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + group_num + game_type + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_10)
 # model 11: switch generally positive but doing well and then getting switched is more neg
 fit.mixed_simple_11 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + cue_type + group_num + game_type + avg_block_accuracy:rest_type + (1|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_11)
-
 # modeled more after 9 which was the best so far
 # model 12: same as 11
 fit.mixed_simple_12 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1 + game_type|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_12)
 # model 13: same as 11 also accuracy_sd is a sig pos predictor
 fit.mixed_simple_13 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + num_rest_in_chunk + accuracy_sd + (1 + game_type|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_13)
 # model 14: same as before
 fit.mixed_simple_14 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + accuracy_sd + (1 + game_type|subj_id),
                family = binomial,
                data = model_data_q2)
-summary(fit.mixed_simple_14)
 
 compare_performance(fit.mixed_simple_1, fit.mixed_simple_2, fit.mixed_simple_3, fit.mixed_simple_4, fit.mixed_simple_5, fit.mixed_simple_6, fit.mixed_simple_7, fit.mixed_simple_8, fit.mixed_simple_9, fit.mixed_simple_10, fit.mixed_simple_11, fit.mixed_simple_12, fit.mixed_simple_13, fit.mixed_simple_14) # model 13 is the best by far; 14 is slightly better than 13 but negligible
 ##########################
@@ -461,10 +570,21 @@ ggplot(coef_data, aes(x = estimate, y = term_clean)) +
     breaks = scales::pretty_breaks(n = 6)
   )
 
+# create a more simple plot
+# Extract model coefficients and confidence intervals
+coef_data <- tidy(fit.mixed_simple_14, conf.int = TRUE)
+# Create coefficient plot
+ggplot(coef_data, aes(y = reorder(term, estimate), x = estimate)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_pointrange(aes(xmin = conf.low, xmax = conf.high)) +
+    labs(x = "Coefficient Estimate", y = "Term",
+         title = "Fixed Effects Coefficients with 95% Confidence Intervals")
+
 ```
 
 # Q2 SPECIFIC PLOTS
 
+Model predictions plotted on raw data:
 ``` {r data_model_pred}
 # Create prediction dataset with specific time points
 new_data <- expand.grid(
@@ -524,13 +644,12 @@ ggplot(new_data, aes(x = avg_block_accuracy,
        y = "Predicted Accuracy Curr Block",
        color = "Cue Type",
        linetype = "Game A Type",
-       title = "Predicted Performance by Prev Accuracy, Cue Type, and Game Type") +
+       title = "Pred Performance by Prev Accuracy, Cue Type, and Game Type") +
   theme_minimal() +
   theme(legend.position = "bottom",
         panel.spacing = unit(1, "lines"),
         strip.text = element_text(size = 12, face = "bold"),
         text = element_text(size = 12))
-
 ```
 
 ``` {r data_loading}
@@ -573,7 +692,7 @@ ggplot(new_data, aes(x = avg_block_accuracy,
          y = "Predicted Probability of Success",
          color = "Cue Type",
          fill = "Cue Type",
-         title = "Predicted Performance by Previous Accuracy and Cue Type: Game A = DS, group = 5") +
+         title = "Pred Performance by Prev Accuracy and Cue Type: Game A = DS, group = 5") +
     theme_minimal() +
     theme(legend.position = "bottom",
           panel.grid.minor = element_blank(),
@@ -625,7 +744,7 @@ ggplot(new_data, aes(x = avg_block_accuracy,
          y = "Predicted Probability of Success",
          color = "Cue Type",
          fill = "Cue Type",
-         title = "Predicted Performance by Previous Accuracy and Cue Type: Game A = SR, group = 5") +
+         title = "Pred Performance by Prev Accuracy and Cue Type: Game A = SR, group = 5") +
     theme_minimal() +
     theme(legend.position = "bottom",
           panel.grid.minor = element_blank(),
@@ -635,226 +754,13 @@ geom_point(data = model_data_q2,
            alpha = 0.1,
            size = 1)
 
+############################
 
-###########################
-
-new_data <- expand.grid(
-    avg_block_accuracy = seq(0, 1, length.out = 100),
-    cue_type = c("stay", "switch"),
-    game_type = c("digit_span", "spatial_recall"),
-    gameA_isSR = FALSE,
-    group_num = 1,
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
-)
-
-# Get predictions and standard errors
-predictions <- predict(fit.mixed_simple_14, 
-                      newdata = new_data, 
-                      type = "link",
-                      re.form = NA,
-                      se.fit = TRUE)  # This gives us standard errors
-
-# Add predictions and confidence intervals to our data
-new_data$predicted <- plogis(predictions$fit)
-new_data$lower <- plogis(predictions$fit - 1.96 * predictions$se.fit)
-new_data$upper <- plogis(predictions$fit + 1.96 * predictions$se.fit)
-
-# Create the plot
-ggplot(new_data, aes(x = avg_block_accuracy, 
-                     y = predicted, 
-                     color = cue_type,
-                     fill = cue_type)) +
-    facet_wrap(~game_type, labeller = labeller(
-        game_type = c(digit_span = "Digit Span",
-                     spatial_recall = "Spatial Recall"))) +
-    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
-    geom_line(size = 1) +
-    scale_color_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    scale_fill_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    labs(x = "Previous Block Accuracy",
-         y = "Predicted Probability of Success",
-         color = "Cue Type",
-         fill = "Cue Type",
-         title = "Predicted Performance by Previous Accuracy and Cue Type: Game A = DS, group = 1") +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor = element_blank(),
-          strip.text = element_text(face = "bold", size = 12))+
-geom_point(data = model_data_q2,
-           aes(y = next_block_successes/(next_block_successes + next_block_failures)),
-           alpha = 0.1,
-           size = 1)
-
-#############################
-
-new_data <- expand.grid(
-    avg_block_accuracy = seq(0, 1, length.out = 100),
-    cue_type = c("stay", "switch"),
-    game_type = c("digit_span", "spatial_recall"),
-    gameA_isSR = TRUE,
-    group_num = 1,
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
-)
-
-# Get predictions and standard errors
-predictions <- predict(fit.mixed_simple_14, 
-                      newdata = new_data, 
-                      type = "link",
-                      re.form = NA,
-                      se.fit = TRUE)  # This gives us standard errors
-
-# Add predictions and confidence intervals to our data
-new_data$predicted <- plogis(predictions$fit)
-new_data$lower <- plogis(predictions$fit - 1.96 * predictions$se.fit)
-new_data$upper <- plogis(predictions$fit + 1.96 * predictions$se.fit)
-
-# Create the plot
-ggplot(new_data, aes(x = avg_block_accuracy, 
-                     y = predicted, 
-                     color = cue_type,
-                     fill = cue_type)) +
-    facet_wrap(~game_type, labeller = labeller(
-        game_type = c(digit_span = "Digit Span",
-                     spatial_recall = "Spatial Recall"))) +
-    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
-    geom_line(size = 1) +
-    scale_color_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    scale_fill_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    labs(x = "Previous Block Accuracy",
-         y = "Predicted Probability of Success",
-         color = "Cue Type",
-         fill = "Cue Type",
-         title = "Predicted Performance by Previous Accuracy and Cue Type: Game A = SR, group = 1") +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor = element_blank(),
-          strip.text = element_text(face = "bold", size = 12))+
-geom_point(data = model_data_q2,
-           aes(y = next_block_successes/(next_block_successes + next_block_failures)),
-           alpha = 0.1,
-           size = 1)
-
-###########################
-
-new_data <- expand.grid(
-    avg_block_accuracy = seq(0, 1, length.out = 100),
-    cue_type = c("stay", "switch"),
-    game_type = c("digit_span", "spatial_recall"),
-    gameA_isSR = FALSE,
-    group_num = 9,
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
-)
-
-# Get predictions and standard errors
-predictions <- predict(fit.mixed_simple_14, 
-                      newdata = new_data, 
-                      type = "link",
-                      re.form = NA,
-                      se.fit = TRUE)  # This gives us standard errors
-
-# Add predictions and confidence intervals to our data
-new_data$predicted <- plogis(predictions$fit)
-new_data$lower <- plogis(predictions$fit - 1.96 * predictions$se.fit)
-new_data$upper <- plogis(predictions$fit + 1.96 * predictions$se.fit)
-
-# Create the plot
-ggplot(new_data, aes(x = avg_block_accuracy, 
-                     y = predicted, 
-                     color = cue_type,
-                     fill = cue_type)) +
-    facet_wrap(~game_type, labeller = labeller(
-        game_type = c(digit_span = "Digit Span",
-                     spatial_recall = "Spatial Recall"))) +
-    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
-    geom_line(size = 1) +
-    scale_color_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    scale_fill_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    labs(x = "Previous Block Accuracy",
-         y = "Predicted Probability of Success",
-         color = "Cue Type",
-         fill = "Cue Type",
-         title = "Predicted Performance by Previous Accuracy and Cue Type: Game A = DS, group = 9") +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor = element_blank(),
-          strip.text = element_text(face = "bold", size = 12))+
-geom_point(data = model_data_q2,
-           aes(y = next_block_successes/(next_block_successes + next_block_failures)),
-           alpha = 0.1,
-           size = 1)
-
-#############################
-
-new_data <- expand.grid(
-    avg_block_accuracy = seq(0, 1, length.out = 100),
-    cue_type = c("stay", "switch"),
-    game_type = c("digit_span", "spatial_recall"),
-    gameA_isSR = TRUE,
-    group_num = 9,
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
-)
-
-# Get predictions and standard errors
-predictions <- predict(fit.mixed_simple_14, 
-                      newdata = new_data, 
-                      type = "link",
-                      re.form = NA,
-                      se.fit = TRUE)  # This gives us standard errors
-
-# Add predictions and confidence intervals to our data
-new_data$predicted <- plogis(predictions$fit)
-new_data$lower <- plogis(predictions$fit - 1.96 * predictions$se.fit)
-new_data$upper <- plogis(predictions$fit + 1.96 * predictions$se.fit)
-
-# Create the plot
-ggplot(new_data, aes(x = avg_block_accuracy, 
-                     y = predicted, 
-                     color = cue_type,
-                     fill = cue_type)) +
-    facet_wrap(~game_type, labeller = labeller(
-        game_type = c(digit_span = "Digit Span",
-                     spatial_recall = "Spatial Recall"))) +
-    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, color = NA) +
-    geom_line(size = 1) +
-    scale_color_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    scale_fill_manual(values = c("stay" = "#2C3E50", "switch" = "#E74C3C"),
-                      labels = c("Stay", "Switch")) +
-    labs(x = "Previous Block Accuracy",
-         y = "Predicted Probability of Success",
-         color = "Cue Type",
-         fill = "Cue Type",
-         title = "Predicted Performance by Previous Accuracy and Cue Type: Game A = SR, group = 9") +
-    theme_minimal() +
-    theme(legend.position = "bottom",
-          panel.grid.minor = element_blank(),
-          strip.text = element_text(face = "bold", size = 12))+
-geom_point(data = model_data_q2,
-           aes(y = next_block_successes/(next_block_successes + next_block_failures)),
-           alpha = 0.1,
-           size = 1)
 ```
 
-Looking at the model in different ways:
+
+Looking at the model in different ways: (model checks)
 ``` {r data_loading}
-# Extract model coefficients and confidence intervals
-coef_data <- tidy(fit.mixed_simple_14, conf.int = TRUE)
-
-# Create coefficient plot
-ggplot(coef_data, aes(y = reorder(term, estimate), x = estimate)) +
-    geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
-    geom_pointrange(aes(xmin = conf.low, xmax = conf.high)) +
-    labs(x = "Coefficient Estimate", y = "Term",
-         title = "Fixed Effects Coefficients with 95% Confidence Intervals")
-
-
-
 # Plot predicted probabilities
 plot(Effect(c("avg_block_accuracy", "cue_type"), fit.mixed_simple_14))
 
@@ -878,10 +784,49 @@ ggplot(model_data_q2, aes(x = predicted, y = observed)) +
     labs(x = "Predicted Probability", y = "Observed Proportion",
          title = "Model Calibration Plot")
 
+# this will give me log odds 1st contrast - 2nd at various avg block acc points
+emm <- emmeans(
+  fit.mixed_simple_14, 
+  ~ avg_block_accuracy * cue_type, 
+  at = list(avg_block_accuracy = c(0.2, 0.5, 0.8))
+)
+pairs(emm)
+
+
+# compare model to the same model without the cue:performance interaction
+model_no_interaction <- glmer(cbind(next_block_successes, next_block_failures) ~ 
+                            avg_block_accuracy + cue_type + game_type + 
+                            group_num + gameA_isSR + accuracy_sd + 
+                            (1 + game_type|subj_id), 
+                            family = binomial, data = model_data_q2)
+anova(model_no_interaction, fit.mixed_simple_14) # 14 is better
+
+
+# Calculate effects at different levels of avg_block_accuracy
+effect_plot <- effect("avg_block_accuracy:cue_type", fit.mixed_simple_14)
+# plot this
 ```
 
+More model checks/visualizations:
 ``` {r data_loading}
+# raw data with predictions
+# try separating this by game
+ggplot(model_data_q2, aes(x = avg_block_accuracy, 
+                          y = next_block_successes/(next_block_successes + next_block_failures),
+                          color = cue_type)) +
+  geom_point(alpha = 0.2, position=position_jitter(0.1,0.1)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  labs(x = "Average Block Accuracy", y = "Success Rate") +
+  ggtitle("Using a simple binomial (future performance ~ previous performance) by cue type", "raw data")
 
+# faceted by initial condition
+ggplot(model_data_q2, aes(x = avg_block_accuracy, 
+                          y = next_block_successes/(next_block_successes + next_block_failures),
+                          color = cue_type)) +
+  facet_wrap(~gameA_isSR) +
+  geom_point(alpha = 0.2, position=position_jitter(0.1,0.1)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  labs(x = "Average Block Accuracy", y = "Success Rate")
 
 ```
 
