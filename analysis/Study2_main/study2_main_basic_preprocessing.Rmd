@@ -663,7 +663,7 @@ all_runs_avg_subset %>%
     plot.title = element_text(size = 13)   # Plot title
   )
 ```
-``` {r rests_over_time_pre_exclusion}
+``` {r rests_over_time_post_exclusion}
 df_recent_subset_analyze %>%
   filter(game_type == "rest_task") %>%
   select(subj_id, rest_chunk, num_rest_in_chunk) %>%
@@ -732,3 +732,55 @@ df_recent_subset_analyze %>%
 ```
 
 IN THE END: excluded 6 so far (1 for incomplete data, 5 for the accuracy exclusion criteria)
+
+
+
+# Plot same performance graphs but separate out time out trials:
+
+
+``` {r post_exclusion_plots}
+all_runs_avg_subset_filtered <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  filter(timed_out == FALSE) %>%
+  group_by(subj_id, trial_type) %>%
+  summarize(avg_acc_no_timeout = mean(is_correct_numeric))
+  
+
+# average of all subj averages (excluding timed out trials)
+all_runs_avg_subset_filtered %>%
+  ggplot(mapping = aes(x=trial_type,y=avg_acc_no_timeout, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject",size = 30) +
+  ggtitle("Average of subject mean performance on each game (post-exclusion)", "excluding time out trials")
+  theme(text = element_text(size = 13))
+
+
+# median of subject averages
+all_runs_avg_subset_filtered %>%
+ ggplot(mapping = aes(x=trial_type,y=avg_acc_no_timeout, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", size = 30) +
+  ggtitle("Median of subject mean performance on each game (post-exclusion)","excluding time out trials")
+  theme(
+    text = element_text(size = 12),        # Base text size
+    axis.title = element_text(size = 13),  # Axis titles
+    axis.text = element_text(size = 13),   # Axis labels
+    plot.title = element_text(size = 13)   # Plot title
+  )
+```
