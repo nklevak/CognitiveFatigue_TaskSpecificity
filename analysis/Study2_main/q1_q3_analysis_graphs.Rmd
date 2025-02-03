@@ -595,3 +595,12 @@ temp %>%
   ggtitle("Relationship between prior block performance, switch status, and rest time")
 ```
 
+
+
+# more model tests (use the report package to investigate the current best model, but also test to see if adding in other vars makes model better)
+Things to add:
+- plot how it changes over time
+- add a game type preference variable?
+- add a cue read variable? / look only at people who explicitly said they read the cue
+
+
