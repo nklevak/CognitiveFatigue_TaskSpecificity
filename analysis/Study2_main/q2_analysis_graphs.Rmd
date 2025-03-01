@@ -30,7 +30,7 @@ library(patchwork)  # For combining plots
 library(broom.mixed)
 library(effects)
 library(emmeans)
-
+library(report)
 
 
 # set the default ggplot theme 
@@ -829,10 +829,6 @@ ggplot(model_data_q2, aes(x = avg_block_accuracy,
   labs(x = "Average Block Accuracy", y = "Success Rate")
 
 ```
-
-
-
-
 
 # more model tests (use the report package to investigate the current best model, but also test to see if adding in other vars makes model better)
 Things to add:
