@@ -492,19 +492,43 @@ fit.mixed_simple_14 <- glmer(cbind(next_block_successes, next_block_failures) ~ 
                family = binomial,
                data = model_data_q2)
 
-compare_performance(fit.mixed_simple_1, fit.mixed_simple_2, fit.mixed_simple_3, fit.mixed_simple_4, fit.mixed_simple_5, fit.mixed_simple_6, fit.mixed_simple_7, fit.mixed_simple_8, fit.mixed_simple_9, fit.mixed_simple_10, fit.mixed_simple_11, fit.mixed_simple_12, fit.mixed_simple_13, fit.mixed_simple_14) # model 13 is the best by far; 14 is slightly better than 13 but negligible
+#model 15: model 14 but without the accuracy_sd
+fit.mixed_simple_15_final <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+compare_performance(fit.mixed_simple_1, fit.mixed_simple_2, fit.mixed_simple_3, fit.mixed_simple_4, fit.mixed_simple_5, fit.mixed_simple_6, fit.mixed_simple_7, fit.mixed_simple_8, fit.mixed_simple_9, fit.mixed_simple_10, fit.mixed_simple_11, fit.mixed_simple_12, fit.mixed_simple_13, fit.mixed_simple_14, fit.mixed_simple_15_final) # model 13 is the best by far; 14 is slightly better than 13 but negligible
+
+summary(fit.mixed_simple_15_final)
 ##########################
 
 summary(fit.mixed_simple_14)
+
+
+check_model(fit.mixed_simple_13)
+check_overdispersion(fit.mixed_simple_13)
+
+report(fit.mixed_simple_13)
+
+## FOCUSING ON MODEL 15 FINAL NOW BECAUSE HAD TO REMOVE ACCURACY_SD
+compare_performance(fit.mixed_simple_1, fit.mixed_simple_2, fit.mixed_simple_3, fit.mixed_simple_4, fit.mixed_simple_5, fit.mixed_simple_6, fit.mixed_simple_7, fit.mixed_simple_8, fit.mixed_simple_9, fit.mixed_simple_10, fit.mixed_simple_11, fit.mixed_simple_12, fit.mixed_simple_15_final) # model 12 and 15 is the best by far
+
+check_model(fit.mixed_simple_15_final)
+check_overdispersion(fit.mixed_simple_15_final)
+
+report(fit.mixed_simple_15_final)
+
 ```
 
 
 Plot the best models coefficients:
 ``` {r data_loading}
+best_model_q2 <- fit.mixed_simple_15_final
+
 coef_data <- data.frame(
-  term = names(fixef(fit.mixed_simple_14)),
-  estimate = fixef(fit.mixed_simple_14),
-  se = sqrt(diag(vcov(fit.mixed_simple_14)))
+  term = names(fixef(best_model_q2)),
+  estimate = fixef(best_model_q2),
+  se = sqrt(diag(vcov(best_model_q2)))
 ) %>%
   mutate(
     lower = estimate - 1.96 * se,
@@ -572,13 +596,34 @@ ggplot(coef_data, aes(x = estimate, y = term_clean)) +
 
 # create a more simple plot
 # Extract model coefficients and confidence intervals
-coef_data <- tidy(fit.mixed_simple_14, conf.int = TRUE)
-# Create coefficient plot
+coef_data <- tidy(best_model_q2, effects = "fixed",conf.int = TRUE) 
+coef_data <- coef_data %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "avg_block_accuracy" ~ "Avg Accuracy of Previous Block",
+      term == "gameA_isSRTRUE" ~ "Game A = Spatial Recall condition",
+      term == "game_typespatial_recall" ~ "Previous Block = Spatial Recall",
+      term == "cue_typeswitch" ~ "Game Switched This Block",
+      term == "avg_block_accuracy:cue_typeswitch" ~ "Prior Block Avg Accuracy X Game Switched",
+      term == "group_num" ~ "Block Number in Experiment",
+      TRUE ~ term  # Keep original if no match
+    )
+  )
+# More publication-ready plot
 ggplot(coef_data, aes(y = reorder(term, estimate), x = estimate)) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
-    geom_pointrange(aes(xmin = conf.low, xmax = conf.high)) +
-    labs(x = "Coefficient Estimate", y = "Term",
-         title = "Fixed Effects Coefficients with 95% Confidence Intervals")
+    geom_pointrange(aes(xmin = conf.low, xmax = conf.high, color = p.value < 0.05)) +
+    scale_color_manual(values = c("TRUE" = "black", "FALSE" = "gray60"), 
+                      labels = c("p ≥ 0.05", "p < 0.05"),
+                      name = "Significance") +
+    labs(x = "Coefficient Estimate", y = NULL,
+         title = "Fixed Effects Coefficients of Model Predicting Average Accuracy of a Block",
+         subtitle = "With 95% Confidence Intervals") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          axis.text.y = element_text(size = 11),
+          panel.grid.minor = element_blank())
 
 ```
 
@@ -593,12 +638,12 @@ new_data <- expand.grid(
     game_type = c("digit_span", "spatial_recall"),
     gameA_isSR = c(TRUE, FALSE),
     # Use meaningful time points from your experiment
-    group_num = c(1, 5, 10),
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
+    group_num = c(1, 5, 10)
+    #accuracy_sd = mean(model_data_q2$accuracy_sd)
 )
 
 # Get predictions
-predictions <- predict(fit.mixed_simple_14, 
+predictions <- predict(best_model_q2, 
                       newdata = new_data, 
                       type = "link",
                       re.form = NA)   # Exclude random effects for population-level predictions
@@ -658,12 +703,12 @@ new_data <- expand.grid(
     cue_type = c("stay", "switch"),
     game_type = c("digit_span", "spatial_recall"),
     gameA_isSR = FALSE,  # or TRUE, depending on what's most representative
-    group_num = mean(model_data_q2$group_num),
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
+    group_num = mean(model_data_q2$group_num)
+    #accuracy_sd = mean(model_data_q2$accuracy_sd)
 )
 
 # Get predictions and standard errors
-predictions <- predict(fit.mixed_simple_14, 
+predictions <- predict(best_model_q2, 
                       newdata = new_data, 
                       type = "link",
                       re.form = NA,
@@ -710,12 +755,12 @@ new_data <- expand.grid(
     cue_type = c("stay", "switch"),
     game_type = c("digit_span", "spatial_recall"),
     gameA_isSR = TRUE,  # or TRUE, depending on what's most representative
-    group_num = mean(model_data_q2$group_num),
-    accuracy_sd = mean(model_data_q2$accuracy_sd)
+    group_num = mean(model_data_q2$group_num)
+    #accuracy_sd = mean(model_data_q2$accuracy_sd)
 )
 
 # Get predictions and standard errors
-predictions <- predict(fit.mixed_simple_14, 
+predictions <- predict(best_model_q2, 
                       newdata = new_data, 
                       type = "link",
                       re.form = NA,
@@ -762,19 +807,19 @@ geom_point(data = model_data_q2,
 Looking at the model in different ways: (model checks)
 ``` {r data_loading}
 # Plot predicted probabilities
-plot(Effect(c("avg_block_accuracy", "cue_type"), fit.mixed_simple_14))
+plot(Effect(c("avg_block_accuracy", "cue_type"), best_model_q2))
 
 
-model_data_q2$residuals <- residuals(fit.mixed_simple_14)
+model_data_q2$residuals <- residuals(best_model_q2)
 # Plot residuals against predicted values
-ggplot(model_data_q2, aes(x = fitted(fit.mixed_simple_14), y = residuals)) +
+ggplot(model_data_q2, aes(x = fitted(best_model_q2), y = residuals)) +
     geom_point(alpha = 0.5) +
     geom_smooth() +
     labs(x = "Fitted Values", y = "Residuals",
          title = "Residuals vs Fitted Values")
 
 
-model_data_q2$predicted <- fitted(fit.mixed_simple_14)
+model_data_q2$predicted <- fitted(best_model_q2)
 model_data_q2$observed <- model_data_q2$next_block_successes / 
                          (model_data_q2$next_block_successes + model_data_q2$next_block_failures)
 
@@ -796,14 +841,14 @@ pairs(emm)
 # compare model to the same model without the cue:performance interaction
 model_no_interaction <- glmer(cbind(next_block_successes, next_block_failures) ~ 
                             avg_block_accuracy + cue_type + game_type + 
-                            group_num + gameA_isSR + accuracy_sd + 
+                            group_num + gameA_isSR + 
                             (1 + game_type|subj_id), 
                             family = binomial, data = model_data_q2)
-anova(model_no_interaction, fit.mixed_simple_14) # 14 is better
+anova(model_no_interaction, best_model_q2) # 14 is better
 
 
 # Calculate effects at different levels of avg_block_accuracy
-effect_plot <- effect("avg_block_accuracy:cue_type", fit.mixed_simple_14)
+effect_plot <- effect("avg_block_accuracy:cue_type", best_model_q2)
 # plot this
 ```
 
@@ -814,20 +859,92 @@ More model checks/visualizations:
 ggplot(model_data_q2, aes(x = avg_block_accuracy, 
                           y = next_block_successes/(next_block_successes + next_block_failures),
                           color = cue_type)) +
-  geom_point(alpha = 0.2, position=position_jitter(0.1,0.1)) +
+  geom_point(alpha = 0.2, position=position_jitter(0.05,0.05)) +
   geom_smooth(method = "glm", method.args = list(family = "binomial")) +
-  labs(x = "Average Block Accuracy", y = "Success Rate") +
-  ggtitle("Using a simple binomial (future performance ~ previous performance) by cue type", "raw data")
+  labs(x = "Average Previous Block Accuracy", y = "Average Current Block Accuracy") +
+  ggtitle("Predicting future performance from previous performance", "Fitting simple binomials on raw participant data, by switch type")
 
-# faceted by initial condition
+###
 ggplot(model_data_q2, aes(x = avg_block_accuracy, 
                           y = next_block_successes/(next_block_successes + next_block_failures),
                           color = cue_type)) +
-  facet_wrap(~gameA_isSR) +
-  geom_point(alpha = 0.2, position=position_jitter(0.1,0.1)) +
-  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
-  labs(x = "Average Block Accuracy", y = "Success Rate")
+  geom_point(alpha = 0.2, position=position_jitter(0.05,0.05)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), linewidth = 1.2) +
+  labs(x = "Average Previous Block Accuracy", 
+       y = "Average Current Block Accuracy",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+                    labels = c("Game stayed the same", "Game switched")) +
+  ggtitle("Predicting future performance from previous performance", 
+          "Fitting simple binomials on raw participant data, by switch type") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"),
+        text = element_text(family = "Arial"),
+        axis.title = element_text(face = "bold"))
 
+# 
+# # faceted by initial condition
+# ggplot(model_data_q2, aes(x = avg_block_accuracy, 
+#                           y = next_block_successes/(next_block_successes + next_block_failures),
+#                           color = cue_type)) +
+#   facet_wrap(~gameA_isSR) +
+#   geom_point(alpha = 0.2, position=position_jitter(0.1,0.1)) +
+#   geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+#   labs(x = "Average Previous Block Accuracy", y = "Average Current Block Accuracy")
+
+```
+``` {r data_loading}
+# Install and load required packages
+library(kableExtra)
+
+# Using your extracted model results
+tidy_results <- tidy(fit.mixed_simple_15_final, effects = "fixed", conf.int = TRUE)
+
+# Create a nicely formatted table dataframe
+table_data <- tidy_results %>%
+  mutate(
+    # Format numbers with appropriate precision
+    Estimate = sprintf("%.3f", estimate),
+    `Std. Error` = sprintf("%.3f", std.error),
+    `z value` = sprintf("%.3f", statistic),
+    `Odds Ratio` = sprintf("%.3f", exp(estimate)),
+    `95% CI` = sprintf("[%.3f, %.3f]", exp(conf.low), exp(conf.high)),
+    `p value` = ifelse(p.value < 0.001, "<0.001",
+                      ifelse(p.value < 0.01, sprintf("%.3f**", p.value),
+                             ifelse(p.value < 0.05, sprintf("%.3f*", p.value),
+                                    sprintf("%.3f", p.value))))
+  ) %>%
+  # Rename terms to be more readable
+  mutate(Predictor = case_when(
+    term == "(Intercept)" ~ "Intercept",
+    term == "avg_block_accuracy" ~ "Block Accuracy",
+    term == "cue_type" ~ "Cue Type",
+    term == "game_type" ~ "Game Type",
+    term == "group_num" ~ "Group Number",
+    term == "gameA_isSR" ~ "Game A is SR",
+    term == "avg_block_accuracy:cue_type" ~ "Block Accuracy × Cue Type",
+    TRUE ~ term
+  )) %>%
+  select(Predictor, Estimate, `Std. Error`, `z value`, `Odds Ratio`, `95% CI`, `p value`)
+
+# Create a PDF table with classic research paper styling
+research_table <- kable(table_data, format = "latex", booktabs = TRUE, 
+                     caption = "Mixed-Effects Logistic Regression Results",
+                     align = c("l", "r", "r", "r", "r", "r", "r")) %>%
+  kable_styling(latex_options = c("hold_position", "scale_down")) %>%
+  footnote(general = "* p < 0.05, ** p < 0.01", 
+           general_title = "Note: ", 
+           threeparttable = TRUE,
+           footnote_as_chunk = TRUE)
+
+print(table_data, row.names = FALSE)
+# Save to PDF
+#save_kable(research_table, "regression_table_classic.pdf")
+
+# For word processor compatibility
+save_kable(research_table, "regression_table_classic.docx")
 ```
 
 # more model tests (use the report package to investigate the current best model, but also test to see if adding in other vars makes model better)

@@ -27,6 +27,7 @@ library(effects)
 library(rstatix, exclude="filter")  # For statistical tests
 library(ggpubr)
 library(patchwork)  # For combining plots
+library(report)
 
 
 # set the default ggplot theme 
@@ -218,6 +219,11 @@ summary(fit.mixed_6_nb) # adding rest type didn't really make a big difference; 
 compare_performance(fit.mixed_5_nb, fit.mixed_6_nb)
 ```
 
+``` {r best_model_report}
+report(fit.mixed_5_nb)
+
+```
+
 # JOINT PLOTS
 
 Plot the best model's coefficients:
@@ -290,6 +296,38 @@ ggplot(coef_data, aes(x = estimate, y = term_clean)) +
     breaks = scales::pretty_breaks(n = 6)
   )
 
+#################################
+### PLOT IT IN BETTER WAY
+best_model_q1_q3 <- fit.mixed_5_nb
+  
+coef_data <- tidy(best_model_q1_q3, effects = "fixed",conf.int = TRUE) 
+coef_data <- coef_data %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "avg_block_accuracy" ~ "Avg Prior Block Accuracy",
+      term == "gameA_isSRTRUE" ~ "Game A = Spatial Recall condition",
+      term == "game_typespatial_recall" ~ "Previous Block = Spatial Recall",
+      term == "cue_typeswitch" ~ "Cued That Game Will Switch After This Rest Period",
+      term == "avg_block_accuracy:cue_typeswitch" ~ "Prior Accuracy X Switch Cue",
+      term == "group_num" ~ "Block Number in Experiment",
+      TRUE ~ term  # Keep original if no match
+    )
+  )
+# More publication-ready plot
+ggplot(coef_data, aes(y = reorder(term, estimate), x = estimate)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_pointrange(aes(xmin = conf.low, xmax = conf.high, color = p.value < 0.05)) +
+    scale_color_manual(values = c("TRUE" = "black", "FALSE" = "gray60"), 
+                      labels = c("p ≥ 0.05", "p < 0.05"),
+                      name = "Significance") +
+    labs(x = "Coefficient Estimate", y = NULL,
+         title = "Fixed Effects Coefficients of Model Predicting Rest Period Length",
+         subtitle = "With 95% Confidence Intervals") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          axis.text.y = element_text(size = 11),
+          panel.grid.minor = element_blank())
 
 ```
 
