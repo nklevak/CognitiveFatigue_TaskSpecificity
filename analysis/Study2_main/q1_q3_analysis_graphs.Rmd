@@ -547,7 +547,7 @@ df_all_blockwise %>%
            label = stats_label,
            size = 3) +  # Larger text
   labs(x = "Average block accuracy",
-       y = "Following rests taken",
+       y = "Following Rest Trials Taken",
        color = "Block Number") +
   ggtitle("Predicting rest from performance (fixed effects only)") +
   theme_bw() +
