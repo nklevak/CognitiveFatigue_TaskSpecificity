@@ -2,7 +2,9 @@ This is the January 2025 iteration of this experiment, with self-paced rest peri
 The rest task is based off of the dsst task in the niv lab demos site, and the spatial recall task is using the spatial recall code from that same site.
 The digit span task was inspired by experiment factory digit span.
 
-This is run with JSPsych v 7.3, and hosted on cognition.run: link *here* (will insert once data is collected)
+*credit to Sam Zorowitz from jspsych-demos for most of the spatial recall code, and Experiment Factory from the Poldrack Lab for inspiration on the digit span task*
+
+This is run with JSPsych v 7.3, and hosted on cognition.run: link https://j597u0nuzh.cognition.run
 
 ## Current Design
 Game A and Game B are counterbalanced to be either spatial recall or digit span.
