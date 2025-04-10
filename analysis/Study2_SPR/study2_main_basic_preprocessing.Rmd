@@ -1,0 +1,786 @@
+---
+title: "study2_main_basic_preprocessing"
+output: html_document
+date: "2025-01-17"
+---
+This is the basic analysis for study 2, to ensure the data is processable and has the basic variables we need. Also, to plot basic performance metrics and to clean the data.
+
+Goal for this simple analysis: 
+- make sure that rt is analyzable and correct
+- plot the distribution of rt for all three tasks
+- plot the distribution of correctness for all three tasks
+- plot rest length over time per participant 
+
+The setup was:
+4 spatial recall practice
+4 digit span practice
+4 rest practice
+
+10 groups, 13 blocks per group
+- 10 digit span per block
+- 10 visual search per block
+- up to 20 rest per rest period
+
+group ordering: ABABBABAAB
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+library(jsonlite)
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+**reading in the data**
+``` {r data_wrangling}
+# exp vars
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+# first batch of data
+setwd("../../data/SPR_main/batch1")
+csv_files <- list.files(pattern = "\\.csv$")
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+df_all_batch1 <- bind_rows(lapply(csv_files,read_csv_as_character))
+```
+
+``` {r data_wrangling}
+# second batch of data (from second cog run link)
+setwd("../../data/SPR_main/batch2")
+csv_files <- list.files(pattern = "\\.csv$")
+# Function to read a CSV file and convert all columns to character type
+read_csv_as_character <- function(file) {
+  df <- read.csv(file, stringsAsFactors = FALSE)
+  df[] <- lapply(df, as.character)
+  return(df)
+}
+df_all_batch2 <- bind_rows(lapply(csv_files,read_csv_as_character))
+batch2_is_empty <- nrow(df_all_batch2) == 0 
+if (!batch2_is_empty) {
+  df_all_batch2 <- df_all_batch2 %>%
+    mutate(run_id = as.character((as.integer(run_id) + 500)))
+}
+
+df_all <- bind_rows(df_all_batch1, df_all_batch2)
+
+# LEAVE COMMENTED OUT UNTIL YOU GET MORE PARTICIPANTS THEN RUN THIS ONCE AND COMMENT OUT AGAIN
+# # read in previous subj_ids that you've already approved/paid so you don't double do it
+# 
+already_paid_1 <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch1.txt",header = FALSE,
+                        col.names = "prolific_id",# Names the single column
+                        stringsAsFactors = FALSE)
+already_paid_2 <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch2.txt",header = FALSE,
+                        col.names = "prolific_id",# Names the single column
+                        stringsAsFactors = FALSE)
+```
+
+**pre-processing the data**
+
+Anonymize the data and remove unneccesary columns, also gets rid of prolific id:
+``` {r data_wrangling_anon}
+# first get the participant id and bonus for repayment
+df_bonus_id <- df_all %>%
+  filter(str_detect(tolower(response), "prolific_id") | !is.na(final_bonus)) %>%
+  mutate(subj_id = as.numeric(run_id)) %>%
+  select(subj_id, response, final_bonus) %>%
+  group_by(subj_id) %>%
+  summarise(
+    prolific_id = first(response[str_detect(response, "prolific_id")]),
+    final_bonus = first(final_bonus[!is.na(final_bonus)]),
+    .groups = "drop"
+  ) %>%
+  # extract the prolific_id from the JSON string
+  mutate(
+    prolific_id = gsub('.*"prolific_id":"([^"]+)".*', '\\1', prolific_id),
+    final_bonus = as.numeric(final_bonus)
+  )
+
+# then anonymize
+anonymize_clean <- function(df) {
+  df <- df %>%
+    select(-recorded_at,-url,-ip,-user_agent,-referer,-sequence_length,
+         -accept_language,-device,-internal_node_id,-view_history,
+         -source_code_version, -contains("browser"),-contains("platform"),
+         -contains("screen"),-contains("width"),-contains("height"),
+         -contains("failed"),-condition,-success,-event_history) %>%
+    filter(!str_detect(tolower(response), "prolific_id"))
+
+  return(df)
+}
+df_all <- anonymize_clean(df_all)
+```
+
+
+Do basic cleaning and data wrangling: 
+- this removes non game trials; so keep this in mind when looking for the survey data
+``` {r data_wrangling}
+df_recent_subset <- df_all %>%
+  mutate(subj_id = as.integer(run_id)) %>%
+  mutate(is_correct_numeric = ifelse(is_correct=="false" | timed_out == "1" | timed_out == "true" | timed_out == 1, 0, 1)) %>%
+  group_by(subj_id) %>%
+  mutate(
+    gameA = ifelse(all(is.na(gameA_name)), NA, 
+                   first(gameA_name[!is.na(gameA_name) & !(gameA_name=="")])),
+    SR_isGameA = ifelse(all(is.na(gameA_isSR)), NA,
+                        first(gameA_isSR[!is.na(gameA_isSR) & !(gameA_isSR == "")]))
+  ) %>%
+  mutate(gameA_isSR = ifelse(SR_isGameA == "true", TRUE, FALSE), gameA_name = gameA) %>%
+  ungroup() %>%
+  filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials" | trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "rt_main_trials") %>%
+  select(-c(run_id, transition_type, gameB_name, game_A, game_B, backwards, score_an, score_pc, score_ls, is_correct, stimulus, target_shape, final_bonus)) %>%
+  ungroup() %>%
+  mutate(trial_index_num = as.numeric(trial_index)) %>%
+  mutate(trial_index = trial_index_num) %>%
+  select(-trial_index_num, -SR_isGameA, -gameA) %>%
+  arrange(subj_id, trial_index)
+```
+
+Save the practice runs in a separate df, and also change is_correct into a true/false, calculate avg performance on each task, get rid of unnecessary columns
+``` {r data_wrangling_avgs}
+practice_runs_subset_df <- df_recent_subset %>%
+  filter(trial_type == "sr_practice_response" | trial_type == "ds_practice_response" | trial_type == "rt_practice_trials") %>%
+  group_by(subj_id, trial_type) %>%
+  summarize(avg_accuracy = mean(is_correct_numeric))
+write.csv(practice_runs_subset_df, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/SPRmain_practice_trials_cleaned.csv")
+
+all_runs_avg_subset <- df_recent_subset %>%
+  filter(trial_type == "sr_main_response" | trial_type == "ds_main_response" | trial_type == "rt_main_trials") %>%
+  group_by(subj_id, trial_type) %>%
+  summarize(avg_accuracy = mean(is_correct_numeric))
+```
+
+Add block labels to each block, and group numbers to each group
+Will do: 1,2,3,4,5,6,etc so up to 30 for the blocks
+``` {r data_wrangling_blocks_groups}
+# make sure its arranged in order and remove practice rows
+df_recent_subset_analyze <- df_recent_subset %>%
+  filter(trial_type != "sr_practice_response" & trial_type != "ds_practice_response" & trial_type != "rt_practice_trials") %>%
+  arrange(subj_id, trial_index) %>%
+  ungroup() %>%
+  # add overall trial counts of each task
+  group_by(subj_id, game_type) %>%
+  arrange(trial_index) %>%
+  mutate(overall_type_count = row_number()) %>%
+  ungroup() %>%
+  # add the block numbers and group values
+  arrange(subj_id, trial_index) %>%
+  group_by(subj_id) %>%
+  mutate(
+    block_num = cumsum(game_type == "rest_task" & lag(game_type, default = first(game_type)) != "rest_task"),
+    group_num = ifelse(game_type == "rest_task" & follows_group_num != "null", follows_group_num, NA)
+  ) %>%
+  fill(group_num, .direction = "up") %>%
+  mutate(
+    # block_num = ifelse(game_type == "rest_task", NA, block_num),
+    block_num = ifelse(is.na(block_num), 1, block_num)
+  ) %>%
+  ungroup() %>%
+  # reset the block numbers to start from 1 for each participant
+  # get rid of block num for rest task
+  group_by(subj_id) %>%
+  mutate(
+    block_num = ifelse(block_num >= 0, dense_rank(block_num), block_num),
+    block_num = ifelse(game_type == "rest_task", NA, block_num)
+  ) %>%
+  select(-option_to_end, -overall_num_rest_used, -end_rest_button_clicked, -responses, -timeout) %>%
+  ungroup() %>%
+  arrange(subj_id, trial_index)
+
+# wrangle the time outs and reaction times
+# df_recent_subset_analyze %>%
+#   filter(rt >= 4200 & response != "null" & response != "[]") %>%
+#   print()
+df_recent_subset_analyze <- df_recent_subset_analyze %>%
+  mutate(na_trial = ifelse(is.na(timed_out), 1,0),
+        timed_out = ifelse(timed_out == "true" | timed_out == 1 | timed_out == "1", TRUE, FALSE)) %>%
+  mutate(rt = ifelse(timed_out == TRUE,NA,rt)) %>% # for all tasks, if timed out rt = 4200 or 5000 ms; for SR sometimes it's slightly above 4200 if it didn't catch it in time
+  mutate(rt_num = as.numeric(rt)) %>%
+  mutate(rt = rt_num) %>%
+  select(-rt_num)
+
+# count rests taken per break (label rest chunk per participant (should be 30) and add a column which counts how many per break there are)
+df_recent_subset_analyze <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  arrange(subj_id, trial_index) %>%
+  group_by(subj_id) %>%
+  mutate(task_change = game_type != lag(game_type, default = "first_row"),
+         rest_chunk = cumsum(task_change & game_type == "rest_task"),
+         rest_chunk = ifelse(game_type == "rest_task", rest_chunk, NA)) %>%
+  ungroup() %>%
+  group_by(subj_id, rest_chunk) %>%
+  mutate(num_rest_in_chunk = sum(!is.na(rest_chunk))) %>%
+  select(-task_change) %>%
+  ungroup()
+
+# save the cleaned subset data
+write.csv(df_recent_subset_analyze, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/SPRmain_main_trials_cleaned.csv")
+```
+
+
+``` {r data_wrangling_timeouts}
+# count how much each participant timed out (to make sure no participants didn't do anything/exited the task early)
+prop_timed_out <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  group_by(subj_id, game_type) %>%
+  summarize(num_timed_out = sum(timed_out == TRUE), num_not_timed_out = sum(timed_out == FALSE), num_NA = sum(na_trial == 1)) %>%
+  mutate(total_trials = num_not_timed_out + num_timed_out,
+         prop_timed_out = num_timed_out / total_trials)
+
+# save time out counts to the subj_id / bonus table 
+final_participant_data <- df_bonus_id %>%
+  left_join(prop_timed_out, by = "subj_id") 
+
+final_participant_data <- final_participant_data%>%
+  group_by(subj_id) %>%
+  mutate(max_timed_out_sr_ds = max(
+        case_when(
+          game_type %in% c("spatial_recall", "digit_span") ~ prop_timed_out,
+          TRUE ~ NA_real_
+        ),na.rm = TRUE))
+
+# bonus stuff used to be here, now its at the bottom of this cell
+```
+
+``` {r data_wrangling_survey}
+# preprocess the survey data and save it
+survey_cleaned = df_all %>%
+  filter(trial_type == "survey-text" & !str_detect(tolower(response), "prolific_id")) %>%
+  select(run_id, response) %>%
+  mutate(subj_id = as.numeric(run_id)) %>%
+  select(-run_id)
+
+df_separated <- survey_cleaned %>%
+  group_by(subj_id) %>%
+  mutate(survey_type = case_when(
+    str_detect(response, "rest_decision") ~ "rest_survey",
+    str_detect(response, "game_description") ~ "game_survey"
+  )) %>%
+  mutate(response = str_replace(response, "\\}\\{", "},{")) %>%
+  # Now wrap in brackets to make it a valid JSON array
+  mutate(response = paste0("[", response, "]"))
+# Parse rest survey responses
+rest_responses <- df_separated %>%
+  filter(survey_type == "rest_survey") %>%
+  mutate(
+    parsed = map(response, fromJSON)
+  ) %>%
+  unnest_wider(parsed) %>%
+  select(-response, -survey_type)
+# Parse game survey responses
+game_responses <- df_separated %>%
+  filter(survey_type == "game_survey") %>%
+  mutate(
+    parsed = map(response, fromJSON)
+  ) %>%
+  unnest_wider(parsed) %>%
+  select(-response, -survey_type)
+# Join them back together
+survey_cleaned <- rest_responses %>%
+  full_join(game_responses, by = "subj_id")
+write.csv(survey_cleaned, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/SPRmain_survey_cleaned.csv")
+
+# SAVED CSVS:
+# practice_runs_subset_df, "/data_anonymized/SPRmain_practice_trials_cleaned.csv" (practice trials cleaned)
+# df_recent_subset_analyze, "/data_anonymized/SPRmain_main_trials_cleaned.csv" (main trials cleaned)
+# survey_cleaned, "/data_anonymized/SPRmain/SPRmain_survey_cleaned.csv" (survey answers)
+# prop_timed_out, "/data_anonymized/SPR_main_timed_out_data_cleaned.csv" (timed out data per subj per trial type) (done below)
+# df_bonus_id, "/data/SPR_main_bonus_payments_batch1.txt" (this is removed from git as it is prolific ids and bonuses) (done below) (and batch2)
+``` 
+
+``` {r data_wrangling_bonus}
+# MOVED BONUS STUFF TO HERE TO MAKE IT EASIER TO SEE
+# check to see if any participants timed out too much on spatial recall or digit span
+# too much = >85% (if they did, look into their responses to see if they tried to respond)
+# also check to see if anyone has <150 trials for ds or sr (means they didn't complete the task for some reason)
+df_bonus_id <- final_participant_data %>%
+  ungroup() %>%
+  mutate(flagged_time_outs = ifelse(max_timed_out_sr_ds > 0.85, TRUE, FALSE),
+         flagged_few_trials = ifelse(game_type != "rest_task" & total_trials < 150, TRUE, FALSE),
+         flagged_has_nas = ifelse(num_NA != 0, TRUE, FALSE)) # figure out whats happening w 539 subj
+
+# print the ones who you should look into more
+df_bonus_id %>%
+  filter(flagged_time_outs == TRUE | flagged_few_trials == TRUE | flagged_has_nas == TRUE) %>%
+  # filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved (did everyone in batch 1)
+  # filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
+  print() %>%
+  select(subj_id, prolific_id, flagged_time_outs, max_timed_out_sr_ds, flagged_few_trials, flagged_has_nas) %>%
+  distinct()
+
+# filter out/exclude those who have na trials????
+exclude_has_nas <- df_bonus_id%>%
+  filter(flagged_has_nas == TRUE) %>%
+  select(subj_id)
+
+exclude_has_nas
+
+```
+
+``` {r data_wrangling_bonus}
+# save the timed out data which you can save in the anonymous folder
+prop_timed_out <- df_bonus_id %>%
+  # filter(!(subj_id %in% exclude_has_nas)) %>% # exclude for now
+  select(-prolific_id, -final_bonus, -max_timed_out_sr_ds)
+write.csv(prop_timed_out, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/SPR_main_timed_out_data_cleaned.csv")
+
+# clean the bonus_id df which you will then use for paying bonuses (DO NOT UPLOAD THIS FILE TO data_anonymized FOLDER) but can update to data/ because it's hidden with gitignore (can then upload this to prolific for an easy way to pay bonuses)
+
+# for batch 1
+subj_to_exclude =  exclude_has_nas$subj_id #excluding the ones with incomplete data
+df_bonus_id_b1 <- df_bonus_id %>%
+  select(subj_id, prolific_id, final_bonus) %>%
+  filter(subj_id < 500) %>%
+  distinct() %>%
+  # filter(!(subj_id %in% subj_to_exclude)) %>%
+  # filter(!(prolific_id %in% already_paid_1$prolific_id)) %>% #this lets me filter out those I already approved/looked at
+  select(prolific_id, final_bonus)
+write.table(df_bonus_id_b1, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_bonus_payments_batch1.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+df_bonus_id_b1 <- df_bonus_id_b1 %>%
+  select(prolific_id)
+write.table(df_bonus_id_b1, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch1.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE,eol = ",")
+
+# for batch 2
+subj_to_exclude = exclude_has_nas$subj_id #excluding the ones with incomplete data
+df_bonus_id_b2 <- df_bonus_id %>%
+  select(subj_id, prolific_id, final_bonus) %>%
+  filter(subj_id >= 500) %>%
+  distinct() %>%
+  # filter(!(subj_id %in% subj_to_exclude)) %>%
+  # filter(!(prolific_id %in% already_paid_2$prolific_id)) %>% #this lets me filter out those I already approved/looked at
+  select(prolific_id, final_bonus)
+write.table(df_bonus_id_b2, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_bonus_payments_batch2.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE)
+
+df_bonus_id_b2 <- df_bonus_id_b2 %>%
+  select(prolific_id)
+write.table(df_bonus_id_b2, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data/SPR_main_approvals_batch2.txt", sep=",", row.names=FALSE, col.names=FALSE, quote=FALSE,eol = ",")
+
+# find certain prolific ids here
+# df_bonus_id %>%
+#   filter(prolific_id %in% c(""))
+
+df_bonus_id <- df_bonus_id %>%
+  select(-prolific_id)
+df_bonus_id_b1 <- df_bonus_id_b1 %>%
+  select(-prolific_id)
+df_bonus_id_b2 <- df_bonus_id_b2 %>%
+  select(-prolific_id)
+
+```
+
+## Basic Plots and Checks:
+
+Plot average accuracies per task per person:
+``` {r avg_acc_pre_exclusion}
+all_runs_avg_subset %>%
+  ggplot(aes(x=trial_type,y=avg_accuracy,color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  # facet_wrap(~trial_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game types",y="Average accuracy per participant on given game type")+
+  ggtitle("Average participant performance on each game: pre-exclusion")
+
+```
+
+
+Plot average RT per task per person:
+``` {r avg_rt_pre_exclusion}
+rt_overall_avgs <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  filter(timed_out == FALSE) %>%
+  group_by(subj_id, game_type) %>%
+  summarize(rt_avg = mean(rt))
+
+rt_overall_avgs %>%
+  ggplot(aes(x=game_type,y=rt_avg,color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  # facet_wrap(~trial_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game types",y="Average rt per participant on given game type")+
+  ggtitle("Average participant rt on each game: pre-exclusion")
+
+
+
+df_recent_subset_analyze <- df_recent_subset_analyze %>%
+  select(-correct_response, -rest_trial_num, -end_rest)
+```
+
+
+Plot performance over time SR and DS and Rest Task per person:
+``` {r perf_over_time_pre_exclusion}
+avg_accuracy_blocks <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  group_by(subj_id, block_num, group_num, game_type) %>%
+  summarise(avg_accuracy = mean(is_correct_numeric))
+
+avg_accuracy_blocks %>%
+  filter(game_type == "spatial_recall") %>%
+  ggplot(mapping = aes(x=block_num, y=avg_accuracy, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  geom_smooth(method = "lm", se = TRUE) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  ylim(0,1) +
+  # stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Block number",y="Average accuracy per participant in given block")+
+  ggtitle("Spatial recall: Average accuracy over time: pre-exclusion")
+
+
+
+avg_accuracy_blocks %>%
+  filter(game_type == "digit_span") %>%
+  ggplot(mapping = aes(x=block_num, y=avg_accuracy, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  geom_smooth(method = "lm", se = TRUE) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  ylim(0,1) +
+  # stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Block number",y="Average accuracy per participant in given block")+
+  ggtitle("Digit span: Average accuracy over time: pre-exclusion")
+
+
+
+avg_accuracy_blocks %>%
+  filter(game_type == "rest_task") %>%
+  mutate(group_num = as.numeric(group_num)) %>%
+  ggplot(mapping = aes(x=group_num, y=avg_accuracy, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  geom_smooth(method = "lm", se = TRUE,formula = y ~ x) +
+  ylim(0,1) +
+  # stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Group number",y="Average accuracy per participant in given group")+
+  ggtitle("Rest task: Average accuracy over time: pre-exclusion")
+
+```
+
+Plot rests taken over time:
+``` {r rests_over_time_pre_exclusion}
+df_recent_subset_analyze %>%
+  filter(game_type == "rest_task") %>%
+  select(subj_id, rest_chunk, num_rest_in_chunk) %>%
+  group_by(subj_id, rest_chunk, num_rest_in_chunk) %>%
+  distinct() %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x=rest_chunk, y=num_rest_in_chunk, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  geom_smooth(method = "lm", se = TRUE,formula = y ~ x) +
+  labs(x="Rest period number",y="Number of rests taken")+
+  ggtitle("Average number of rests taken over time: pre-exclusion")
+  
+```
+
+
+Plot average proportion of timeouts per task:
+``` {r rests_over_time_pre_exclusion}
+df_recent_subset_analyze %>%
+  ungroup() %>%
+  group_by(subj_id, game_type) %>%
+  summarize(num_timed_out = sum(timed_out == TRUE), num_not_timed_out = sum(timed_out == FALSE)) %>%
+  mutate(total_trials = num_not_timed_out + num_timed_out,
+         prop_timed_out = num_timed_out / total_trials) %>%
+  ggplot(mapping = aes(x=game_type, y=prop_timed_out, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  labs(x="Game type",y="Proportion of trials timed out")+
+  ggtitle("Proportion of trials timed out, per game type: pre-exclusion")
+```
+
+# DO EXCLUSION CRITERIA:
+- excluding participants based on:
+1. accuracy below 30% on both tasks (digit span and spatial recall) (signifying a lack of attention/trying) or above 95% on both tasks
+2. those with incomplete data (had some glithc; only one; saved in: exclude_has_nas)
+
+``` {r pre_exclusion_plots}
+# average of all subj averages
+all_runs_avg_subset %>%
+  ggplot(mapping = aes(x=trial_type,y=avg_accuracy, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", title = "Average of subject mean performance on each game (pre-exclusion)",size = 30) +
+  theme(text = element_text(size = 13))
+
+
+# median of subject averages
+all_runs_avg_subset %>%
+ ggplot(mapping = aes(x=trial_type,y=avg_accuracy, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", title = "Median of subject mean performance on each game (pre-exclusion)", size = 30) +
+  theme(
+    text = element_text(size = 12),        # Base text size
+    axis.title = element_text(size = 13),  # Axis titles
+    axis.text = element_text(size = 13),   # Axis labels
+    plot.title = element_text(size = 13)   # Plot title
+  )
+```
+``` {r exclusion}
+# cutoffs
+top_cutoff = 0.95 # right now, to be cut out must get above this on both tasks
+bottom_cutoff = 0.30 # right now, to be cut out must get below this on both tasks
+
+# get subjects above the cutoff on both tasks
+subjects_high_low_accuracy <- all_runs_avg_subset %>%
+  group_by(subj_id) %>%
+  summarize(min_avg_score = min(avg_accuracy), max_avg_score = max(avg_accuracy)) %>%
+  filter(min_avg_score > top_cutoff | max_avg_score < bottom_cutoff) %>%
+  print()
+
+# DO OTHER EXCLUSION HERE
+# remove these subjects from final datasets
+all_runs_avg_subset <-  all_runs_avg_subset%>%
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
+survey_cleaned <- survey_cleaned %>%
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
+practice_runs_subset_df <- practice_runs_subset_df %>%
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
+df_recent_subset_analyze <- df_recent_subset_analyze %>%
+  filter(!(subj_id %in% subjects_high_low_accuracy$subj_id),
+         !(subj_id %in% exclude_has_nas$subj_id))
+
+write.csv(survey_cleaned, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv")
+write.csv(practice_runs_subset_df, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv")
+write.csv(df_recent_subset_analyze, "/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv")
+```
+
+
+``` {r post_exclusion_plots}
+# average of all subj averages
+all_runs_avg_subset %>%
+  ggplot(mapping = aes(x=trial_type,y=avg_accuracy, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", title = "Average of subject mean performance on each game (post-exclusion)",size = 30) +
+  theme(text = element_text(size = 13))
+
+
+# median of subject averages
+all_runs_avg_subset %>%
+ ggplot(mapping = aes(x=trial_type,y=avg_accuracy, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", title = "Median of subject mean performance on each game (post-exclusion)", size = 30) +
+  theme(
+    text = element_text(size = 12),        # Base text size
+    axis.title = element_text(size = 13),  # Axis titles
+    axis.text = element_text(size = 13),   # Axis labels
+    plot.title = element_text(size = 13)   # Plot title
+  )
+```
+``` {r rests_over_time_post_exclusion}
+df_recent_subset_analyze %>%
+  filter(game_type == "rest_task") %>%
+  select(subj_id, rest_chunk, num_rest_in_chunk) %>%
+  group_by(subj_id, rest_chunk, num_rest_in_chunk) %>%
+  distinct() %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x=rest_chunk, y=num_rest_in_chunk, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  geom_smooth(method = "lm", se = TRUE,formula = y ~ x) +
+  labs(x="Rest period number",y="Number of rests taken")+
+  ggtitle("Average number of rests taken over time: post-exclusion")
+
+
+
+
+rt_overall_avgs <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  filter(timed_out == FALSE) %>%
+  group_by(subj_id, game_type) %>%
+  summarize(rt_avg = mean(rt))
+
+rt_overall_avgs %>%
+  ggplot(aes(x=game_type,y=rt_avg,color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  # facet_wrap(~trial_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game types",y="Average rt per participant on given game type")+
+  ggtitle("Average participant rt on each game: post-exclusion")
+  
+```
+
+``` {r prop_skipped_post_exclusion}
+df_recent_subset_analyze %>%
+  ungroup() %>%
+  group_by(subj_id, game_type) %>%
+  summarize(num_timed_out = sum(timed_out == TRUE), num_not_timed_out = sum(timed_out == FALSE)) %>%
+  mutate(total_trials = num_not_timed_out + num_timed_out,
+         prop_timed_out = num_timed_out / total_trials) %>%
+  ggplot(mapping = aes(x=game_type, y=prop_timed_out, color=subj_id)) +
+  geom_point(alpha = 0.5,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game type",y="Proportion of trials timed out")+
+  ggtitle("Proportion of trials timed out, per game type: post-exclusion")
+
+```
+
+IN THE END: excluded 6 so far (1 for incomplete data, 5 for the accuracy exclusion criteria)
+
+
+
+# Plot same performance graphs but separate out time out trials:
+
+
+``` {r post_exclusion_plots}
+all_runs_avg_subset_filtered <- df_recent_subset_analyze %>%
+  ungroup() %>%
+  filter(timed_out == FALSE) %>%
+  group_by(subj_id, trial_type) %>%
+  summarize(avg_acc_no_timeout = mean(is_correct_numeric))
+  
+
+# average of all subj averages (excluding timed out trials)
+all_runs_avg_subset_filtered %>%
+  ggplot(mapping = aes(x=trial_type,y=avg_acc_no_timeout, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject",size = 30) +
+  ggtitle("Average of subject mean performance on each game (post-exclusion)", "excluding time out trials")
+  theme(text = element_text(size = 13))
+
+
+# median of subject averages
+all_runs_avg_subset_filtered %>%
+ ggplot(mapping = aes(x=trial_type,y=avg_acc_no_timeout, color=subj_id)) +
+ geom_point(alpha = 0.3,position = position_jitter(width = 0.4,
+                              height = 0.01)) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 1)+
+  stat_summary(fun.y = median, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Game Type",y="Average accuracy on all trials, per subject", size = 30) +
+  ggtitle("Median of subject mean performance on each game (post-exclusion)","excluding time out trials")
+  theme(
+    text = element_text(size = 12),        # Base text size
+    axis.title = element_text(size = 13),  # Axis titles
+    axis.text = element_text(size = 13),   # Axis labels
+    plot.title = element_text(size = 13)   # Plot title
+  )
+```
