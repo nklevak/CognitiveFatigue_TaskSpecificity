@@ -334,6 +334,39 @@ ggplot() +
         plot.title = element_text(face = "bold"),
         legend.title = element_text(face = "bold"),
         axis.title = element_text(face = "bold"))
+
+
+#### FINAL VERSION FOR CCN
+ggplot(model_data, aes(x = avg_block_accuracy, 
+                       y = num_rest_in_chunk,
+                       color = cue_type)) +
+  # Raw data points
+  geom_point(alpha = 0.2, position = position_jitter(0.05, 0.05)) +
+  # Use loess smoothing instead which is more flexible
+  geom_smooth(method = "loess", span = 0.9,
+              linewidth = 1.5) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
+          "Loess smoothed trend lines on raw participant data") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(size = 14),
+        legend.title = element_text(face = "bold", size = 14),
+        legend.text = element_text(size = 12),
+        text = element_text(family = "Arial", size = 12),
+        axis.title = element_text(face = "bold", size = 14),
+        axis.text = element_text(size = 12),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA))
+
+# Save the plot to a PNG file with higher resolution
+ggsave("1a_big.png", width = 10, height = 8.5, dpi = 300)
 ```
 
 # JOINT PLOTS

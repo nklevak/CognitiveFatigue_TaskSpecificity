@@ -1005,6 +1005,35 @@ ggplot(model_data_q2, aes(x = avg_block_accuracy,
         text = element_text(family = "Arial"),
         axis.title = element_text(face = "bold"))
 
+
+### CCN GRAPH FINAL (save and make it big)
+ggplot(model_data_q2, aes(x = avg_block_accuracy, 
+                          y = next_block_successes/(next_block_successes + next_block_failures),
+                          color = cue_type)) +
+  geom_point(alpha = 0.2, position=position_jitter(0.05,0.05)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), linewidth = 1.2) +
+  labs(x = "Average Previous Epoch Accuracy", 
+       y = "Average Following Epoch Accuracy",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+                    labels = c("Game stayed the same", "Game switched")) +
+  ggtitle("Switching tasks improves performance after low-efficacy epochs", 
+          "Fitting simple binomials on raw participant data, by switch type") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(size = 14),
+        legend.title = element_text(face = "bold", size = 14),
+        legend.text = element_text(size = 12),
+        text = element_text(family = "Arial", size = 12),
+        axis.title = element_text(face = "bold", size = 14),
+        axis.text = element_text(size = 12),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA))
+
+# Save the plot to a PNG file with higher resolution
+ggsave("1b_big.png", width = 10, height = 8.5, dpi = 300)
+
 ```
 ``` {r data_loading}
 # Install and load required packages
