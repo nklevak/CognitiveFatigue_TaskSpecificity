@@ -177,7 +177,7 @@ subject_data <- df_all_blockwise_HMM_all %>%
   summarise(
     epoch_accuracy = list(epoch_accuracy),
     post_epoch_post_cue_rest_duration = list(post_epoch_post_cue_rest_duration),
-    rest_cue_type = list(ifelse(rest_cue_type == 1, "switch", "stay")),
+    rest_cue_type = list(rest_cue_type),
     epoch_follows_task_switch = list(epoch_follows_task_switch),
     block_number = list(block_number),
     epoch_within_block = list(epoch_within_block),
