@@ -2,3 +2,4 @@
 data/*
 .Rproj.user
 .git.backup
+.DS_Store
