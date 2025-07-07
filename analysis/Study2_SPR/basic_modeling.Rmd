@@ -1,0 +1,1413 @@
+---
+title: "basic_modeling"
+output: html_document
+date: "2025-01-20"
+---
+This is the initial modeling analyses for study 2.
+
+The setup was:
+4 spatial recall practice
+4 digit span practice
+4 rest practice
+
+10 groups, 13 blocks per group
+- 10 digit span per block
+- 10 visual search per block
+- up to 20 rest per rest period
+
+group ordering: ABABBABAAB
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+library(jsonlite)
+library(MASS, exclude = "select")
+library(performance)
+library(DHARMa)
+
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+# READ IN DATA (these are all post-exclusion files from both batches)
+``` {r data_loading}
+# exp vars
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+df_all <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv",stringsAsFactors = FALSE) %>%
+  select(-X)
+df_practice <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv",stringsAsFactors = FALSE)%>%
+  select(-X)
+df_survey <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv", stringsAsFactors = FALSE)%>%
+  select(-X)
+```
+
+# QUESTION 1:
+1) Is there a post-error increase in fatigue? i.e. is accuracy a significant negative estimator for subsequent rest time?
+
+**model idea**: Rest Time (rests taken in a given chunk) ~ Average accuracy in previous block + time(block_num) + game_type + group_num(represents place in experiment) + gameA_isSR(which order the games were in) + (1|subject)
+
+``` {r data_loading}
+# get average per block per subject
+rest_info <- df_all %>%
+  group_by(subj_id) %>%
+  filter(!is.na(rest_chunk), !is.na(type_desc)) %>%
+  select(subj_id, block_num = rest_chunk, num_rest_in_chunk, rest_type = type_desc) %>%
+  distinct() %>%
+  ungroup() %>%
+  group_by(subj_id,block_num) %>%
+  slice(1)  # Take only the first row for each block
+
+# Then join with summary
+df_all_blockwise <- df_all %>%
+  ungroup() %>%
+  filter(trial_type != "rt_main_trials") %>%
+  group_by(subj_id, block_num) %>%
+  summarize(
+    avg_block_accuracy = mean(is_correct_numeric),
+    accuracy_sd = sd(is_correct_numeric),
+    avg_rt = mean(rt[!timed_out]),
+    rt_sd = sd(rt[!timed_out]),
+    group_num = first(group_num),
+    gameA_isSR = first(gameA_isSR),
+    game_type = first(game_type),
+    .groups = 'drop'
+  ) %>%
+  left_join(rest_info, by = c("subj_id","block_num"))%>%
+  mutate(cue_type = ifelse(rest_type == "block_same_same" | rest_type == "group_A_A" | rest_type == "group_B_B", "stay", "switch"))
+
+df_all_blockwise <- df_all_blockwise %>%
+  ungroup() %>%
+  group_by(subj_id) %>%
+  mutate(scale_rest = as.vector(scale(num_rest_in_chunk, center = TRUE, scale = TRUE)),
+         scale_accuracy = as.vector(scale(avg_block_accuracy, center = TRUE, scale = TRUE))) %>%
+  ungroup()
+```
+
+``` {r q1_analysis}
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 2) +  # Points colored by block number
+  labs(x = "Average block accuracy",
+       y = "Scaled number of rest taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest length from performance")
+
+
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = scale_accuracy, y = scale_rest)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 2) +  # Points colored by block number
+  labs(x = "Scaled avg block accuracy",
+       y = "Scaled number of rest taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest length from performance")
+```
+
+``` {r q1_analysis}
+# adding the r squared value to the plot
+# First create the linear model to get R-squared
+lm_model <- df_all_blockwise %>%
+  lm(num_rest_in_chunk ~ avg_block_accuracy, data = .)
+
+# Get R-squared value formatted nicely
+summary(lm_model)
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+print(r_squared)
+
+# Create the plot with R-squared annotation
+df_all_blockwise %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method = "lm", se = TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 1, position=position_jitter(0,0.1), alpha = 0.6) +
+  annotate("text", 
+           x = 0.1,  # Try middle of x-axis
+           y = 3,    # Try near top of y-axis
+           label = r_squared_label) +
+  labs(x = "Average block accuracy",
+       y = "Following rest number taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest length from performance")
+
+
+################## scaled version ################################################
+# adding the r squared value to the plot
+# First create the linear model to get R-squared
+lm_model <- df_all_blockwise %>%
+  lm(scale_rest ~ scale_accuracy, data = .)
+
+# Get R-squared value formatted nicely
+summary(lm_model)
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+print(r_squared)
+
+df_all_blockwise %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x = scale_accuracy, y = scale_rest)) +
+  geom_smooth(method="lm",se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 1, position=position_jitter(0,0.1), alpha = 0.6) +  # Points colored by block number
+  annotate("text", 
+           x = 0.1,  # Try middle of x-axis
+           y = 3,    # Try near top of y-axis
+           label = r_squared_label) +
+  labs(x = "Scaled avg block accuracy",
+       y = "Scaled number of rest taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest length from performance")
+```
+``` {r q1_analysis}
+# Separate regression lines for each block
+ggplot(df_all_blockwise, aes(x = avg_block_accuracy, y = scale_rest, color = factor(block_num))) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Average block accuracy",
+       y = "Following rest number taken",
+       color = "Block Number") +
+  ggtitle("Relationship between performance and scaled rests taken by block")
+
+# Separate regression lines for each group
+ggplot(df_all_blockwise, aes(x = avg_block_accuracy, y = scale_rest, color = factor(group_num))) +
+  geom_point(size = 2) +
+  geom_smooth(method = "lm", se = TRUE) +
+  labs(x = "Average block accuracy",
+       y = "Following rest number taken",
+       color = "Group Number") +
+  ggtitle("Relationship between performance and scaled rests taken by group")
+```
+``` {r q1_analysis}
+# Evolution of accuracy-rest relationship across blocks
+df_all_blockwise %>%
+  group_by(subj_id) %>%
+  # mutate(
+  #   acc_centered = scale(avg_block_accuracy, center = TRUE, scale = FALSE),
+  #   rest_centered = scale(num_rest_in_chunk, center = TRUE, scale = FALSE)
+  # ) %>%
+  ggplot(aes(x = block_num, y = scale_rest, color = scale_accuracy)) +
+  geom_point(alpha = 0.3, position=position_jitter(0.1)) +
+  geom_smooth(method = "loess") +
+  scale_color_gradient2(low = "red", mid = "white", high = "blue", 
+                       midpoint = 0,
+                       name = "Relative\nAccuracy") +
+  labs(x = "Block Number",
+       y = "Relative rest num",
+       title = "How Performance Affects Fatigue Across Task Progress",
+       subtitle = "Blue = better than subject's average, Red = worse") +
+  theme_minimal()
+
+df_all_blockwise %>%
+  ungroup() 
+```
+
+``` {r q1_analysis}
+### plotting the betas of the coefficients
+# Calculate block-specific betas
+block_betas <- df_all_blockwise %>%
+  group_by(block_num) %>%
+  summarise(
+    model = list(lm(num_rest_in_chunk ~ avg_block_accuracy)),
+    tidy_model = list(tidy(model[[1]])),
+    r2 = summary(model[[1]])$r.squared
+  ) %>%
+  unnest(tidy_model) %>%
+  filter(term == "avg_block_accuracy") %>%
+  mutate(
+    ci_lower = estimate - 1.96 * std.error,
+    ci_upper = estimate + 1.96 * std.error,
+    significant = p.value < 0.05
+  )
+
+# Create the plot
+ggplot(block_betas, aes(x = block_num)) +
+  # Add horizontal line at y=0 for reference
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Add linear trend line
+  geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+  # Add error bars
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  # Add points, colored by significance
+  geom_point(aes(y = estimate, color = significant), size = 3) +
+  # Add line connecting points
+  geom_line(aes(y = estimate), alpha = 0.5) +
+  # Color scheme
+  scale_color_manual(values = c("gray60", "blue"), 
+                    labels = c("p ≥ 0.05", "p < 0.05")) +
+  # Labels
+  labs(x = "Block Number",
+       y = "Beta Coefficient (Rest number ~ Block Accuracy)",
+       title = "How Performance Predicts Subsequent Rest Across Blocks",
+       subtitle = "Red line shows linear trend across blocks",
+       color = "Statistical\nSignificance") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+# Calculate and print trend statistics
+trend_model <- lm(estimate ~ block_num, data = block_betas)
+trend_summary <- summary(trend_model)
+
+# Print key statistics
+cat("\nLinear Trend Analysis:\n")
+cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+
+
+# accounting for subjects by scaling (need to remove NAs tho)
+block_betas <- df_all_blockwise %>%
+  filter(!is.na(scale_rest), !is.na(scale_accuracy)) %>%
+  group_by(block_num) %>%
+  summarise(
+    model = list(lm(scale_rest ~ scale_accuracy)),
+    tidy_model = list(tidy(model[[1]])),
+    r2 = summary(model[[1]])$r.squared
+  ) %>%
+  unnest(tidy_model) %>%
+  filter(term == "scale_accuracy") %>%
+  mutate(
+    ci_lower = estimate - 1.96 * std.error,
+    ci_upper = estimate + 1.96 * std.error,
+    significant = p.value < 0.05
+  )
+
+# Create the plot
+ggplot(block_betas, aes(x = block_num)) +
+  # Add horizontal line at y=0 for reference
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  # Add linear trend line
+  geom_smooth(aes(y = estimate), method = "lm", color = "red", alpha = 0.2) +
+  # Add error bars
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.2) +
+  # Add points, colored by significance
+  geom_point(aes(y = estimate, color = significant), size = 3) +
+  # Add line connecting points
+  geom_line(aes(y = estimate), alpha = 0.5) +
+  # Color scheme
+  scale_color_manual(values = c("gray60", "blue"), 
+                    labels = c("p ≥ 0.05", "p < 0.05")) +
+  # Labels
+  labs(x = "Block Number",
+       y = "Beta Coefficient (scale Rest number ~ scale Block Accuracy)",
+       title = "How Performance Predicts Subsequent Rest Across Blocks",
+       subtitle = "Red line shows linear trend across blocks",
+       color = "Statistical\nSignificance") +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    axis.title = element_text(face = "bold")
+  )
+
+# Calculate and print trend statistics
+trend_model <- lm(estimate ~ block_num, data = block_betas)
+trend_summary <- summary(trend_model)
+
+# Print key statistics
+cat("\nLinear Trend Analysis:\n")
+cat("Slope:", round(coef(trend_model)[2], 3), "\n")
+cat("p-value:", round(trend_summary$coefficients[2,4], 3), "\n")
+cat("R-squared:", round(trend_summary$r.squared, 3), "\n")
+```
+
+``` {r q1_analysis}
+#TODO: look at this ^ but by game type
+```
+
+``` {r q1_analysis}
+# Create the linear model to get R-squared and effect size
+lm_model <- df_all_blockwise %>%
+  ungroup() %>%
+  lm(num_rest_in_chunk ~ avg_block_accuracy, data = .)
+
+# Get R-squared value
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+p_value <- anova(lm_model)$"Pr(>F)"[1]
+
+# Calculate Cohen's f² effect size
+# f² = R² / (1 - R²)
+f_squared <- r_squared / (1 - r_squared)
+
+# For simple regression, we can convert r to d
+# First get r (correlation)
+r <- sqrt(r_squared) * sign(coef(lm_model)[2])  # multiply by sign of slope
+# Convert r to d using the formula: d = 2r/sqrt(1-r^2)
+cohens_d <- (2 * r) / sqrt(1 - r^2)
+
+# Create formatted labels
+stats_label <- sprintf("R² = %.3f\nf² = %.3f\nd = %.3f\np = %.3e", 
+                      r_squared, f_squared, cohens_d, p_value)
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following rests taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# scaled version (accounts for subject diff)
+# Create the linear model to get R-squared and effect size
+lm_model <- df_all_blockwise %>%
+  ungroup() %>%
+  lm(scale_rest ~ scale_accuracy, data = .)
+
+# Get R-squared value
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+p_value <- anova(lm_model)$"Pr(>F)"[1]
+
+# Calculate Cohen's f² effect size
+# f² = R² / (1 - R²)
+f_squared <- r_squared / (1 - r_squared)
+
+# For simple regression, we can convert r to d
+# First get r (correlation)
+r <- sqrt(r_squared) * sign(coef(lm_model)[2])  # multiply by sign of slope
+# Convert r to d using the formula: d = 2r/sqrt(1-r^2)
+cohens_d <- (2 * r) / sqrt(1 - r^2)
+
+# Create formatted labels
+stats_label <- sprintf("R² = %.3f\nf² = %.3f\nd = %.3f\np = %.3e", 
+                      r_squared, f_squared, cohens_d, p_value)
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = scale_accuracy, y = scale_rest)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 3,  
+           y = 2,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Scaled avg block accuracy",
+       y = "Scaled number of rests taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+
+```
+
+``` {r q1_analysis}
+# TODO do REACTION TIME (i.e. RT variability, etc)
+```
+
+``` {r q1_analysis_glmer_poisson_noRT}
+# for non-RT inclusive analysis
+complete_data_rest_models_noRT <- df_all_blockwise
+complete_data_rest_models_noRT <- na.omit(complete_data_rest_models_noRT)
+complete_data_rest_models_noRT$group_num_centered <- 
+    as.vector(scale(complete_data_rest_models_noRT$group_num, center=TRUE, scale=TRUE))
+complete_data_rest_models_noRT$block_num_centered <- 
+    as.vector(scale(complete_data_rest_models_noRT$block_num, center=TRUE, scale=TRUE))
+
+# for later RT inclusive analysis (because including RT removes extra rows/data)
+complete_data_rest_models <- df_all_blockwise %>%
+  filter(!is.na(rt_sd))
+complete_data_rest_models <- na.omit(complete_data_rest_models)
+complete_data_rest_models$group_num_centered <- 
+    as.vector(scale(complete_data_rest_models$group_num, center=TRUE, scale=TRUE))
+complete_data_rest_models$block_num_centered <- 
+    as.vector(scale(complete_data_rest_models$block_num, center=TRUE, scale=TRUE))
+
+# **model idea**: Rest Time (rests taken in a given chunk) ~ Average accuracy in previous block + time(block_num) + game_type + group_num(represents place in experiment) + gameA_isSR(which order the games were in) + (1|subject)
+# complete_data_rest_models <- na.omit(df_all_blockwise) # this gets rid of timed out trials where rt_sd = NaN
+
+# using poisson bc it's count data (rest number)
+fit.rest_noRT_one <- glmer(num_rest_in_chunk ~ (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_two <- glmer(num_rest_in_chunk ~ block_num_centered + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_three <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_four <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_five <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_six <- glmer(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + game_type + cue_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_seven <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type +
+                               avg_block_accuracy:cue_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_eight <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type +
+                               avg_block_accuracy:cue_type + game_type:cue_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_nine <- glmer(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + game_type + cue_type + gameA_isSR + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_ten <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type +
+                               avg_block_accuracy:cue_type + gameA_isSR + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_eleven <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type +
+                               avg_block_accuracy:cue_type + game_type:cue_type + gameA_isSR + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+
+compare_performance(fit.rest_noRT_one, fit.rest_noRT_two, fit.rest_noRT_three, fit.rest_noRT_four, fit.rest_noRT_five, fit.rest_noRT_six, fit.rest_noRT_seven, fit.rest_noRT_eight, fit.rest_noRT_nine, fit.rest_noRT_ten, fit.rest_noRT_eleven) # 7 and 8 are the best (but very low marginal R^2)
+
+fit.rest_noRT_twelve <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type +
+                               avg_block_accuracy:cue_type + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_thirteen <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + cue_type +
+                               avg_block_accuracy:cue_type + game_type:cue_type + gameA_isSR + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+compare_performance(fit.rest_noRT_seven, fit.rest_noRT_eight,fit.rest_noRT_twelve,fit.rest_noRT_thirteen) # twelve and thirteen are better but thirteen is less parsimonious
+
+fit.rest_noRT_fourteen <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + cue_type +
+                               avg_block_accuracy:cue_type + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_noRT_fifteen <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type*cue_type +
+                               avg_block_accuracy:cue_type + gameA_isSR + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+compare_performance(fit.rest_noRT_seven, fit.rest_noRT_eight,fit.rest_noRT_twelve,fit.rest_noRT_thirteen, fit.rest_noRT_fourteen, fit.rest_noRT_fifteen) # thirteen and fifteen are the best!!!!
+
+
+# checking models:
+testDispersion(simulateResiduals(fittedModel = fit.rest_noRT_thirteen)) 
+testDispersion(simulateResiduals(fittedModel = fit.rest_noRT_fifteen)) 
+
+# model summaries
+summary(fit.rest_noRT_thirteen)
+summary(fit.rest_noRT_fifteen)
+
+
+
+# Coefficient plot
+# Extract and plot model coefficients
+coef_data <- data.frame(
+  term = names(fixef(fit.rest_noRT_thirteen)),
+  estimate = fixef(fit.rest_noRT_thirteen),
+  se = sqrt(diag(vcov(fit.rest_noRT_thirteen)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+
+ggplot(coef_data, aes(x = estimate, y = term)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2) +
+  geom_point(size = 3) +
+  labs(x = "Coefficient Estimate",
+       y = "",
+       title = "Model Coefficient Estimates",
+       subtitle = "Error bars show 95% confidence intervals") +
+  theme_minimal()
+```
+
+``` {r q1_analysis_glmer_poisson_RT}
+complete_data_rest_models <- complete_data_rest_models %>%
+  group_by(subj_id) %>%
+  mutate(scale_rt = as.vector(scale(avg_rt, center=TRUE, scale=TRUE)),
+         scaled_rt_sd = as.vector(scale(rt_sd, center=TRUE, scale=TRUE))) %>%
+  ungroup()
+
+# using poisson bc it's count data (rest number)
+fit.rest_RT_one <- glmer(num_rest_in_chunk ~ (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_two <- glmer(num_rest_in_chunk ~ block_num_centered + (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_three <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + scale_rt + (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_four <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + scale_rt + game_type + (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_five <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + scale_rt + game_type + cue_type + (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_six <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type*scale_rt + (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_seven <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type*scale_rt + scaled_rt_sd + (1|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+fit.rest_eight <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + game_type + cue_type*scale_rt + scaled_rt_sd + (1 + game_type|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+
+compare_performance(fit.rest_RT_one, fit.rest_two, fit.rest_three, fit.rest_four, fit.rest_five, fit.rest_six, fit.rest_seven, fit.rest_eight) # eight is the best but very small marginal effect
+
+# checking models:
+testDispersion(simulateResiduals(fittedModel = fit.rest_eight)) 
+# model summaries
+summary(fit.rest_eight)
+
+
+
+# best model from above but add it rt_sd:
+fit.rest_noRT_thirteen_withRT <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + cue_type +
+                               avg_block_accuracy:cue_type + game_type:cue_type + gameA_isSR + scaled_rt_sd + (1 + game_type|subj_id),
+                           data = complete_data_rest_models,
+                           family = poisson)
+
+compare_performance(fit.rest_noRT_thirteen, fit.rest_noRT_thirteen_withRT) # not fit with same data, but fit.rest_noRT_thirteen is better
+compare_performance(fit.rest_noRT_thirteen, fit.rest_noRT_fifteen, fit.rest_eight) # thirteen and fifteen still the best; I should go back and calculate scaled rt variability in a better way
+
+summary(fit.rest_eight)
+``` 
+
+``` {r q1_analysis_models_simple}
+# trying to look at simpler models and plot that 
+fit.rest_simple_1 <- glmer(num_rest_in_chunk ~ (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_2 <- glmer(num_rest_in_chunk ~ block_num_centered + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_3 <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_4 <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + cue_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_5 <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + cue_type + game_type + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_6 <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + cue_type + game_type + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_7 <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy*cue_type + game_type + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+fit.rest_simple_8 <- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy*cue_type + game_type + gameA_isSR + (1 + game_type|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson)
+
+# compare these
+compare_performance(fit.rest_simple_1, fit.rest_simple_2, fit.rest_simple_3, fit.rest_simple_4, fit.rest_simple_5, fit.rest_simple_6, fit.rest_simple_7, fit.rest_simple_8) # 7 and 8 are best
+
+compare_performance(fit.rest_simple_7, fit.rest_simple_8, fit.rest_noRT_thirteen, fit.rest_noRT_fifteen) # 7 is most parsimonious 8 has more R2 marginal (but only around 0.011)
+
+testDispersion(simulateResiduals(fittedModel = fit.rest_simple_8)) 
+
+summary(fit.rest_simple_7)
+summary(fit.rest_simple_8)
+
+
+
+# Coefficient plot
+# Extract and plot model coefficients
+coef_data <- data.frame(
+  term = names(fixef(fit.rest_simple_8)),
+  estimate = fixef(fit.rest_simple_8),
+  se = sqrt(diag(vcov(fit.rest_simple_8)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+
+ggplot(coef_data, aes(x = estimate, y = term)) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2) +
+  geom_point(size = 3) +
+  labs(x = "Coefficient Estimate",
+       y = "",
+       title = "Model Coefficient Estimates",
+       subtitle = "Error bars show 95% confidence intervals") +
+  theme_minimal()
+
+
+
+coef_data <- data.frame(
+  term = names(fixef(fit.rest_simple_8)),
+  estimate = fixef(fit.rest_simple_8),
+  se = sqrt(diag(vcov(fit.rest_simple_8)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se,
+    # Create readable labels
+    # Add significance markers
+    sig = case_when(
+      abs(estimate) > 1.96 * se ~ "*",
+      TRUE ~ ""
+    )
+  ) %>%
+  # Reorder factors for better visualization
+  mutate(term_clean = factor(term, levels = rev(term)))
+
+# Create the enhanced plot
+ggplot(coef_data, aes(x = estimate, y = term)) +
+  # Add shaded background for non-significant region
+  geom_rect(aes(xmin = -1.96 * min(se), xmax = 1.96 * min(se), 
+                ymin = -Inf, ymax = Inf),
+            fill = "gray90", alpha = 0.5) +
+  # Add vertical line at zero
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  # Add error bars
+  geom_errorbarh(aes(xmin = lower, xmax = upper), 
+                height = 0.3, 
+                color = "navy",
+                linewidth = 1) +
+  # Add points
+  geom_point(size = 4, color = "navy", fill = "white", shape = 21) +
+  # Add significance markers
+  geom_text(aes(x = upper + 0.15, label = sig), 
+            color = "navy", 
+            size = 8) +
+  # Customize labels and theme
+  labs(x = "Coefficient Estimate",
+       y = NULL,
+       title = "Effect of Performance and Task Switching on Rest",
+       subtitle = "Error bars show 95% confidence intervals\n* indicates significant effect") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 10)),
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  # Scale x axis to be symmetric and have nice breaks
+  scale_x_continuous(
+    limits = c(min(coef_data$lower) - 0.2, max(coef_data$upper) + 0.2),
+    breaks = scales::pretty_breaks(n = 6)
+  )
+
+
+
+temp <- df_all_blockwise %>%
+  select(subj_id, num_rest_in_chunk, avg_block_accuracy,cue_type, gameA_isSR, block_num)
+
+fit.rest_basic_model <- glmer(num_rest_in_chunk ~ avg_block_accuracy*cue_type + gameA_isSR + (1|subj_id),
+                           data = temp,
+                           family = poisson)
+summary(fit.rest_basic_model)
+```
+
+
+## OLDER MODELING FOR Q1
+These are the older models when the rest chunks were wrangled incorrectly; pivoting to doing the mixed effects models above ^
+``` {r q1_analysis_models_nonRT_OLD, eval=FALSE, echo=FALSE}
+# **model idea**: Rest Time (rests taken in a given chunk) ~ Average accuracy in previous block + time(block_num) + game_type + group_num(represents place in experiment) + gameA_isSR(which order the games were in) + (1|subject)
+# complete_data_rest_models <- na.omit(df_all_blockwise) # this gets rid of timed out trials where rt_sd = NaN
+
+#until we use RT, maybe just get rid of the RT columns OR filter out the timed_out
+# 1) get rid of RT cols and do this
+
+complete_data_rest_models_noRT <- df_all_blockwise %>%
+  select(-avg_rt, -rt_sd)
+
+complete_data_rest_models_noRT <- na.omit(complete_data_rest_models_noRT)
+
+# using poisson bc it's count data (rest number) -> fails to converge
+# fit.rest_noRT_one <- glmer(num_rest_in_chunk ~ (1|subj_id),
+#                            data = complete_data_rest_models_noRT,
+#                            family = poisson)
+
+# using a regular negative binomial (only fixed effects though, so modeling PER subject)
+# center the group_num and block_num to reduce collinearity: 
+complete_data_rest_models_noRT$group_num_centered <- 
+    as.vector(scale(complete_data_rest_models_noRT$group_num, center=TRUE, scale=FALSE))
+complete_data_rest_models_noRT$block_num_centered <- 
+    as.vector(scale(complete_data_rest_models_noRT$block_num, center=TRUE, scale=FALSE))
+
+# run the models:
+fit.rest_noRT_one <- glm.nb(num_rest_in_chunk ~ factor(subj_id),
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_two <- glm.nb(num_rest_in_chunk ~ block_num_centered + factor(subj_id),
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_three <- glm.nb(num_rest_in_chunk ~ group_num_centered + factor(subj_id),
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_four <- glm.nb(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + factor(subj_id),
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_five <- glm.nb(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + factor(subj_id),
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_six <- glm.nb(num_rest_in_chunk ~ gameA_isSR + group_num_centered*avg_block_accuracy + factor(subj_id),
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_seven <- glm.nb(num_rest_in_chunk ~ gameA_isSR + group_num_centered*avg_block_accuracy + factor(subj_id) + cue_type,
+                           data = complete_data_rest_models_noRT)
+fit.rest_noRT_eight <- glm.nb(num_rest_in_chunk ~ gameA_isSR + group_num_centered*avg_block_accuracy + factor(subj_id) + cue_type + cue_type:avg_block_accuracy,
+                           data = complete_data_rest_models_noRT)
+
+compare_performance(fit.rest_noRT_one, fit.rest_noRT_two, fit.rest_noRT_three, fit.rest_noRT_four, fit.rest_noRT_five, fit.rest_noRT_six,
+                    fit.rest_noRT_seven,fit.rest_noRT_eight)
+
+# model 7 seems to be the best
+check_model(fit.rest_noRT_seven) # has some issues
+summary(fit.rest_noRT_seven)
+
+# Create diagnostic plots
+simulationOutput_7 <- simulateResiduals(fittedModel = fit.rest_noRT_seven)
+plot(simulationOutput_7)
+
+# Check for overdispersion
+testDispersion(simulationOutput_7)
+
+# has overdispersion, bad model
+
+``` 
+
+```{r q1_analysis_models_nonRT_OLD, eval=FALSE, echo=FALSE}
+######################################
+# THIS MODEL HAS PROBLEMS / singularity
+fit.rest_noRT_glmerTest<- glmer(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy + (1|subj_id),
+                           data = complete_data_rest_models_noRT,
+                           family = poisson,#because its a count
+                           control = glmerControl(optimizer = "bobyqa"))
+# second attempt
+# number of observations per subject (30 each)
+table(complete_data_rest_models_noRT$subj_id)
+# check random effects variance
+VarCorr(fit.rest_noRT_glmerTest) # very small between subject difference? should I not use mixed effects then
+
+# trying GLMs without subject id because it accounts for so little
+fit.rest_noRT_glm_one <- glm(num_rest_in_chunk ~ block_num_centered,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_two <- glm(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_three <- glm(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_four <- glm(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + gameA_isSR,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_five <- glm(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + gameA_isSR + cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_six <- glm(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + gameA_isSR + avg_block_accuracy:cue_type + cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_seven <- glm(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + gameA_isSR + game_type + cue_type + avg_block_accuracy:cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_eight <- glm(num_rest_in_chunk ~ block_num_centered*avg_block_accuracy + gameA_isSR + game_type*cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_nine <- glm(num_rest_in_chunk ~ group_num_centered*avg_block_accuracy + gameA_isSR + game_type*cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_ten <- glm(num_rest_in_chunk ~ group_num_centered*scale_accuracy + gameA_isSR + game_type*cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_11 <- glm(num_rest_in_chunk ~ group_num_centered*avg_block_accuracy + gameA_isSR + game_type*cue_type + subj_id,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_12 <- glm(num_rest_in_chunk ~ group_num_centered*scale_accuracy + gameA_isSR + game_type*cue_type + subj_id,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+fit.rest_noRT_glm_13 <- glm(num_rest_in_chunk ~ group_num_centered*scale_accuracy + gameA_isSR + game_type + cue_type + avg_block_accuracy:cue_type,
+                         data = complete_data_rest_models_noRT,
+                         family = poisson)
+
+compare_performance(fit.rest_noRT_glm_one, fit.rest_noRT_glm_two, fit.rest_noRT_glm_three, fit.rest_noRT_glm_four, fit.rest_noRT_glm_five,fit.rest_noRT_glm_six,fit.rest_noRT_glm_seven,fit.rest_noRT_glm_eight,fit.rest_noRT_glm_nine,fit.rest_noRT_glm_ten,fit.rest_noRT_glm_11,
+                    fit.rest_noRT_glm_12,fit.rest_noRT_glm_13)
+
+
+# model 10 seems to be the best
+check_model(fit.rest_noRT_glm_ten) # has some issues but less
+summary(fit.rest_noRT_glm_ten)
+
+simulationOutput_10 <- simulateResiduals(fittedModel = fit.rest_noRT_glm_ten)
+
+# Check for overdispersion
+testDispersion(simulationOutput_10) # veryyyy overdispersed
+
+# try neg binomial
+fit.rest_noRT_glm_ten_bin <- glm.nb(num_rest_in_chunk ~ group_num_centered*scale_accuracy + gameA_isSR + game_type*cue_type,
+                         data = complete_data_rest_models_noRT)
+
+compare_performance(fit.rest_noRT_glm_ten_bin, fit.rest_noRT_glm_ten)
+check_model(fit.rest_noRT_glm_ten_bin)
+testDispersion(simulateResiduals(fittedModel = fit.rest_noRT_glm_ten_bin)) # less overdispersed but still overdispersed and a worse model
+``` 
+
+
+```{r q1_analysis_models_RT_OLD, eval=FALSE, echo=FALSE}
+# 2) filter out the timed out rows and do this
+complete_data_rest_models <- df_all_blockwise %>%
+  filter(!is.na(rt_sd))
+complete_data_rest_models <- na.omit(complete_data_rest_models)
+
+complete_data_rest_models$group_num_centered <- 
+    as.vector(scale(complete_data_rest_models$group_num, center=TRUE, scale=FALSE))
+complete_data_rest_models$block_num_centered <- 
+    as.vector(scale(complete_data_rest_models$block_num, center=TRUE, scale=FALSE))
+
+# trying GLMs without subject id because it accounts for so little
+fit.rest_glm_one <- glm(num_rest_in_chunk ~ block_num_centered,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_two <- glm(num_rest_in_chunk ~ block_num_centered + avg_rt,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_three <- glm(num_rest_in_chunk ~ block_num_centered + avg_rt + rt_sd,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_four <- glm(num_rest_in_chunk ~ block_num_centered*rt_sd + avg_rt,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_five <- glm(num_rest_in_chunk ~ block_num_centered*rt_sd + avg_rt + gameA_isSR + cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_six <- glm(num_rest_in_chunk ~ block_num_centered*rt_sd + gameA_isSR + avg_rt + cue_type + avg_block_accuracy,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_seven <- glm(num_rest_in_chunk ~ block_num_centered + avg_block_accuracy*rt_sd + avg_rt + gameA_isSR + game_type + cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_eight <- glm(num_rest_in_chunk ~ block_num_centered*rt_sd + avg_block_accuracy:rt_sd + avg_rt + gameA_isSR + game_type + cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_nine <- glm(num_rest_in_chunk ~ group_num_centered*rt_sd + avg_rt + avg_block_accuracy:rt_sd + gameA_isSR + game_type*cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_ten <- glm(num_rest_in_chunk ~ group_num_centered*rt_sd + avg_rt + scale_accuracy + scale_accuracy:rt_sd + gameA_isSR + game_type*cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_11 <- glm(num_rest_in_chunk ~ group_num_centered + rt_sd + avg_rt + scale_accuracy + scale_accuracy:rt_sd + game_type*cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_12 <- glm(num_rest_in_chunk ~ group_num_centered + rt_sd + avg_rt + scale_accuracy + scale_accuracy:rt_sd + game_type:cue_type + game_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_13 <- glm(num_rest_in_chunk ~ group_num_centered + rt_sd + avg_rt + scale_accuracy + scale_accuracy:rt_sd + game_type + cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+fit.rest_glm_14 <- glm(num_rest_in_chunk ~ group_num_centered + rt_sd + avg_rt + scale_accuracy + scale_accuracy:rt_sd + game_type:cue_type + cue_type,
+                         data = complete_data_rest_models,
+                         family = poisson)
+
+compare_performance(fit.rest_glm_one, fit.rest_glm_two, fit.rest_glm_three, fit.rest_glm_four, fit.rest_glm_five,fit.rest_glm_six,fit.rest_glm_seven,fit.rest_glm_eight,fit.rest_glm_nine) #9 is best
+
+compare_performance(fit.rest_glm_nine, fit.rest_glm_ten,fit.rest_glm_11,fit.rest_glm_12,fit.rest_glm_13,fit.rest_glm_14) #13 is best but only a tiny bit (AIC BIC)
+
+# models 11 and 12 seem to be the best
+check_model(fit.rest_glm_11) # has some issues but less
+summary(fit.rest_glm_11)
+
+check_model(fit.rest_glm_12) # has some issues but less
+summary(fit.rest_glm_12)
+
+### 12 removes cue_type as its own signal; test which model is better
+anova(fit.rest_glm_12, fit.rest_glm_11, test = "Chisq")
+
+
+summary(fit.rest_glm_11) # i think this is basically the same as 12
+summary(fit.rest_glm_13)
+
+testDispersion(simulateResiduals(fittedModel = fit.rest_glm_11)) #very overdispersed
+```
+
+# QUESTION 2:
+2) When does task switching reduce fatigue, if ever? i.e. how does performance differ in the block following a switch vs a non-switch, and how long is the subsequent self-paced rest (in comparison)
+
+1. compare average accuracy in the block:
+	1. following a switch vs following a stay
+	2. account for game_type, block_num, group_num, 1|subj_id
+	3.  can use "switched" or "stayed" as a predictor (create this variable after isolating those blocks)
+2. compare number of rests taken in the rest after the first switched block vs in the rest after the first stayed block
+	1. will be complicated to wrangle this
+	2. account for game_type, block_num, group_num, 1|subj_id
+	3. can use "switched" or "stayed" as a predictor (create this variable after isolating those blocks)
+
+``` {r data_loading}
+df_all_blockwise_q2 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(following_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scale_following_avg_accuracy = lead(scale_accuracy, default = NA),
+         scale_following_block_rest = lead(scale_rest, default = NA)) %>%
+  ungroup()
+```
+
+``` {r data_plotting}
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('prev acc << avg','prev acc < avg', 'prev acc > avg', 'prev acc >> avg')
+
+temp <- df_all_blockwise_q2 %>%
+  filter(block_num!=30) %>%
+  mutate(accuracy_bin_preceding = cut(scale_accuracy, breaks = breaks, labels = labels, right = FALSE),
+         rest_bin_preceding = cut(scale_rest, breaks = breaks, labels = labels, right = FALSE)) %>%
+  ungroup() %>%
+  filter(!is.na(accuracy_bin_preceding), !is.na(rest_bin_preceding))
+
+temp %>%
+  filter(block_num != 30) %>%
+  ggplot(mapping = aes(x=cue_type, y=following_avg_accuracy)) +
+  facet_wrap(~accuracy_bin_preceding, ncol=4) +
+  theme_bw() +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    strip.text = element_text(size = 7),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "light blue",
+               shape = 21,
+               size = 0.75) +
+  labs(x = "Did the task switch?",
+       y = "Average accuracy in following block") +
+  ggtitle("Relationship between prior block performance, switch status, and future performance") +
+  ylim(0, 1.1)
+
+
+
+
+
+temp %>%
+  filter(block_num != 30) %>%
+  ggplot(mapping = aes(x=cue_type, y=scale_following_avg_accuracy)) +
+  facet_wrap(~accuracy_bin_preceding, ncol=4) +
+  theme_bw() +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    strip.text = element_text(size = 7),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "light blue",
+               shape = 21,
+               size = 0.75) +
+  labs(x = "Did the task switch?",
+       y = "Scaled average accuracy in following block") +
+  ggtitle("Relationship between prior block performance, switch status, and future performance")
+
+
+
+```
+
+``` {r data_plotting}
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c('rest << avg','rest < avg', 'rest > avg', 'rest >> avg')
+
+temp <- df_all_blockwise_q2 %>%
+  filter(block_num!=30) %>%
+  mutate(accuracy_bin_preceding = cut(scale_accuracy, breaks = breaks, labels = labels, right = FALSE),
+         rest_bin_preceding = cut(scale_rest, breaks = breaks, labels = labels, right = FALSE)) %>%
+  ungroup() %>%
+  filter(!is.na(accuracy_bin_preceding), !is.na(rest_bin_preceding))
+
+temp %>%
+  filter(block_num != 30) %>%
+  ggplot(mapping = aes(x=cue_type, y=following_avg_accuracy)) +
+  facet_wrap(~rest_bin_preceding, ncol=4) +
+  theme_bw() +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "light blue",
+               shape = 21,
+               size = 0.75) +
+  labs(x = "Did the task switch?",
+       y = "Average accuracy following this block") +
+  ggtitle("Relationship between prior rest amount, switch status, and future performance") +
+  ylim(0, 1.1)
+  
+temp %>%
+  filter(block_num != 30) %>%
+  ggplot(mapping = aes(x=cue_type, y=scale_following_avg_accuracy)) +
+  facet_wrap(~rest_bin_preceding, ncol=4) +
+  theme_bw() +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "light blue",
+               shape = 21,
+               size = 0.75) +
+  labs(x = "Did the task switch?",
+       y = "Scaled average accuracy following this block") +
+  ggtitle("Relationship between prior rest amount, switch status, and scaled future performance")
+```
+
+``` {r data_loading}
+df_all_blockwise_q2 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(following_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scale_following_avg_accuracy = lead(scale_accuracy, default = NA),
+         scale_following_block_rest = lead(scale_rest, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default = NA)) %>% # this is the rest in the period after the switch or stay
+  ungroup()
+
+df_all_blockwise_q2 %>%
+  ggplot(mapping = aes(x=cue_type, y= following_block_rest, color=subj_id)) +
+  geom_point(alpha = 0.1,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  facet_wrap(~game_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Did the previous block switch?",y="Rest following the switched/stayed block")+
+  ggtitle("Participant rest post switch or stay block")
+
+
+df_all_blockwise_q2 %>%
+  ggplot(mapping = aes(x=cue_type, y= scale_following_block_rest, color=subj_id)) +
+  geom_point(alpha = 0.1,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  facet_wrap(~game_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Did the previous block switch?",y="Accuracy in the switched/stayed block")+
+  ggtitle("Scaled participant rest post switch or stay block")
+
+#############
+
+df_all_blockwise_q2 %>%
+  ggplot(mapping = aes(x=cue_type, y= following_avg_accuracy, color=subj_id)) +
+  geom_point(alpha = 0.1,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  facet_wrap(~game_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Did the previous block switch?",y="Rest following the switched/stayed block")+
+  ggtitle("Participant performance in switch or stay block")
+
+
+df_all_blockwise_q2 %>%
+  ggplot(mapping = aes(x=cue_type, y= scale_following_avg_accuracy, color=subj_id)) +
+  geom_point(alpha = 0.1,position = position_jitter(width = 0.2,
+                                        height = 0)) +
+  facet_wrap(~game_type)+
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "yellow",
+               shape = 21,
+               size = 0.5)+
+  stat_summary(fun.y = mean, geom = "text", aes(label = round(..y.., 2)), hjust = -.5) +
+  labs(x="Did the previous block switch?",y="Scaled accuracy in the switched/stayed block")+
+  ggtitle("Scaled participant performance in switch or stay block")
+```
+
+``` {r data_loading}
+df_all_blockwise_q2 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(following_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         # scale_following_avg_accuracy = lead(scale_accuracy, default = NA),
+         # scale_following_block_rest = lead(scale_rest, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default = NA)) %>% # this is the rest in the period after the switch or stay
+  filter(block_num != 30) %>%
+  filter(!is.na(following_avg_accuracy)) %>%
+  ungroup() %>%
+  select(-avg_rt, -rt_sd, -scale_rest, -scale_accuracy, -accuracy_sd) %>%
+  filter(subj_id != 539) %>% # LOOK INTO THIS LATER (should catch any NAs in the timed_out or is_correct)
+  mutate(subj_id = as.factor(subj_id))
+
+
+library(gamlss)
+# Fit zero-one-inflated beta regression
+# BEINF is the zero-one-inflated beta family
+model_1 <- gamlss(following_avg_accuracy ~ random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+model_2 <- gamlss(following_avg_accuracy ~ block_num + random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+model_3 <- gamlss(following_avg_accuracy ~ avg_block_accuracy + block_num + random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+model_4 <- gamlss(following_avg_accuracy ~ avg_block_accuracy + cue_type + block_num + random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+model_5 <- gamlss(following_avg_accuracy ~ avg_block_accuracy + cue_type + gameA_isSR + block_num + random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+model_6 <- gamlss(following_avg_accuracy ~ avg_block_accuracy + cue_type + num_rest_in_chunk + gameA_isSR + block_num + random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+model_7 <- gamlss(following_avg_accuracy ~ avg_block_accuracy*cue_type + num_rest_in_chunk + gameA_isSR + block_num + random(subj_id), 
+                family = BEINF,  # Zero-one-inflated beta
+                data = df_all_blockwise_q2)
+
+library(performance)
+compare_performance(model_1, model_2, model_3, model_4, model_5, model_6, model_7, metrics = c("AIC", "BIC", "R2", "RMSE")) # model 7 is better but hard to tell if it's actually good
+
+summary(model_7)
+plot(model_7)
+
+# IM NOT SURE WHICH MODEL TYPE TO USE FOR THIS STUFF (since its 0 to 1, 0 inclusive)
+
+```
+``` {r data_loading}
+df_all_blockwise_q2 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(following_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scale_following_avg_accuracy = lead(scale_accuracy, default = NA),
+         scale_following_block_rest = lead(scale_rest, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default = NA),
+         following_block_num = lead(block_num, default=NA),
+         following_block_num_centered = as.vector(scale(block_num, center=TRUE, scale=TRUE)),
+         following_cue_type = lead(cue_type, default=NA)) %>% # this is the rest in the period after the switch or stay
+  filter(block_num != 30) %>%
+  filter(!is.na(following_avg_accuracy)) %>%
+  ungroup() %>%
+  select(-avg_rt, -rt_sd, -scale_rest, -scale_accuracy, -accuracy_sd) %>%
+  filter(subj_id != 539) # LOOK INTO THIS LATER (should catch any NAs in the timed_out or is_correct)
+
+fit.rest_simple_1 <- glmer(following_block_rest ~ (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_2 <- glmer(following_block_rest ~ following_block_num_centered + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_3 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_4 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + gameA_isSR + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_5 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + gameA_isSR + cue_type + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_6 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + gameA_isSR + cue_type + num_rest_in_chunk + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_7 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + gameA_isSR + cue_type + num_rest_in_chunk + following_cue_type + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+
+compare_performance(fit.rest_simple_1, fit.rest_simple_2, fit.rest_simple_3, fit.rest_simple_4, fit.rest_simple_5, fit.rest_simple_6, fit.rest_simple_7) # 6 is best
+
+summary(fit.rest_simple_6)
+#####
+
+fit.rest_simple_6 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + gameA_isSR + cue_type + num_rest_in_chunk + (1|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_8 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy + gameA_isSR + cue_type + num_rest_in_chunk + (1 + num_rest_in_chunk|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+fit.rest_simple_9 <- glmer(following_block_rest ~ following_block_num_centered + following_avg_accuracy*cue_type + gameA_isSR + num_rest_in_chunk + (1 + num_rest_in_chunk|subj_id),
+                           data = df_all_blockwise_q2,
+                           family = poisson)
+compare_performance(fit.rest_simple_6 ,fit.rest_simple_8, fit.rest_simple_9) # 8 is best; marginal 0.145 condition 0.85 # 9 is also good but more complex
+
+summary(fit.rest_simple_8)
+summary(fit.rest_simple_9)
+
+
+
+
+coef_data <- data.frame(
+  term = names(fixef(fit.rest_simple_9)),
+  estimate = fixef(fit.rest_simple_9),
+  se = sqrt(diag(vcov(fit.rest_simple_9)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se,
+    # Create readable labels
+    # Add significance markers
+    sig = case_when(
+      abs(estimate) > 1.96 * se ~ "*",
+      TRUE ~ ""
+    )
+  ) %>%
+  # Reorder factors for better visualization
+  mutate(term_clean = factor(term, levels = rev(term)))
+
+# Create the enhanced plot
+ggplot(coef_data, aes(x = estimate, y = term)) +
+  # Add shaded background for non-significant region
+  geom_rect(aes(xmin = -1.96 * min(se), xmax = 1.96 * min(se), 
+                ymin = -Inf, ymax = Inf),
+            fill = "gray90", alpha = 0.5) +
+  # Add vertical line at zero
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  # Add error bars
+  geom_errorbarh(aes(xmin = lower, xmax = upper), 
+                height = 0.3, 
+                color = "navy",
+                linewidth = 1) +
+  # Add points
+  geom_point(size = 4, color = "navy", fill = "white", shape = 21) +
+  # Add significance markers
+  geom_text(aes(x = upper + 0.15, label = sig), 
+            color = "navy", 
+            size = 8) +
+  # Customize labels and theme
+  labs(x = "Coefficient Estimate",
+       y = NULL,
+       title = "Effect of Performance and Task Switching on Future Rest",
+       subtitle = "Error bars show 95% confidence intervals\n* indicates significant effect") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 10)),
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  # Scale x axis to be symmetric and have nice breaks
+  scale_x_continuous(
+    limits = c(min(coef_data$lower) - 0.2, max(coef_data$upper) + 0.2),
+    breaks = scales::pretty_breaks(n = 6)
+  )
+```
+# QUESTION 3:
+3) Is task switching acted upon as rejuvenating? i.e. will rest time when cued that the next block will be a switch be less than when cued the next block will be a stay
+
+1. compare rest length between switches to rest length between stays
+	1. can use "switched" or "stayed" as a predictor (create this variable after isolating those blocks)
+
+**model idea**: Rest Time (rests taken in a given chunk) ~ time(block_num) + game_type + group_num(represents place in experiment) + gameA_isSR(which order the games were in) + told_theyd_switch + (1|subject)
+
+
+``` {r data_loading}
+# look at switch vs stay overall
+breaks <- c(-Inf, -1, 0, 1, Inf)
+labels <- c(' << avg',' < avg', ' > avg', ' >> avg')
+
+df_all_blockwise_q3 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(following_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scale_following_avg_accuracy = lead(scale_accuracy, default = NA),
+         scale_following_block_rest = lead(scale_rest)) %>%
+  ungroup()
+
+temp <- df_all_blockwise_q3 %>%
+  filter(block_num!=30) %>%
+  mutate(accuracy_bin_preceding = cut(scale_accuracy, breaks = breaks, labels = labels, right = FALSE)) %>%
+  ungroup() %>%
+  filter(!is.na(accuracy_bin_preceding), !is.na(scale_rest), !is.na(scale_following_block_rest))
+
+temp %>%
+  select(block_num, cue_type, scale_following_block_rest, accuracy_bin_preceding) %>%
+  distinct() %>%
+  filter(block_num != 30) %>%
+  ggplot(mapping = aes(x=cue_type, y=scale_following_block_rest)) +
+  facet_wrap(~accuracy_bin_preceding, ncol=4) +
+  theme_bw() +
+  theme(
+    panel.spacing.x = unit(2, "lines"),
+    strip.text = element_text(size = 14),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12)
+  ) +
+  geom_point(alpha=0.15, position = position_jitter(width=0.3, height=0), size = 0.4) +
+  stat_summary(fun.data = "mean_cl_boot",
+               geom = "pointrange",
+               color = "black",
+               fill = "light blue",
+               shape = 21,
+               size = 0.75) +
+  labs(x = "Did the task switch?",
+       y = "Scaled rest amount following this cue") +
+  ggtitle("Relationship between prior block performance, switch status, and rest time") +
+  ylim(0, 1.1)
+  
+
+```
+
+``` {r data_loading}
+# look at switch vs stay specifically when it's A to A vs A to B 
+
+```
+
+
+``` {r data_loading}
+
+```
+
+``` {r data_loading}
+
+```

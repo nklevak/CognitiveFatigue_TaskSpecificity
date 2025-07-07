@@ -1,0 +1,55 @@
+---
+title: "1_wrangling_HMM_data"
+output: html_document
+date: "2025-07-07"
+---
+Do data wrangling to create a dataset to feed into HMM fitting in step 2 *insert filename*. 
+
+This is using data from the Study2_SPR experiment (anonymized data located in ../data_anonymized/SPRmain)
+
+Format of data after this wrangling:
+
+84 subjects
+subject_data = {
+    '1': {
+        'accuracy': [0.8, 0.7, 0.9, ...],  # 30 values (one value per block)
+        'following_rest_duration': [2.1, 3.5, 1.8, ...],  # 30 values (one value per block)
+        'task_switch': [1 if switch, 0 if stay], # if this block was a product of a task switch
+        'block_number': [1,1,1, 2,2,2, 3,3,3, ..., 10,10,10],
+        'epoch_within_block': [1,2,3, 1,2,3, 1,2,3, ..., 1,2,3],
+        'overall_epoch': [1,2,3,4,5,6,7,8,9, ..., 28,29,30],
+        'game_type': ['A','A','A', 'B','B','B', ...],
+        'prev_rest_duration': [previous rest duration for each epoch]
+    },
+    # ... for all 84 subjects
+}
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+library(jsonlite)
+library(MASS, exclude = "select")
+library(performance)
+library(DHARMa)
+library(effects)
+library(rstatix, exclude="filter")  # For statistical tests
+library(ggpubr)
+library(patchwork)  # For combining plots
+library(broom.mixed)
+library(effects)
+library(emmeans)
+library(report)
+
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
