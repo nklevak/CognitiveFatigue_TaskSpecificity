@@ -12,18 +12,18 @@ Format of data after this wrangling:
 84 subjects
 subject_data = {
     '1': {
-        'accuracy': [0.8, 0.7, 0.9, ...],  # 30 values (one value per block)
-        'following_rest_duration': [2.1, 3.5, 1.8, ...],  # 30 values (one value per block)
-        'task_switch': [1 if switch, 0 if stay], # if this block was a product of a task switch
+        'epoch_accuracy': [0.8, 0.7, 0.9, ...],  # 30 values (one value per block)
+        'post_epoch_post_cue_rest_duration': [2.1, 3.5, 1.8, ...],  # 30 values (one value per block)
+        'rest_cue_type': ['switch' or 'stay'] # if the cue before the rest period was switch or stay (basically this is the same as epoch_follows_task_switch but one row up)
+        'epoch_follows_task_switch': [1 if switch, 0 if stay], # if this block was a product of a task switch (first row has to be NA because it was neither)
         'block_number': [1,1,1, 2,2,2, 3,3,3, ..., 10,10,10],
         'epoch_within_block': [1,2,3, 1,2,3, 1,2,3, ..., 1,2,3],
         'overall_epoch': [1,2,3,4,5,6,7,8,9, ..., 28,29,30],
         'game_type': ['A','A','A', 'B','B','B', ...],
-        'prev_rest_duration': [previous rest duration for each epoch]
+        'pre_epoch_rest_duration': [previous rest duration for each epoch] # first row has to be NA because there was no previous rest duration
     },
     # ... for all 84 subjects
 }
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -52,4 +52,162 @@ library(report)
 
 # set the default ggplot theme 
 theme_set(theme_classic())
+```
+
+
+# READ IN DATA (these are all post-exclusion files from both batches)
+``` {r data_loading}
+# exp vars
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+all_per_block <- 10
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+df_all <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv",stringsAsFactors = FALSE) %>%
+  select(-X)
+df_practice <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv",stringsAsFactors = FALSE)%>%
+  select(-X)
+df_survey <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv", stringsAsFactors = FALSE)%>%
+  select(-X)
+```
+
+``` {r data_loading}
+# get average per block per subject
+rest_info <- df_all %>%
+  group_by(subj_id) %>%
+  filter(!is.na(rest_chunk), !is.na(type_desc)) %>%
+  select(subj_id, block_num = rest_chunk, num_rest_in_chunk, rest_type = type_desc) %>%
+  distinct() %>%
+  ungroup() %>%
+  group_by(subj_id,block_num) %>%
+  slice(1)  # Take only the first row for each block
+
+# Then join with summary
+df_all_blockwise <- df_all %>%
+  ungroup() %>%
+  filter(trial_type != "rt_main_trials") %>%
+  group_by(subj_id, block_num) %>%
+  summarize(
+    avg_block_accuracy = mean(is_correct_numeric),
+    accuracy_sd = sd(is_correct_numeric),
+    avg_rt = mean(rt[!timed_out]),
+    rt_sd = sd(rt[!timed_out]),
+    group_num = first(group_num),
+    gameA_isSR = first(gameA_isSR),
+    game_type = first(game_type),
+    .groups = 'drop'
+  ) %>%
+  left_join(rest_info, by = c("subj_id","block_num"))%>%
+  mutate(cue_type = ifelse(rest_type == "block_same_same" | rest_type == "group_A_A" | rest_type == "group_B_B", "stay", "switch"))
+
+df_all_blockwise <- df_all_blockwise %>%
+  ungroup() %>%
+  group_by(subj_id) %>%
+  mutate(scale_rest = as.vector(scale(num_rest_in_chunk, center = TRUE, scale = TRUE)),
+         scale_accuracy = as.vector(scale(avg_block_accuracy, center = TRUE, scale = TRUE))) %>%
+  ungroup()
+
+# just a check to make sure it has all non-excluded participants (84)
+df_all_blockwise %>%
+  select(subj_id) %>%
+  distinct()
+```
+
+
+``` {r data_loading}
+df_all_blockwise_HMM <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(post_cue_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scaled_post_cue_avg_accuracy = lead(scale_accuracy, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default=NA),
+         scaled_following_block_rest = lead(scale_rest, default = NA)) %>%
+  ungroup()
+```
+
+# wrangle data so that it's read for the first run of the heirarchical HMM file
+
+Format of data after this wrangling:
+
+84 subjects
+subject_data = {
+    '1': {
+        'epoch_accuracy': [0.8, 0.7, 0.9, ...],  # 30 values (one value per block)
+        'post_epoch_post_cue_rest_duration': [2.1, 3.5, 1.8, ...],  # 30 values (one value per block)
+        'rest_cue_type': ['switch' or 'stay'] # if the cue before the rest period was switch or stay (basically this is the same as epoch_follows_task_switch but one row up)
+        'epoch_follows_task_switch': [1 if switch, 0 if stay], # if this block was a product of a task switch (first row has to be NA because it was neither)
+        'block_number': [1,1,1, 2,2,2, 3,3,3, ..., 10,10,10],
+        'epoch_within_block': [1,2,3, 1,2,3, 1,2,3, ..., 1,2,3],
+        'overall_epoch': [1,2,3,4,5,6,7,8,9, ..., 28,29,30],
+        'game_type': ['A','A','A', 'B','B','B', ...],
+        'pre_epoch_rest_duration': [previous rest duration for each epoch] # first row has to be NA because there was no previous rest duration
+    },
+    # ... for all 84 subjects
+}
+
+``` {r data_HMM_wrangling}
+df_all_blockwise_HMM_all <- df_all_blockwise_HMM %>%
+  group_by(subj_id) %>%  # Group by subject to ensure lag works within each subject
+  mutate(overall_epoch = block_num,
+         epoch_accuracy = avg_block_accuracy,
+         post_epoch_post_cue_rest_duration = num_rest_in_chunk,
+         rest_cue_type = ifelse(cue_type == "switch", 1, 0),
+         epoch_follows_task_switch = ifelse(lag(cue_type) == "switch", 1, 0), # takes the previous epoch's cue_type per subj
+         block_number = ceiling(overall_epoch / 3),
+         epoch_within_block =  ((overall_epoch - 1) %% 3) + 1,
+         pre_epoch_rest_duration = lag(post_epoch_post_cue_rest_duration)) %>% # takes previous row's rest duration
+  ungroup() %>%
+  select(subj_id, overall_epoch, epoch_accuracy, post_epoch_post_cue_rest_duration, rest_cue_type, 
+         epoch_follows_task_switch, block_number, epoch_within_block, game_type, pre_epoch_rest_duration) %>%
+  arrange(subj_id, overall_epoch)
+```
+
+## save to json file
+
+``` {r data_saving}
+# Convert to nested list structure
+subject_data <- df_all_blockwise_HMM_all %>%
+  group_by(subj_id) %>%
+  summarise(
+    epoch_accuracy = list(epoch_accuracy),
+    post_epoch_post_cue_rest_duration = list(post_epoch_post_cue_rest_duration),
+    rest_cue_type = list(ifelse(rest_cue_type == 1, "switch", "stay")),
+    epoch_follows_task_switch = list(epoch_follows_task_switch),
+    block_number = list(block_number),
+    epoch_within_block = list(epoch_within_block),
+    overall_epoch = list(overall_epoch),
+    game_type = list(game_type),
+    pre_epoch_rest_duration = list(pre_epoch_rest_duration),
+    .groups = 'drop'
+  ) %>%
+  # Convert to named list with subject IDs as keys
+  {
+    result <- list()
+    for(i in 1:nrow(.)) {
+      subj_id <- as.character(.$subj_id[i])
+      result[[subj_id]] <- list(
+        epoch_accuracy = .$epoch_accuracy[[i]],
+        post_epoch_post_cue_rest_duration = .$post_epoch_post_cue_rest_duration[[i]],
+        rest_cue_type = .$rest_cue_type[[i]],
+        epoch_follows_task_switch = .$epoch_follows_task_switch[[i]],
+        block_number = .$block_number[[i]],
+        epoch_within_block = .$epoch_within_block[[i]],
+        overall_epoch = .$overall_epoch[[i]],
+        game_type = .$game_type[[i]],
+        pre_epoch_rest_duration = .$pre_epoch_rest_duration[[i]]
+      )
+    }
+    result
+  }
+```
+
+``` {r data_saving}
+# Save as JSON file
+write_json(subject_data, "subject_data_for_HMM.json", pretty = TRUE)
 ```
