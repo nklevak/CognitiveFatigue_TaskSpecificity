@@ -5,7 +5,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "nklevak", email = "nastasia.k1214@gmail.com"},
 ]
-dependencies = ["jupyter>=1.1.1", "ipykernel>=6.29.5", "pandas>=2.3.1", "matplotlib>=3.9.4", "scikit-learn>=1.6.1", "arviz>=0.17.1", "numpy<2.0,>=1.21", "scipy<1.11.0,>=1.9.0", "pymc>=5.12.0"]
+dependencies = ["jupyter>=1.1.1", "ipykernel>=6.29.5", "pandas>=2.3.1", "matplotlib>=3.9.4", "scikit-learn>=1.6.1", "arviz>=0.17.1", "numpy>=1.26.4", "scipy>=1.10.1", "pymc>=5.12.0", "pytensor>=2.19.0"]
 requires-python = "==3.9.*"
 readme = "README.md"
 license = {text = "MIT"}
