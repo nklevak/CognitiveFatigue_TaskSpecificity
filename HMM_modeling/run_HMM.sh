@@ -6,7 +6,7 @@
 #SBATCH --mem=12G
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH --array=0-$(($(wc -l < HMM_modeling/subject_ids.txt)-1))
+#SBATCH --array=0-83
 
 # Activate your environment
 source ~/.bashrc
