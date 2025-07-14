@@ -24,4 +24,4 @@ fi
 echo "Processing subject: $SUBJECT_ID"
 
 # Run the script for the current subject ID
-python HMM_modeling/fit_nonhierarchical_HMM.py --subject_id $SUBJECT_ID
+python HMM_modeling/fit_nonheirarchical_HMM.py --subject_id $SUBJECT_ID
