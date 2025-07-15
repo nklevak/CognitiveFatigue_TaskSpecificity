@@ -23,7 +23,7 @@ def fit_subject(subject_id, subject_data, n_states=2, n_samples=100, n_tune=500,
         class HMMCustomDist(pm.CustomDist):
             @staticmethod
             def dist(size, value, game, time, base_mu, beta_game, beta_time, sigma, pi, A):
-                return pt.zeros_like(value)
+                return pt.zeros(value.shape)
             @staticmethod
             def logp(size, value, game, time, base_mu, beta_game, beta_time, sigma, pi, A):
                 mu = (base_mu[None, :, :] +
@@ -57,7 +57,7 @@ def fit_subject(subject_id, subject_data, n_states=2, n_samples=100, n_tune=500,
             dist=HMMCustomDist.dist,
             logp=HMMCustomDist.logp,
             observed=obs,
-            ndim_supp=0,
+            ndim_supp=2,
             shape=obs.shape
         )
 
@@ -77,8 +77,8 @@ if __name__ == "__main__":
 
     # logging info to make sure data is all there
     print(f"Available subjects: {list(subject_data.keys())}")
-    print(f"Requested subject: {subject_id}")
-    if subject_id not in subject_data:
-        raise ValueError(f"Subject {subject_id} not found in data!")
+    print(f"Requested subject: {args.subject_id}")
+    if args.subject_id not in subject_data:
+        raise ValueError(f"Subject {args.subject_id} not found in data!")
 
     fit_subject(args.subject_id, subject_data)

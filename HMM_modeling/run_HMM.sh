@@ -20,7 +20,7 @@ export PYTENSOR_COMPILEDIR="/tmp/pytensor_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}
 mkdir -p $PYTENSOR_COMPILEDIR
 
 # Install dependencies if needed  
-/home/users/nklevak/miniconda3/bin/python -m pdm install
+/home/users/nklevak/miniconda3/bin/python -m pdm install -v
 
 # Activate PDM environment
 eval "$(/home/users/nklevak/miniconda3/bin/python -m pdm venv activate)"
