@@ -6,22 +6,32 @@
 #SBATCH --mem=12G
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH --array=0-83
+#SBATCH --array=0-2
 
-# Activate your environment
-source ~/.bashrc
-eval "$(pdm venv activate)"
+# Create logs directory
+mkdir -p HMM_modeling/logs
 
-# Get the subject ID for this task
+# Force PyTensor to use Python-only mode (no C compilation)
+export PYTENSOR_FLAGS="device=cpu,floatX=float64,optimizer=fast_compile,cxx="
+export OMP_NUM_THREADS=1
+
+# Use job-specific temp directory for any remaining cache
+export PYTENSOR_COMPILEDIR="/tmp/pytensor_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}"
+mkdir -p $PYTENSOR_COMPILEDIR
+
+# Install dependencies if needed  
+/home/users/nklevak/miniconda3/bin/python -m pdm install
+
+# Activate PDM environment
+eval "$(/home/users/nklevak/miniconda3/bin/python -m pdm venv activate)"
+
+# Get subject ID and run
 SUBJECT_ID=$(sed -n "$((SLURM_ARRAY_TASK_ID+1))p" HMM_modeling/subject_ids.txt)
 
-# Check if subject ID was found
-if [[ -z "$SUBJECT_ID" ]]; then
-    echo "Error: Could not get subject ID for task $SLURM_ARRAY_TASK_ID"
-    exit 1
-fi
-
 echo "Processing subject: $SUBJECT_ID"
+echo "PyTensor flags: $PYTENSOR_FLAGS"
 
-# Run the script for the current subject ID
 python HMM_modeling/fit_nonheirarchical_HMM.py --subject_id $SUBJECT_ID
+
+# Clean up temp directory
+rm -rf $PYTENSOR_COMPILEDIR

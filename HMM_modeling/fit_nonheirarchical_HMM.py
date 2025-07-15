@@ -56,8 +56,9 @@ def fit_subject(subject_id, subject_data, n_states=2, n_samples=100, n_tune=500,
             A,
             dist=HMMCustomDist.dist,
             logp=HMMCustomDist.logp,
+            observed=obs,
             ndim_supp=0,
-            shape=()
+            shape=obs.shape
         )
 
         trace = pm.sample(n_samples, tune=n_tune, target_accept=0.95, progressbar=False)
@@ -73,4 +74,11 @@ if __name__ == "__main__":
 
     with open(args.data, "r") as f:
         subject_data = json.load(f)
+
+    # logging info to make sure data is all there
+    print(f"Available subjects: {list(subject_data.keys())}")
+    print(f"Requested subject: {subject_id}")
+    if subject_id not in subject_data:
+        raise ValueError(f"Subject {subject_id} not found in data!")
+
     fit_subject(args.subject_id, subject_data)
