@@ -6,46 +6,68 @@ import pytensor.tensor as pt
 from pytensor.scan.basic import scan
 import os
 
-def fit_subject(subject_id, subject_data, n_states=2, n_samples=100, n_tune=500, outdir="HMM_modeling/results"):
+def fit_subject(subject_id, subject_data, n_samples=100, n_tune=500, outdir="HMM_modeling/results"):
     subj = subject_data[subject_id]
     obs = np.column_stack((subj['epoch_accuracy'], subj['post_epoch_post_cue_rest_duration']))
     game = np.array([0 if g == 'digit_span' else 1 for g in subj['game_type']])
     time = np.array(subj['overall_epoch'])
 
     with pm.Model() as model:
+        n_states = 2
+        
         base_mu = pm.Normal('base_mu', mu=0, sigma=1, shape=(n_states, 2))
         beta_game = pm.Normal('beta_game', mu=0, sigma=1, shape=(n_states, 2))
         beta_time = pm.Normal('beta_time', mu=0, sigma=1, shape=(n_states, 2))
         sigma = pm.HalfNormal('sigma', sigma=1, shape=(n_states, 2))
-        pi = pm.Dirichlet('pi', a=np.ones(n_states))
-        A = pm.Dirichlet('A', a=np.ones((n_states, n_states)), shape=(n_states, n_states))
+        
+        # Use Normal + softmax
+        pi_logits = pm.Normal('pi_logits', mu=0, sigma=1, shape=n_states)
+        pi = pm.math.softmax(pi_logits)
+        
+        A_logits = pm.Normal('A_logits', mu=0, sigma=1, shape=(n_states, n_states))
+        A = pm.math.softmax(A_logits, axis=1)
 
         class HMMCustomDist(pm.CustomDist):
             @staticmethod
-            def dist(size, value, game, time, base_mu, beta_game, beta_time, sigma, pi, A):
-                return pt.zeros(value.shape)
+            def dist(game, time, base_mu, beta_game, beta_time, sigma, pi, A, size=None):
+                return pt.zeros((game.shape[0], 2))
+                
             @staticmethod
-            def logp(size, value, game, time, base_mu, beta_game, beta_time, sigma, pi, A):
+            def logp(value, game, time, base_mu, beta_game, beta_time, sigma, pi, A):
+                
+                n_states = 2
+                
                 mu = (base_mu[None, :, :] +
                       beta_game[None, :, :] * game[:, None, None] +
                       beta_time[None, :, :] * time[:, None, None])
+                
+                # Compute emission probabilities
                 logp_states = []
-                for k in range(n_states):
+                for k in range(n_states):  # Now this works since n_states = 2
                     logp_acc = pm.logp(pm.Normal.dist(mu=mu[:, k, 0], sigma=sigma[k, 0]), value[:, 0])
                     logp_rest = pm.logp(pm.Normal.dist(mu=mu[:, k, 1], sigma=sigma[k, 1]), value[:, 1])
                     logp_states.append(logp_acc + logp_rest)
+                
                 logp_states = pt.stack(logp_states, axis=1)
+                
+                # Forward algorithm
                 def scan_fn(logp_t, prev_alpha):
-                    alpha = pt.logsumexp(prev_alpha + pt.log(A), axis=1) + logp_t
+                    alpha = pt.logsumexp(prev_alpha[:, None] + pt.log(A), axis=0) + logp_t
                     return alpha
+                
                 alpha_0 = pt.log(pi) + logp_states[0]
                 alphas, _ = scan(fn=scan_fn, sequences=logp_states[1:], outputs_info=alpha_0)
-                logp = pt.logsumexp(alphas[-1])
-                return logp
+                
+                final_logp = pt.switch(
+                    pt.gt(logp_states.shape[0], 1),
+                    pt.logsumexp(alphas[-1]),
+                    pt.logsumexp(alpha_0)
+                )
+                
+                return final_logp
 
         obs_i = pm.CustomDist(
             f'obs_{subject_id}',
-            obs,
             game,
             time,
             base_mu,
