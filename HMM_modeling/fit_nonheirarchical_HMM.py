@@ -13,7 +13,7 @@ def fit_subject(subject_id, subject_data, n_samples=100, n_tune=500, outdir="HMM
     time = np.array(subj['overall_epoch'])
 
     with pm.Model() as model:
-        n_states = 2
+        n_states = 3
         
         base_mu = pm.Normal('base_mu', mu=0, sigma=1, shape=(n_states, 2))
         beta_game = pm.Normal('beta_game', mu=0, sigma=1, shape=(n_states, 2))
@@ -35,7 +35,7 @@ def fit_subject(subject_id, subject_data, n_samples=100, n_tune=500, outdir="HMM
             @staticmethod
             def logp(value, game, time, base_mu, beta_game, beta_time, sigma, pi, A):
                 
-                n_states = 2
+                n_states = 3
                 
                 mu = (base_mu[None, :, :] +
                       beta_game[None, :, :] * game[:, None, None] +
@@ -90,7 +90,7 @@ def fit_subject(subject_id, subject_data, n_samples=100, n_tune=500, outdir="HMM
             shape=obs.shape
         )
 
-        trace = pm.sample(n_samples, tune=n_tune, target_accept=0.95, progressbar=False)
+        trace = pm.sample(n_samples, tune=n_tune,init='adapt_diag', target_accept=0.95, progressbar=False)#added better intitialization sampling
         # Save trace
         os.makedirs(outdir, exist_ok=True)
         trace.to_netcdf(os.path.join(outdir, f"trace_subject_{subject_id}.nc"))
@@ -111,4 +111,4 @@ if __name__ == "__main__":
         raise ValueError(f"Subject {args.subject_id} not found in data!")
 
     # altering num samples and num tuning
-    fit_subject(args.subject_id, subject_data,n_samples=2000, n_tune=2000, outdir="HMM_modeling/results_n2000_t2000")
+    fit_subject(args.subject_id, subject_data,n_samples=2000, n_tune=2000, outdir="HMM_modeling/results_3state_n2000_t2000")
