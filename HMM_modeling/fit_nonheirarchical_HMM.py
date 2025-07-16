@@ -51,11 +51,18 @@ def fit_subject(subject_id, subject_data, n_samples=100, n_tune=500, outdir="HMM
                 logp_states = pt.stack(logp_states, axis=1)
                 
                 # Forward algorithm
+                # def scan_fn(logp_t, prev_alpha):
+                #     alpha = pt.logsumexp(prev_alpha[:, None] + pt.log(A), axis=0) + logp_t
+                #     return alpha
+                # alpha_0 = pt.log(pi) + logp_states[0]
+
                 def scan_fn(logp_t, prev_alpha):
-                    alpha = pt.logsumexp(prev_alpha[:, None] + pt.log(A), axis=0) + logp_t
+                    alpha = pt.logsumexp(prev_alpha[:, None] + pt.log(A + 1e-8), axis=0) + logp_t
                     return alpha
+                alpha_0 = pt.log(pi + 1e-8) + logp_states[0]
+
+
                 
-                alpha_0 = pt.log(pi) + logp_states[0]
                 alphas, _ = scan(fn=scan_fn, sequences=logp_states[1:], outputs_info=alpha_0)
                 
                 final_logp = pt.switch(
@@ -103,4 +110,5 @@ if __name__ == "__main__":
     if args.subject_id not in subject_data:
         raise ValueError(f"Subject {args.subject_id} not found in data!")
 
-    fit_subject(args.subject_id, subject_data)
+    # altering num samples and num tuning
+    fit_subject(args.subject_id, subject_data,n_samples=2000, n_tune=2000, outdir="HMM_modeling/results_n2000_t2000")
