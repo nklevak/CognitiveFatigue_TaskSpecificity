@@ -22,7 +22,7 @@ echo "  Job ID: $SLURM_JOB_ID"
 mkdir -p HMM_modeling/logs
 
 # Force PyTensor to use Python-only mode (no C compilation)
-export PYTENSOR_FLAGS="device=cpu,floatX=float64,optimizer=fast_compile,cxx="
+export PYTENSOR_FLAGS="device=cpu,floatX=float64,optimizer=None,cxx=,exception_verbosity=high"
 export OMP_NUM_THREADS=1
 
 # Use job-specific temp directory for any remaining cache

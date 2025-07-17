@@ -63,6 +63,12 @@ def fit_pooled_model(subject_data, n_samples=100, n_tune=500, n_states=2, outdir
     with pm.Model() as model:
         # these parameters are shared across all subjects
         # Use smaller prior variances for better numerical stability
+
+        # base_mu = pm.Normal('base_mu',
+        #                     mu=[[0.2, 0.9], [-0.2, -0.1]],# based off of simple HMMlearn model
+        #                     sigma=0.3,
+        #                     shape=(n_states, 2))        
+        
         base_mu = pm.Normal('base_mu', mu=0, sigma=0.5, shape=(n_states, 2))
         beta_game = pm.Normal('beta_game', mu=0, sigma=0.5, shape=(n_states, 2))
         beta_time = pm.Normal('beta_time', mu=0, sigma=0.5, shape=(n_states, 2))
@@ -183,8 +189,8 @@ def fit_pooled_model(subject_data, n_samples=100, n_tune=500, n_states=2, outdir
         try:
             print("Attempting to sample...")
             trace = pm.sample(n_samples, tune=n_tune, init='jitter+adapt_diag', 
-                            target_accept=0.90, max_treedepth=10, progressbar=True,
-                            return_inferencedata=True)
+                 target_accept=0.90, nuts={"max_treedepth": 10}, 
+                 progressbar=True, return_inferencedata=True)
             print("Sampling completed successfully!")
         except Exception as e:
             print(f"Sampling failed with error: {e}")
