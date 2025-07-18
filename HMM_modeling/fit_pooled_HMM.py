@@ -64,12 +64,12 @@ def fit_pooled_model(subject_data, n_samples=100, n_tune=500, n_states=2, outdir
         # these parameters are shared across all subjects
         # Use smaller prior variances for better numerical stability
 
-        # base_mu = pm.Normal('base_mu',
-        #                     mu=[[0.2, 0.9], [-0.2, -0.1]],# based off of simple HMMlearn model
-        #                     sigma=0.3,
-        #                     shape=(n_states, 2))        
+        base_mu = pm.Normal('base_mu',
+                            mu=[[0.2, 0.9], [-0.2, -0.1]],# based off of simple HMMlearn model
+                            sigma=0.3,
+                            shape=(n_states, 2))        
         
-        base_mu = pm.Normal('base_mu', mu=0, sigma=0.5, shape=(n_states, 2))
+        # base_mu = pm.Normal('base_mu', mu=0, sigma=0.5, shape=(n_states, 2))
         beta_game = pm.Normal('beta_game', mu=0, sigma=0.5, shape=(n_states, 2))
         beta_time = pm.Normal('beta_time', mu=0, sigma=0.5, shape=(n_states, 2))
         sigma = pm.HalfNormal('sigma', sigma=0.5, shape=(n_states, 2))
