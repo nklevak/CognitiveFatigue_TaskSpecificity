@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# OLD: was used as an initial test run
+
 # THIS CODE: uses HMMlearn to run a nonheirarchical HMM fit to each subject individually (seeing if my pymc interpretation was just wrong so far, or if the data structure has issues). Also using this to get better estimates for the initial params (to then feed into my pymc model).
 
 import numpy as np
