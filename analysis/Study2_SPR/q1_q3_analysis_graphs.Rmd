@@ -161,7 +161,7 @@ summary(fit.mixed_3)
 # same effects as in mixed 3 but also group number is sig negative predictor (as group gets larger they rest less than before)
 fit.mixed_4 <- glmer(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + (1|subj_id),
                            data = model_data,
-                           family = poisson) 
+                           family = poisson)
 summary(fit.mixed_4)
 
 # same as before ^ 
@@ -259,7 +259,6 @@ report(fit.mixed_5_nb)
 ```
 ``` {r}
 # USING THIS FOR CCN
-# negative binomial didn't converge here so using loess
 ggplot(model_data, aes(x = avg_block_accuracy, 
                        y = num_rest_in_chunk,
                        color = cue_type)) +
@@ -269,10 +268,10 @@ ggplot(model_data, aes(x = avg_block_accuracy,
   geom_smooth(method = "loess", span = 0.9,
               linewidth = 1.5) +
   # Labels and theme
-  labs(x = "Average Block Accuracy", 
+  labs(x = "Average Epoch Accuracy", 
        y = "Subsequent Rest Duration",
        color = "Game Switch Type") +
-  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+  scale_color_manual(values = c("#0072B2", "#E99746"), 
                     labels = c("Told game would remain the same", "Told game would switch")) +
   ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
           "Loess smoothed trend lines on raw participant data") +
@@ -322,10 +321,10 @@ ggplot() +
             aes(x = bin_center, y = mean_rest, color = cue_type, group = cue_type),
             linewidth = 1) +
   # Labels and theme
-  labs(x = "Average Block Accuracy", 
+  labs(x = "Average Epoch Accuracy", 
        y = "Subsequent Rest Duration",
        color = "Game Switch Type") +
-  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+  scale_color_manual(values = c("#0097DF", "#E99746"), 
                     labels = c("Told game would remain the same", "Told game would switch")) +
   ggtitle("Anticipating a task switch increases rest duration after low-efficacy performance", 
           "Binned averages results") +
@@ -349,24 +348,80 @@ ggplot(model_data, aes(x = avg_block_accuracy,
   labs(x = "Average Epoch Accuracy", 
        y = "Subsequent Rest Duration",
        color = "Game Switch Type") +
-  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+  scale_color_manual(values = c("#0097DF", "#E99746"), 
                     labels = c("Told game would remain the same", "Told game would switch")) +
   ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
-          "Loess smoothed trend lines on raw participant data") +
+          "Loess smoothed trend lines on raw participant data; Significant interaction effect in negative \nbinomial mixed-effects model.") +
   theme_minimal() +
   theme(legend.position = "bottom",
-        plot.title = element_text(face = "bold", size = 16),
-        plot.subtitle = element_text(size = 14),
-        legend.title = element_text(face = "bold", size = 14),
+        plot.title = element_text(size = 16),
+        plot.subtitle = element_text(size = 12),
+        legend.title = element_text(size = 14),
         legend.text = element_text(size = 12),
         text = element_text(family = "Arial", size = 12),
-        axis.title = element_text(face = "bold", size = 14),
+        axis.title = element_text(size = 14),
         axis.text = element_text(size = 12),
         panel.background = element_rect(fill = "white", color = NA),
         plot.background = element_rect(fill = "white", color = NA))
 
-# Save the plot to a PNG file with higher resolution
-ggsave("1a_big.png", width = 10, height = 8.5, dpi = 300)
+# # Save the plot to a PNG file with higher resolution
+# ggsave("1a_big.png", width = 10, height = 8.5, dpi = 300)
+```
+``` {r}
+# Create binned data for modeling (using categorical bins like the original)
+model_data_binned <- model_data %>%
+  mutate(acc_category = cut(avg_block_accuracy, 
+                           breaks = c(-Inf, 0.25, 0.5, 0.75, Inf),
+                           labels = c("Very Low", "Low", "Medium", "High"))) %>%
+  filter(!is.na(acc_category), !is.na(num_rest_in_chunk))
+
+# Fit mixed-effects model for rest duration but replace block accuracy with acc_category
+# fit.model_5_nb 
+mixed_model_rest <- glmer.nb(num_rest_in_chunk ~ group_num + acc_category*cue_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data_binned)
+
+emm_rest <- emmeans(mixed_model_rest, ~ cue_type | acc_category)
+
+# Get the simple pairwise comparisons within each accuracy category
+simple_contrasts <- pairs(emm_rest)
+print("Simple contrasts (effect of cue type within each accuracy category):")
+print(simple_contrasts)
+
+# For the interaction contrasts, we need to test whether the switch-stay difference
+# differs between accuracy categories
+# First, create an object that represents the switch-stay difference at each accuracy level
+switch_vs_stay <- list(diff = c(-1, 1))  # contrast coefficients for switch minus stay
+diff_by_acc <- emmeans(mixed_model_rest, ~ cue_type | acc_category, contr = switch_vs_stay)
+print("Switch minus Stay effect for each accuracy category:")
+print(diff_by_acc$contrasts)
+
+# Now test whether these differences differ between accuracy categories
+# Compare each accuracy category to the others
+interaction_contrasts <- pairs(diff_by_acc)
+print("Interaction contrasts (comparing the switch effect between accuracy categories):")
+print(interaction_contrasts)
+
+# Visualize the interaction effect (the "difference of differences")
+# Extract the switch-stay differences
+diff_data <- as.data.frame(diff_by_acc$contrasts)
+diff_data$acc_category <- as.factor(diff_data$acc_category)
+
+# Plot the switch-stay difference by accuracy category
+ggplot(diff_data, aes(x = acc_category, y = estimate)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = estimate - SE, ymax = estimate + SE), width = 0.2) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "darkgray") +
+  labs(x = "Average Epoch Accuracy",
+       y = "Switch Effect (Switch - Stay)",
+       title = "Difference in Rest Duration Between Switch and Stay Conditions",
+       subtitle = "Positive values indicate longer rest after switch cues") +
+  theme_classic() +
+  theme(
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12, face = "bold"),
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(size = 11)
+  )
 ```
 
 # JOINT PLOTS
@@ -702,6 +757,28 @@ df_all_blockwise %>%
     plot.title = element_text(size = 16),
     legend.title = element_text(size = 12),
     legend.text = element_text(size = 10)
+  )
+
+
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(size = 0.5, position = position_jitter(0.05,0.05)) +
+  # scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following Rest Trials Taken",
+       color = "Epoch Number") +
+  ggtitle("Lower efficacy epochs are associated with longer rests", "Fixed effects plot; same relationship trend found in logistic mixed effects model") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16)
   )
 ```
 

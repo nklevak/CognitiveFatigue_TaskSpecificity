@@ -727,10 +727,10 @@ ggplot(df_all_blockwise_q2_binned_data, aes(x = acc_category, y = post_cue_avg_a
   geom_text(data = sig_annotations, 
             aes(x = acc_category, y = max_y, label = sig_symbol),
             inherit.aes = FALSE, size = 5) +
-  scale_color_manual(values = c("black", "#E69F00"),
+  scale_color_manual(values = c("#0097DF", "#E99746"),
                     labels = c("Stay", "Switch")) +
-  labs(x = "Average Previous Block Accuracy",
-       y = "Average Following Block Accuracy",
+  labs(x = "Average Previous Epoch Accuracy",
+       y = "Average Following Epoch Accuracy",
        color = "Trial Type") +
   scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
   theme_classic() +
@@ -742,8 +742,7 @@ ggplot(df_all_blockwise_q2_binned_data, aes(x = acc_category, y = post_cue_avg_a
     legend.text = element_text(size = 10)
   ) +
   ggtitle("Switching tasks improves performance after low-efficacy epochs", 
-          "Mixed-effects model results")
-
+          "Significance is based on the logistic mixed effects model results")
 ```
 
 
