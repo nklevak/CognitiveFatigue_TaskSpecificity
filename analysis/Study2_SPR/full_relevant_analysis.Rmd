@@ -1,0 +1,1475 @@
+---
+title: "full_relevant_analysis"
+output: html_document
+date: "2025-08-19"
+---
+
+q1_q3_analysis_graphs.Rmd and q2_analysis_graphs.Rmd but with only the most relevant code/plotting.
+
+POST EXCLUSION: 84
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+library(jsonlite)
+library(MASS, exclude = "select")
+library(performance)
+library(DHARMa)
+library(effects)
+library(rstatix, exclude="filter")  # For statistical tests
+library(ggpubr)
+library(patchwork)  # For combining plots
+library(report)
+library(broom.mixed)
+
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+# QUESTIONS:
+1) Is there a post-error increase in fatigue? i.e. is accuracy a significant negative estimator for subsequent rest time?
+2) When does task switching reduce fatigue, if ever? i.e. how does performance differ in the block following a switch vs a non-switch, and how long is the subsequent self-paced rest (in comparison)
+3) Is task switching acted upon as rejuvenating? i.e. will rest time when cued that the next block will be a switch be less than when cued the next block will be a stay
+
+# READ IN DATA (these are all post-exclusion files from both batches)
+``` {r data_loading}
+# exp vars
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+all_per_block <- 10
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+df_all <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv",stringsAsFactors = FALSE) %>%
+  select(-X)
+df_practice <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv",stringsAsFactors = FALSE)%>%
+  select(-X)
+df_survey <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv", stringsAsFactors = FALSE)%>%
+  select(-X)
+```
+
+# Q1 and Q3
+
+``` {r data_loading}
+# get average per block per subject
+rest_info <- df_all %>%
+  group_by(subj_id) %>%
+  filter(!is.na(rest_chunk), !is.na(type_desc)) %>%
+  select(subj_id, block_num = rest_chunk, num_rest_in_chunk, rest_type = type_desc) %>%
+  distinct() %>%
+  ungroup() %>%
+  group_by(subj_id,block_num) %>%
+  slice(1)  # Take only the first row for each block
+
+# Then join with summary
+df_all_blockwise <- df_all %>%
+  ungroup() %>%
+  filter(trial_type != "rt_main_trials") %>%
+  group_by(subj_id, block_num) %>%
+  summarize(
+    avg_block_accuracy = mean(is_correct_numeric),
+    accuracy_sd = sd(is_correct_numeric),
+    avg_rt = mean(rt[!timed_out]),
+    rt_sd = sd(rt[!timed_out]),
+    group_num = first(group_num),
+    gameA_isSR = first(gameA_isSR),
+    game_type = first(game_type),
+    .groups = 'drop'
+  ) %>%
+  left_join(rest_info, by = c("subj_id","block_num"))%>%
+  mutate(cue_type = ifelse(rest_type == "block_same_same" | rest_type == "group_A_A" | rest_type == "group_B_B", "stay", "switch"))
+
+df_all_blockwise <- df_all_blockwise %>%
+  ungroup() %>%
+  group_by(subj_id) %>%
+  mutate(scale_rest = as.vector(scale(num_rest_in_chunk, center = TRUE, scale = TRUE)),
+         scale_accuracy = as.vector(scale(avg_block_accuracy, center = TRUE, scale = TRUE))) %>%
+  ungroup()
+
+# just a check to make sure it has all non-excluded participants (84)
+df_all_blockwise %>%
+  select(subj_id) %>%
+  distinct()
+```
+
+Negative binomial mixed effects models:
+``` {r rest_cue_mixed_models_negbin}
+model_data <- df_all_blockwise
+
+# Model 1: avg_block_accuracy is a sig. neg predictor 
+fit.mixed_1_nb <- glmer.nb(num_rest_in_chunk ~ avg_block_accuracy + cue_type + (1|subj_id),
+                          data = model_data)
+
+# Model 2: avg_block_accuracy is a sig neg predictor
+fit.mixed_2_nb <- glmer.nb(num_rest_in_chunk ~ avg_block_accuracy + cue_type + gameA_isSR + (1|subj_id),
+                          data = model_data)
+
+# Model 3:avg_block_accuracy:cue_typeswitch is now significantly negative (when you do better and switch, you end up resting less than when you do worse and switch)
+fit.mixed_3_nb <- glmer.nb(num_rest_in_chunk ~ avg_block_accuracy*cue_type + gameA_isSR + (1|subj_id),
+                          data = model_data)
+
+# Model 4: same as 3, also group_num is sig neg estimator (as time goes on you rest less)? maybe bc of costliness?
+fit.mixed_4_nb <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + (1|subj_id),
+                          data = model_data)
+
+# Model 5: same as before but also spatial recall is a sig. neg predictor (if it was spatial recall you rest less)
+fit.mixed_5_nb <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data)
+
+# Compare models
+compare_performance(fit.mixed_1_nb, fit.mixed_2_nb, fit.mixed_3_nb, fit.mixed_4_nb, fit.mixed_5_nb) # 5 is the best; r2 marg like 0.18
+
+check_model(fit.mixed_5_nb)
+summary(fit.mixed_5_nb) # 5 looks pretty good; better than poisson (improved overdispersion); later try to also include a preference variable (i.e. control for if participants pref sr or ds); and also try to include a variable for if they read the cues or not
+
+fit.mixed_6_nb <- glmer.nb(num_rest_in_chunk ~ group_num + rest_type + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data)
+summary(fit.mixed_6_nb) # adding rest type didn't really make a big difference; worse model than 5
+
+compare_performance(fit.mixed_5_nb, fit.mixed_6_nb)
+
+best_model_q1q3 <- fit.mixed_5_nb
+```
+
+``` {r best_model_report}
+report(best_model_q1q3)
+```
+
+
+``` {r}
+coef_data <- data.frame(
+  term = names(fixef(best_model_q1q3)),
+  estimate = fixef(best_model_q1q3),
+  se = sqrt(diag(vcov(best_model_q1q3)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se,
+    # Create readable labels
+    term_clean = case_when(
+      term == "avg_block_accuracy" ~ "Avg Prior Block Accuracy",
+      term == "gameA_isSRTRUE" ~ "Game A = SR",
+      term == "game_typespatial_recall" ~ "Curr Game is SR",
+      term == "cue_typeswitch" ~ "Cued to Switch",
+      term == "avg_block_accuracy:cue_typeswitch" ~ "Prior Accuracy X Switch Cue",
+      term == "(Intercept)" ~ "Intercept",
+      TRUE ~ term  # Keep original if no match
+    ),
+    # Add significance markers
+    sig = case_when(
+      abs(estimate) > 1.96 * se ~ "*",
+      TRUE ~ ""
+    )
+  ) %>%
+  # Reorder factors
+  mutate(term_clean = factor(term_clean, levels = rev(term_clean)))
+
+# Create the plot
+ggplot(coef_data, aes(x = estimate, y = term_clean)) +
+  # Add vertical line at zero
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  # Add error bars
+  geom_errorbarh(aes(xmin = lower, xmax = upper), 
+                height = 0.3, 
+                color = "navy",
+                linewidth = 1) +
+  # Add points
+  geom_point(size = 4, color = "navy", fill = "white", shape = 21) +
+  # Add significance markers
+  geom_text(aes(x = upper + 0.15, label = sig), 
+            color = "navy", 
+            size = 8) +
+  # Customize labels and theme
+  labs(x = "Coefficient Estimate",
+       y = NULL,
+       title = "Effect of Performance and Task Switching on Future Rest",
+       subtitle = "Error bars show 95% confidence intervals\n* indicates significant effect") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 10)),
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  # Scale x axis to be symmetric
+  scale_x_continuous(
+    limits = c(min(coef_data$lower) - 0.2, max(coef_data$upper) + 0.2),
+    breaks = scales::pretty_breaks(n = 6)
+  )
+```
+
+### Q3 plot:
+
+``` {r}
+# USED THIS FOR CCN paper
+ggplot(model_data, aes(x = avg_block_accuracy, 
+                       y = num_rest_in_chunk,
+                       color = cue_type)) +
+  # Raw data points
+  geom_point(alpha = 0.2, position = position_jitter(0.05, 0.05)) +
+  # Use loess smoothing instead which is more flexible
+  geom_smooth(method = "loess", span = 0.9,
+              linewidth = 1.5) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#E99746"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
+          "Loess smoothed trend lines on raw participant data") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"),
+        text = element_text(family = "Arial"),
+        axis.title = element_text(face = "bold"))
+
+#### FINAL VERSION FOR CCN poster
+ggplot(model_data, aes(x = avg_block_accuracy, 
+                       y = num_rest_in_chunk,
+                       color = cue_type)) +
+  # Raw data points
+  geom_point(alpha = 0.2, position = position_jitter(0.05, 0.05)) +
+  # Use loess smoothing instead which is more flexible
+  geom_smooth(method = "loess", span = 0.9,
+              linewidth = 1.5) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0097DF", "#E99746"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
+          "Loess smoothed trend lines on raw participant data; Significant interaction effect in negative \nbinomial mixed-effects model.") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(size = 16),
+        plot.subtitle = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        text = element_text(family = "Arial", size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA))
+```
+
+``` {r}
+# Create binned data with numeric bin centers
+binned_data <- model_data %>%
+  # Create bins and calculate bin centers
+  mutate(accuracy_bin = cut(avg_block_accuracy, 
+                          breaks = seq(0, 1, by = 0.25), 
+                          include.lowest = TRUE),
+         # Extract bin midpoints
+         bin_center = 0.125 + 0.25 * (as.numeric(accuracy_bin) - 1)) %>%
+  group_by(bin_center, cue_type) %>%
+  summarize(mean_rest = mean(num_rest_in_chunk, na.rm = TRUE),
+            se_rest = sd(num_rest_in_chunk, na.rm = TRUE)/sqrt(n()),
+            n_obs = n(),
+            .groups = "drop")
+
+# Plot with bin centers
+ggplot() +
+  geom_point(data = model_data, 
+             aes(x = avg_block_accuracy, y = num_rest_in_chunk, color = cue_type),
+             alpha = 0.1, position = position_jitter(0.05, 0.05)) +
+  # Binned averages
+  geom_point(data = binned_data,
+             aes(x = bin_center, y = mean_rest, color = cue_type),
+             size = 3) +
+  # Error bars 
+  geom_errorbar(data = binned_data,
+                aes(x = bin_center, 
+                    ymin = mean_rest - se_rest, 
+                    ymax = mean_rest + se_rest,
+                    color = cue_type),
+                width = 0.03) +
+  # Connect points
+  geom_line(data = binned_data,
+            aes(x = bin_center, y = mean_rest, color = cue_type, group = cue_type),
+            linewidth = 1) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0097DF", "#E99746"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy performance", 
+          "Binned averages results") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"))
+```
+### Q1 plot:
+
+``` {r rest_acc_plot}
+# create a simple linear model for sake of easy visualization
+lm_model <- df_all_blockwise %>%
+  ungroup() %>%
+  lm(num_rest_in_chunk ~ avg_block_accuracy, data = .)
+
+# Get R-squared
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+p_value <- anova(lm_model)$"Pr(>F)"[1]
+
+# Calculate Cohen's f² effect size
+# f² = R² / (1 - R²)
+f_squared <- r_squared / (1 - r_squared)
+
+# convert r to d
+# get r (correlation)
+r <- sqrt(r_squared) * sign(coef(lm_model)[2])  # multiply by sign of slope
+# Convert r to d: d = 2r/sqrt(1-r^2)
+cohens_d <- (2 * r) / sqrt(1 - r^2)
+
+# Create formatted labels
+stats_label <- sprintf("R² = %.3f\nf² = %.3f\nd = %.3f\np = %.3e", 
+                      r_squared, f_squared, cohens_d, p_value)
+
+# with flipped x axis
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +
+  labs(x = "Average block accuracy",
+       y = "Following rests taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance (fixed effects only)") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# with normal x axis
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following Rest Trials Taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance (fixed effects only)") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# used for CCN poster (with better labels, etc)
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(size = 0.5, position = position_jitter(0.05,0.05)) +
+  # scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following Rest Trials Taken",
+       color = "Epoch Number") +
+  ggtitle("Lower efficacy epochs are associated with longer rests", "Fixed effects plot; same relationship trend found in logistic mixed effects model") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16)
+  )
+```
+# Q2
+
+``` {r data_loading}
+df_all_blockwise_q2 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(post_cue_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scaled_post_cue_avg_accuracy = lead(scale_accuracy, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default=NA),
+         scaled_following_block_rest = lead(scale_rest, default = NA)) %>%
+  ungroup()
+```
+
+
+``` {r data_loading}
+# make sure it's still 84
+df_all_blockwise_q2 %>%
+  select(subj_id) %>%
+  distinct()
+
+model_data_q2 <- df_all_blockwise_q2
+
+```
+
+``` {r data_loading}
+model_data_q2 <- df_all_blockwise_q2
+
+##########################
+# get successes and failures per block
+model_data_q2 <- model_data_q2 %>%
+  filter(block_num !=30) %>%
+  mutate(next_block_successes = as.integer(post_cue_avg_accuracy * all_per_block), 
+         next_block_failures = all_per_block - next_block_successes) %>%
+  mutate(transition_category = ifelse(rest_type %in% c("group_A_A", "group_B_B"),"stay_long", ifelse(rest_type %in% c("block_same_same"), "stay_short", "switch")))
+
+```
+
+``` {r modeling}
+# model 1: basic random effect
+fit.mixed_simple_1 <- glmer(cbind(next_block_successes, next_block_failures) ~ (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 2: avg_block_accuracy is a significant positive predictor
+fit.mixed_simple_2 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 3: avg_block_accuracy is a significant positive predictor
+fit.mixed_simple_3 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + num_rest_in_chunk + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 4: avg_block_accuracy is a significant positive predictor
+fit.mixed_simple_4 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + cue_type + num_rest_in_chunk + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 5: avg_block_accuracy is a significant positive predictor; cue_typeswitch is a significant positive predictor;
+# avg_block_accuracy:cue_typeswitch is a significant negative predicter
+fit.mixed_simple_5 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 6: same as 5
+fit.mixed_simple_6 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 7: same as 5
+fit.mixed_simple_7 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 8: same as 5 but spatial recall also sig neg predictor
+fit.mixed_simple_8 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + game_type + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 9: same as 5 but spatial recall also sig neg predictor
+fit.mixed_simple_9 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + game_type + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+# model 10: cue type switch is a sig pos predictor, rest are same as above
+fit.mixed_simple_10 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + group_num + game_type + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+# model 11: switch generally positive but doing well and then getting switched is more neg
+fit.mixed_simple_11 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + cue_type + group_num + game_type + avg_block_accuracy:rest_type + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+# model 14: added num_rest_in_chunk to see if it makes a difference (only diff between 14 and 15)
+fit.mixed_simple_14 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + num_rest_in_chunk + gameA_isSR + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2) # failed to converge
+
+#model 15:
+fit.mixed_simple_15 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2)
+```
+```{r modeling}
+compare_performance(fit.mixed_simple_1, fit.mixed_simple_2, fit.mixed_simple_3, fit.mixed_simple_4, fit.mixed_simple_5, fit.mixed_simple_6, fit.mixed_simple_7, fit.mixed_simple_8, fit.mixed_simple_9, fit.mixed_simple_10, fit.mixed_simple_11, fit.mixed_simple_14, fit.mixed_simple_15)
+```
+
+``` {r modeling}
+best_model_q2 <- fit.mixed_simple_15
+##########################
+
+summary(best_model_q2)
+check_model(best_model_q2)
+check_overdispersion(best_model_q2)
+
+report(best_model_q2)
+``` 
+
+Plot the best models coefficients:
+``` {r data_loading}
+# Extract model coefficients and confidence intervals
+coef_data <- tidy(best_model_q2, effects = "fixed",conf.int = TRUE) 
+coef_data <- coef_data %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "avg_block_accuracy" ~ "Avg Accuracy of Previous Block",
+      term == "gameA_isSRTRUE" ~ "Game A = Spatial Recall condition",
+      term == "game_typespatial_recall" ~ "Previous Block = Spatial Recall",
+      term == "cue_typeswitch" ~ "Game Switched This Block",
+      term == "avg_block_accuracy:cue_typeswitch" ~ "Prior Block Avg Accuracy X Game Switched",
+      term == "group_num" ~ "Block Number in Experiment",
+      TRUE ~ term  # Keep original if no match
+    )
+  )
+
+ggplot(coef_data, aes(y = reorder(term, estimate), x = estimate)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_pointrange(aes(xmin = conf.low, xmax = conf.high, color = p.value < 0.05)) +
+    scale_color_manual(values = c("TRUE" = "black", "FALSE" = "gray60"), 
+                      labels = c("p ≥ 0.05", "p < 0.05"),
+                      name = "Significance") +
+    labs(x = "Coefficient Estimate", y = NULL,
+         title = "Fixed Effects Coefficients of Model Predicting Average Accuracy of a Block",
+         subtitle = "With 95% Confidence Intervals") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          axis.text.y = element_text(size = 11),
+          panel.grid.minor = element_blank())
+
+```
+``` {r}
+### CCN GRAPH FINAL (used in extended abstract)
+ggplot(model_data_q2, aes(x = avg_block_accuracy, 
+                          y = next_block_successes/(next_block_successes + next_block_failures),
+                          color = cue_type)) +
+  geom_point(alpha = 0.2, position=position_jitter(0.05,0.05)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), linewidth = 1.2) +
+  labs(x = "Average Previous Epoch Accuracy", 
+       y = "Average Following Epoch Accuracy",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+                    labels = c("Game stayed the same", "Game switched")) +
+  ggtitle("Switching tasks improves performance after low-efficacy epochs", 
+          "Fitting simple binomials on raw participant data, by switch type") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(size = 14),
+        legend.title = element_text(face = "bold", size = 14),
+        legend.text = element_text(size = 12),
+        text = element_text(family = "Arial", size = 12),
+        axis.title = element_text(face = "bold", size = 14),
+        axis.text = element_text(size = 12),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA))
+# 
+# # Save the plot to a PNG file
+# ggsave("1b_big.png", width = 10, height = 8.5, dpi = 300)
+
+```
+
+
+``` {r}
+# making a model to see how switching impacts future accuracy when you bin the previous accuracy into "low", "medium", or "high" performance
+df_all_blockwise_q2_binned_data <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(post_cue_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scaled_post_cue_avg_accuracy = lead(scale_accuracy, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default=NA),
+         scaled_following_block_rest = lead(scale_rest, default = NA)) %>%
+  ungroup() %>%
+  mutate(acc_category = cut(avg_block_accuracy, 
+                           breaks = c(-Inf, 0.33, 0.66, Inf),
+                           labels = c("Low", "Medium", "High"))) %>%
+  ungroup() %>%
+  filter(block_num !=30) %>%
+  mutate(next_block_successes = as.integer(post_cue_avg_accuracy * all_per_block), 
+         next_block_failures = all_per_block - next_block_successes) %>%
+  mutate(transition_category = ifelse(rest_type %in% c("group_A_A", "group_B_B"),"stay_long", ifelse(rest_type %in% c("block_same_same"), "stay_short", "switch")))
+
+# this just calculates the significance of the difference between each bin
+mixed_model_binned_data <- glmer(cbind(next_block_successes, next_block_failures) ~ acc_category * cue_type + (1|subj_id), 
+                                 family=binomial,
+                                 data = df_all_blockwise_q2_binned_data)
+summary(mixed_model_binned_data)
+anova(mixed_model_binned_data)
+emm <- emmeans(mixed_model_binned_data, ~ cue_type | acc_category)
+pairs(emm)
+
+
+# Plot results with significance annotations
+# First get the pairwise comparison results
+contrasts <- pairs(emm)
+contrast_df <- as.data.frame(contrasts)
+
+# Create the sig_annotations data frame correctly
+sig_annotations <- data.frame(
+  acc_category = c("Low", "Medium", "High"),
+  y_pos = c(0.95, 0.95, 0.95),  # Position for annotations (adjust as needed)
+  sig_symbol = case_when(
+    contrast_df$p.value < 0.001 ~ "***",
+    contrast_df$p.value < 0.01 ~ "**", 
+    contrast_df$p.value < 0.05 ~ "*",
+    TRUE ~ "n.s."
+  )
+)
+
+# Calculate the max y-position for each category to place annotations above error bars
+y_pos_data <- df_all_blockwise_q2_binned_data %>%
+  group_by(acc_category, cue_type) %>%
+  summarize(
+    mean_acc = mean(post_cue_avg_accuracy),
+    se = sd(post_cue_avg_accuracy)/sqrt(n())
+  ) %>%
+  group_by(acc_category) %>%
+  summarize(max_y = max(mean_acc + se) + 0.05)  # Add a small offset
+
+# Update the y_pos in sig_annotations
+sig_annotations <- sig_annotations %>%
+  left_join(y_pos_data, by = "acc_category")
+
+ggplot(df_all_blockwise_q2_binned_data, aes(x = acc_category, y = post_cue_avg_accuracy, color = cue_type, group = cue_type)) +
+  geom_point(alpha = 0.1, position = position_jitter(0.4)) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    size = 1
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    size = 3
+  ) +
+  stat_summary(
+    fun.data = mean_se,
+    geom = "errorbar",
+    width = 0.2
+  ) +
+  # sig annotations
+  geom_text(data = sig_annotations, 
+            aes(x = acc_category, y = max_y, label = sig_symbol),
+            inherit.aes = FALSE, size = 5) +
+  scale_color_manual(values = c("#0097DF", "#E99746"),
+                    labels = c("Stay", "Switch")) +
+  labs(x = "Average Previous Epoch Accuracy",
+       y = "Average Following Epoch Accuracy",
+       color = "Trial Type") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  ) +
+  ggtitle("Switching tasks improves performance after low-efficacy epochs", 
+          "Significance is based on the logistic mixed effects model results")
+```
+
+Using the same model but looking at how RT changes in these various bins:
+---
+title: "full_relevant_analysis"
+output: html_document
+date: "2025-08-19"
+---
+
+q1_q3_analysis_graphs.Rmd and q2_analysis_graphs.Rmd but with only the most relevant code/plotting.
+
+POST EXCLUSION: 84
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library("knitr") # for knitting things
+library("tidyverse") # for all things tidyverse
+library("broom")      # for tidying up linear models 
+library("car")        # for running ANOVAs
+library("afex")       # also for running ANOVAs
+library("emmeans")    # for calculating constrasts
+library(jsonlite)
+library(MASS, exclude = "select")
+library(performance)
+library(DHARMa)
+library(effects)
+library(rstatix, exclude="filter")  # For statistical tests
+library(ggpubr)
+library(patchwork)  # For combining plots
+library(report)
+library(broom.mixed)
+
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+
+# set the default ggplot theme 
+theme_set(theme_classic())
+```
+
+# QUESTIONS:
+1) Is there a post-error increase in fatigue? i.e. is accuracy a significant negative estimator for subsequent rest time?
+2) When does task switching reduce fatigue, if ever? i.e. how does performance differ in the block following a switch vs a non-switch, and how long is the subsequent self-paced rest (in comparison)
+3) Is task switching acted upon as rejuvenating? i.e. will rest time when cued that the next block will be a switch be less than when cued the next block will be a stay
+
+# READ IN DATA (these are all post-exclusion files from both batches)
+``` {r data_loading}
+# exp vars
+sr_practice_num <- 4
+sr_per_block <- 10
+ds_practice_num <- 4
+ds_per_block <- 10
+rt_practice_num <- 4
+rt_per__block_max <- 20
+all_per_block <- 10
+num_groups <- 10
+num_blocks_per_group <- 3
+num_blocks_overall <- num_groups * num_blocks_per_group
+
+df_all <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_main_trials_cleaned.csv",stringsAsFactors = FALSE) %>%
+  select(-X)
+df_practice <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_practice_trials_cleaned.csv",stringsAsFactors = FALSE)%>%
+  select(-X)
+df_survey <- read.csv("/Users/nastasiaklevak/Desktop/FYP_2024/CognitiveFatigue_TaskSpecificity/data_anonymized/SPRmain/excluded/SPRmain_survey_cleaned.csv", stringsAsFactors = FALSE)%>%
+  select(-X)
+```
+
+# Q1 and Q3
+
+``` {r data_loading}
+# get average per block per subject
+rest_info <- df_all %>%
+  group_by(subj_id) %>%
+  filter(!is.na(rest_chunk), !is.na(type_desc)) %>%
+  select(subj_id, block_num = rest_chunk, num_rest_in_chunk, rest_type = type_desc) %>%
+  distinct() %>%
+  ungroup() %>%
+  group_by(subj_id,block_num) %>%
+  slice(1)  # Take only the first row for each block
+
+# Then join with summary
+df_all_blockwise <- df_all %>%
+  ungroup() %>%
+  filter(trial_type != "rt_main_trials") %>%
+  group_by(subj_id, block_num) %>%
+  summarize(
+    avg_block_accuracy = mean(is_correct_numeric),
+    accuracy_sd = sd(is_correct_numeric),
+    avg_rt = mean(rt[!timed_out]),
+    rt_sd = sd(rt[!timed_out]),
+    group_num = first(group_num),
+    gameA_isSR = first(gameA_isSR),
+    game_type = first(game_type),
+    .groups = 'drop'
+  ) %>%
+  left_join(rest_info, by = c("subj_id","block_num"))%>%
+  mutate(cue_type = ifelse(rest_type == "block_same_same" | rest_type == "group_A_A" | rest_type == "group_B_B", "stay", "switch"))
+
+df_all_blockwise <- df_all_blockwise %>%
+  ungroup() %>%
+  group_by(subj_id) %>%
+  mutate(scale_rest = as.vector(scale(num_rest_in_chunk, center = TRUE, scale = TRUE)),
+         scale_accuracy = as.vector(scale(avg_block_accuracy, center = TRUE, scale = TRUE))) %>%
+  ungroup()
+
+# just a check to make sure it has all non-excluded participants (84)
+df_all_blockwise %>%
+  select(subj_id) %>%
+  distinct()
+```
+
+Negative binomial mixed effects models:
+``` {r rest_cue_mixed_models_negbin}
+model_data <- df_all_blockwise
+
+# Model 1: avg_block_accuracy is a sig. neg predictor 
+fit.mixed_1_nb <- glmer.nb(num_rest_in_chunk ~ avg_block_accuracy + cue_type + (1|subj_id),
+                          data = model_data)
+
+# Model 2: avg_block_accuracy is a sig neg predictor
+fit.mixed_2_nb <- glmer.nb(num_rest_in_chunk ~ avg_block_accuracy + cue_type + gameA_isSR + (1|subj_id),
+                          data = model_data)
+
+# Model 3:avg_block_accuracy:cue_typeswitch is now significantly negative (when you do better and switch, you end up resting less than when you do worse and switch)
+fit.mixed_3_nb <- glmer.nb(num_rest_in_chunk ~ avg_block_accuracy*cue_type + gameA_isSR + (1|subj_id),
+                          data = model_data)
+
+# Model 4: same as 3, also group_num is sig neg estimator (as time goes on you rest less)? maybe bc of costliness?
+fit.mixed_4_nb <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + (1|subj_id),
+                          data = model_data)
+
+# Model 5: same as before but also spatial recall is a sig. neg predictor (if it was spatial recall you rest less)
+fit.mixed_5_nb <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data)
+
+# Compare models
+compare_performance(fit.mixed_1_nb, fit.mixed_2_nb, fit.mixed_3_nb, fit.mixed_4_nb, fit.mixed_5_nb) # 5 is the best; r2 marg like 0.18
+
+check_model(fit.mixed_5_nb)
+summary(fit.mixed_5_nb) # 5 looks pretty good; better than poisson (improved overdispersion); later try to also include a preference variable (i.e. control for if participants pref sr or ds); and also try to include a variable for if they read the cues or not
+
+fit.mixed_6_nb <- glmer.nb(num_rest_in_chunk ~ group_num + rest_type + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data)
+summary(fit.mixed_6_nb) # adding rest type didn't really make a big difference; worse model than 5
+
+compare_performance(fit.mixed_5_nb, fit.mixed_6_nb)
+
+best_model_q1q3 <- fit.mixed_5_nb
+```
+
+``` {r best_model_report}
+report(best_model_q1q3)
+```
+
+
+``` {r}
+coef_data <- data.frame(
+  term = names(fixef(best_model_q1q3)),
+  estimate = fixef(best_model_q1q3),
+  se = sqrt(diag(vcov(best_model_q1q3)))
+) %>%
+  mutate(
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se,
+    # Create readable labels
+    term_clean = case_when(
+      term == "avg_block_accuracy" ~ "Avg Prior Block Accuracy",
+      term == "gameA_isSRTRUE" ~ "Game A = SR",
+      term == "game_typespatial_recall" ~ "Curr Game is SR",
+      term == "cue_typeswitch" ~ "Cued to Switch",
+      term == "avg_block_accuracy:cue_typeswitch" ~ "Prior Accuracy X Switch Cue",
+      term == "(Intercept)" ~ "Intercept",
+      TRUE ~ term  # Keep original if no match
+    ),
+    # Add significance markers
+    sig = case_when(
+      abs(estimate) > 1.96 * se ~ "*",
+      TRUE ~ ""
+    )
+  ) %>%
+  # Reorder factors
+  mutate(term_clean = factor(term_clean, levels = rev(term_clean)))
+
+# Create the plot
+ggplot(coef_data, aes(x = estimate, y = term_clean)) +
+  # Add vertical line at zero
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray50", linewidth = 0.8) +
+  # Add error bars
+  geom_errorbarh(aes(xmin = lower, xmax = upper), 
+                height = 0.3, 
+                color = "navy",
+                linewidth = 1) +
+  # Add points
+  geom_point(size = 4, color = "navy", fill = "white", shape = 21) +
+  # Add significance markers
+  geom_text(aes(x = upper + 0.15, label = sig), 
+            color = "navy", 
+            size = 8) +
+  # Customize labels and theme
+  labs(x = "Coefficient Estimate",
+       y = NULL,
+       title = "Effect of Performance and Task Switching on Future Rest",
+       subtitle = "Error bars show 95% confidence intervals\n* indicates significant effect") +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.text.x = element_text(size = 14, color = "black"),
+    axis.title.x = element_text(size = 14, face = "bold", margin = margin(t = 10)),
+    plot.title = element_text(size = 14, face = "bold"),
+    plot.subtitle = element_text(size = 12, color = "gray30"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank(),
+    plot.margin = margin(1, 1, 1, 1, "cm")
+  ) +
+  # Scale x axis to be symmetric
+  scale_x_continuous(
+    limits = c(min(coef_data$lower) - 0.2, max(coef_data$upper) + 0.2),
+    breaks = scales::pretty_breaks(n = 6)
+  )
+```
+
+### Q3 plot:
+
+``` {r}
+# USED THIS FOR CCN paper
+ggplot(model_data, aes(x = avg_block_accuracy, 
+                       y = num_rest_in_chunk,
+                       color = cue_type)) +
+  # Raw data points
+  geom_point(alpha = 0.2, position = position_jitter(0.05, 0.05)) +
+  # Use loess smoothing instead which is more flexible
+  geom_smooth(method = "loess", span = 0.9,
+              linewidth = 1.5) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#E99746"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
+          "Loess smoothed trend lines on raw participant data") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"),
+        text = element_text(family = "Arial"),
+        axis.title = element_text(face = "bold"))
+
+#### FINAL VERSION FOR CCN poster
+ggplot(model_data, aes(x = avg_block_accuracy, 
+                       y = num_rest_in_chunk,
+                       color = cue_type)) +
+  # Raw data points
+  geom_point(alpha = 0.2, position = position_jitter(0.05, 0.05)) +
+  # Use loess smoothing instead which is more flexible
+  geom_smooth(method = "loess", span = 0.9,
+              linewidth = 1.5) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0097DF", "#E99746"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy epochs", 
+          "Loess smoothed trend lines on raw participant data; Significant interaction effect in negative \nbinomial mixed-effects model.") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(size = 16),
+        plot.subtitle = element_text(size = 12),
+        legend.title = element_text(size = 14),
+        legend.text = element_text(size = 12),
+        text = element_text(family = "Arial", size = 12),
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA))
+```
+
+``` {r}
+# Create binned data with numeric bin centers
+binned_data <- model_data %>%
+  # Create bins and calculate bin centers
+  mutate(accuracy_bin = cut(avg_block_accuracy, 
+                          breaks = seq(0, 1, by = 0.25), 
+                          include.lowest = TRUE),
+         # Extract bin midpoints
+         bin_center = 0.125 + 0.25 * (as.numeric(accuracy_bin) - 1)) %>%
+  group_by(bin_center, cue_type) %>%
+  summarize(mean_rest = mean(num_rest_in_chunk, na.rm = TRUE),
+            se_rest = sd(num_rest_in_chunk, na.rm = TRUE)/sqrt(n()),
+            n_obs = n(),
+            .groups = "drop")
+
+# Plot with bin centers
+ggplot() +
+  geom_point(data = model_data, 
+             aes(x = avg_block_accuracy, y = num_rest_in_chunk, color = cue_type),
+             alpha = 0.1, position = position_jitter(0.05, 0.05)) +
+  # Binned averages
+  geom_point(data = binned_data,
+             aes(x = bin_center, y = mean_rest, color = cue_type),
+             size = 3) +
+  # Error bars 
+  geom_errorbar(data = binned_data,
+                aes(x = bin_center, 
+                    ymin = mean_rest - se_rest, 
+                    ymax = mean_rest + se_rest,
+                    color = cue_type),
+                width = 0.03) +
+  # Connect points
+  geom_line(data = binned_data,
+            aes(x = bin_center, y = mean_rest, color = cue_type, group = cue_type),
+            linewidth = 1) +
+  # Labels and theme
+  labs(x = "Average Epoch Accuracy", 
+       y = "Subsequent Rest Duration",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0097DF", "#E99746"), 
+                    labels = c("Told game would remain the same", "Told game would switch")) +
+  ggtitle("Anticipating a task switch increases rest duration after low-efficacy performance", 
+          "Binned averages results") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold"),
+        legend.title = element_text(face = "bold"),
+        axis.title = element_text(face = "bold"))
+```
+### Q1 plot:
+
+``` {r rest_acc_plot}
+# create a simple linear model for sake of easy visualization
+lm_model <- df_all_blockwise %>%
+  ungroup() %>%
+  lm(num_rest_in_chunk ~ avg_block_accuracy, data = .)
+
+# Get R-squared
+r_squared <- summary(lm_model)$r.squared
+r_squared_label <- sprintf("R² = %.3f", r_squared)
+p_value <- anova(lm_model)$"Pr(>F)"[1]
+
+# Calculate Cohen's f² effect size
+# f² = R² / (1 - R²)
+f_squared <- r_squared / (1 - r_squared)
+
+# convert r to d
+# get r (correlation)
+r <- sqrt(r_squared) * sign(coef(lm_model)[2])  # multiply by sign of slope
+# Convert r to d: d = 2r/sqrt(1-r^2)
+cohens_d <- (2 * r) / sqrt(1 - r^2)
+
+# Create formatted labels
+stats_label <- sprintf("R² = %.3f\nf² = %.3f\nd = %.3f\np = %.3e", 
+                      r_squared, f_squared, cohens_d, p_value)
+
+# with flipped x axis
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +
+  labs(x = "Average block accuracy",
+       y = "Following rests taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance (fixed effects only)") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# with normal x axis
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(mapping = aes(color = block_num), size = 0.5, position = position_jitter(0.05,0.05)) +
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following Rest Trials Taken",
+       color = "Block Number") +
+  ggtitle("Predicting rest from performance (fixed effects only)") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  )
+
+# used for CCN poster (with better labels, etc)
+df_all_blockwise %>%
+  ggplot(mapping = aes(x = avg_block_accuracy, y = num_rest_in_chunk)) +
+  geom_smooth(method="lm", se=TRUE) +
+  geom_point(size = 0.5, position = position_jitter(0.05,0.05)) +
+  # scale_x_reverse() +  # Flip x-axis
+  annotate("text", 
+           x = 0.5,  
+           y = 15,
+           label = stats_label,
+           size = 3) +  # Larger text
+  labs(x = "Average block accuracy",
+       y = "Following Rest Trials Taken",
+       color = "Epoch Number") +
+  ggtitle("Lower efficacy epochs are associated with longer rests", "Fixed effects plot; same relationship trend found in logistic mixed effects model") +
+  theme_bw() +
+  theme(
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    plot.title = element_text(size = 16)
+  )
+```
+# Q2
+
+``` {r data_loading}
+df_all_blockwise_q2 <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(post_cue_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scaled_post_cue_avg_accuracy = lead(scale_accuracy, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default=NA),
+         scaled_following_block_rest = lead(scale_rest, default = NA)) %>%
+  ungroup()
+```
+
+
+``` {r data_loading}
+# make sure it's still 84
+df_all_blockwise_q2 %>%
+  select(subj_id) %>%
+  distinct()
+
+model_data_q2 <- df_all_blockwise_q2
+
+```
+
+``` {r data_loading}
+model_data_q2 <- df_all_blockwise_q2
+
+##########################
+# get successes and failures per block
+model_data_q2 <- model_data_q2 %>%
+  filter(block_num !=30) %>%
+  mutate(next_block_successes = as.integer(post_cue_avg_accuracy * all_per_block), 
+         next_block_failures = all_per_block - next_block_successes) %>%
+  mutate(transition_category = ifelse(rest_type %in% c("group_A_A", "group_B_B"),"stay_long", ifelse(rest_type %in% c("block_same_same"), "stay_short", "switch")))
+
+```
+
+``` {r modeling}
+# model 1: basic random effect
+fit.mixed_simple_1 <- glmer(cbind(next_block_successes, next_block_failures) ~ (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 2: avg_block_accuracy is a significant positive predictor
+fit.mixed_simple_2 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 3: avg_block_accuracy is a significant positive predictor
+fit.mixed_simple_3 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + num_rest_in_chunk + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 4: avg_block_accuracy is a significant positive predictor
+fit.mixed_simple_4 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + cue_type + num_rest_in_chunk + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 5: avg_block_accuracy is a significant positive predictor; cue_typeswitch is a significant positive predictor;
+# avg_block_accuracy:cue_typeswitch is a significant negative predicter
+fit.mixed_simple_5 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 6: same as 5
+fit.mixed_simple_6 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 7: same as 5
+fit.mixed_simple_7 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 8: same as 5 but spatial recall also sig neg predictor
+fit.mixed_simple_8 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + game_type + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+# model 9: same as 5 but spatial recall also sig neg predictor
+fit.mixed_simple_9 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + group_num + gameA_isSR + game_type + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+# model 10: cue type switch is a sig pos predictor, rest are same as above
+fit.mixed_simple_10 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + group_num + game_type + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+# model 11: switch generally positive but doing well and then getting switched is more neg
+fit.mixed_simple_11 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy + cue_type + group_num + game_type + avg_block_accuracy:rest_type + (1|subj_id),
+               family = binomial,
+               data = model_data_q2)
+
+# model 14: added num_rest_in_chunk to see if it makes a difference (only diff between 14 and 15)
+fit.mixed_simple_14 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + num_rest_in_chunk + gameA_isSR + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2) # failed to converge
+
+#model 15:
+fit.mixed_simple_15 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1 + game_type|subj_id),
+               family = binomial,
+               data = model_data_q2)
+```
+```{r modeling}
+compare_performance(fit.mixed_simple_1, fit.mixed_simple_2, fit.mixed_simple_3, fit.mixed_simple_4, fit.mixed_simple_5, fit.mixed_simple_6, fit.mixed_simple_7, fit.mixed_simple_8, fit.mixed_simple_9, fit.mixed_simple_10, fit.mixed_simple_11, fit.mixed_simple_14, fit.mixed_simple_15)
+```
+
+``` {r modeling}
+best_model_q2 <- fit.mixed_simple_15
+##########################
+
+summary(best_model_q2)
+check_model(best_model_q2)
+check_overdispersion(best_model_q2)
+
+report(best_model_q2)
+``` 
+
+Plot the best models coefficients:
+``` {r data_loading}
+# Extract model coefficients and confidence intervals
+coef_data <- tidy(best_model_q2, effects = "fixed",conf.int = TRUE) 
+coef_data <- coef_data %>%
+  mutate(
+    term = case_when(
+      term == "(Intercept)" ~ "Intercept",
+      term == "avg_block_accuracy" ~ "Avg Accuracy of Previous Block",
+      term == "gameA_isSRTRUE" ~ "Game A = Spatial Recall condition",
+      term == "game_typespatial_recall" ~ "Previous Block = Spatial Recall",
+      term == "cue_typeswitch" ~ "Game Switched This Block",
+      term == "avg_block_accuracy:cue_typeswitch" ~ "Prior Block Avg Accuracy X Game Switched",
+      term == "group_num" ~ "Block Number in Experiment",
+      TRUE ~ term  # Keep original if no match
+    )
+  )
+
+ggplot(coef_data, aes(y = reorder(term, estimate), x = estimate)) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "gray50") +
+    geom_pointrange(aes(xmin = conf.low, xmax = conf.high, color = p.value < 0.05)) +
+    scale_color_manual(values = c("TRUE" = "black", "FALSE" = "gray60"), 
+                      labels = c("p ≥ 0.05", "p < 0.05"),
+                      name = "Significance") +
+    labs(x = "Coefficient Estimate", y = NULL,
+         title = "Fixed Effects Coefficients of Model Predicting Average Accuracy of a Block",
+         subtitle = "With 95% Confidence Intervals") +
+    theme_minimal() +
+    theme(legend.position = "bottom",
+          axis.text.y = element_text(size = 11),
+          panel.grid.minor = element_blank())
+
+```
+``` {r}
+### CCN GRAPH FINAL (used in extended abstract)
+ggplot(model_data_q2, aes(x = avg_block_accuracy, 
+                          y = next_block_successes/(next_block_successes + next_block_failures),
+                          color = cue_type)) +
+  geom_point(alpha = 0.2, position=position_jitter(0.05,0.05)) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), linewidth = 1.2) +
+  labs(x = "Average Previous Epoch Accuracy", 
+       y = "Average Following Epoch Accuracy",
+       color = "Game Switch Type") +
+  scale_color_manual(values = c("#0072B2", "#F2CF66"), 
+                    labels = c("Game stayed the same", "Game switched")) +
+  ggtitle("Switching tasks improves performance after low-efficacy epochs", 
+          "Fitting simple binomials on raw participant data, by switch type") +
+  theme_minimal() +
+  theme(legend.position = "bottom",
+        plot.title = element_text(face = "bold", size = 16),
+        plot.subtitle = element_text(size = 14),
+        legend.title = element_text(face = "bold", size = 14),
+        legend.text = element_text(size = 12),
+        text = element_text(family = "Arial", size = 12),
+        axis.title = element_text(face = "bold", size = 14),
+        axis.text = element_text(size = 12),
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA))
+# 
+# # Save the plot to a PNG file
+# ggsave("1b_big.png", width = 10, height = 8.5, dpi = 300)
+
+```
+
+
+``` {r}
+# making a model to see how switching impacts future accuracy when you bin the previous accuracy into "low", "medium", or "high" performance
+df_all_blockwise_q2_binned_data <- df_all_blockwise %>%
+  group_by(subj_id) %>%
+  arrange(subj_id, block_num) %>%
+  mutate(post_cue_avg_accuracy = lead(avg_block_accuracy, default = NA),
+         scaled_post_cue_avg_accuracy = lead(scale_accuracy, default = NA),
+         following_block_rest = lead(num_rest_in_chunk, default=NA),
+         scaled_following_block_rest = lead(scale_rest, default = NA)) %>%
+  ungroup() %>%
+  mutate(acc_category = cut(avg_block_accuracy, 
+                           breaks = c(-Inf, 0.33, 0.66, Inf),
+                           labels = c("Low", "Medium", "High"))) %>%
+  ungroup() %>%
+  filter(block_num !=30) %>%
+  mutate(next_block_successes = as.integer(post_cue_avg_accuracy * all_per_block), 
+         next_block_failures = all_per_block - next_block_successes) %>%
+  mutate(transition_category = ifelse(rest_type %in% c("group_A_A", "group_B_B"),"stay_long", ifelse(rest_type %in% c("block_same_same"), "stay_short", "switch")))
+
+# this just calculates the significance of the difference between each bin
+mixed_model_binned_data <- glmer(cbind(next_block_successes, next_block_failures) ~ acc_category * cue_type + (1|subj_id), 
+                                 family=binomial,
+                                 data = df_all_blockwise_q2_binned_data)
+summary(mixed_model_binned_data)
+anova(mixed_model_binned_data)
+emm <- emmeans(mixed_model_binned_data, ~ cue_type | acc_category)
+pairs(emm)
+
+
+# Plot results with significance annotations
+# First get the pairwise comparison results
+contrasts <- pairs(emm)
+contrast_df <- as.data.frame(contrasts)
+
+# Create the sig_annotations data frame correctly
+sig_annotations <- data.frame(
+  acc_category = c("Low", "Medium", "High"),
+  y_pos = c(0.95, 0.95, 0.95),  # Position for annotations (adjust as needed)
+  sig_symbol = case_when(
+    contrast_df$p.value < 0.001 ~ "***",
+    contrast_df$p.value < 0.01 ~ "**", 
+    contrast_df$p.value < 0.05 ~ "*",
+    TRUE ~ "n.s."
+  )
+)
+
+# Calculate the max y-position for each category to place annotations above error bars
+y_pos_data <- df_all_blockwise_q2_binned_data %>%
+  group_by(acc_category, cue_type) %>%
+  summarize(
+    mean_acc = mean(post_cue_avg_accuracy),
+    se = sd(post_cue_avg_accuracy)/sqrt(n())
+  ) %>%
+  group_by(acc_category) %>%
+  summarize(max_y = max(mean_acc + se) + 0.05)  # Add a small offset
+
+# Update the y_pos in sig_annotations
+sig_annotations <- sig_annotations %>%
+  left_join(y_pos_data, by = "acc_category")
+
+ggplot(df_all_blockwise_q2_binned_data, aes(x = acc_category, y = post_cue_avg_accuracy, color = cue_type, group = cue_type)) +
+  geom_point(alpha = 0.1, position = position_jitter(0.4)) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    size = 1
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    size = 3
+  ) +
+  stat_summary(
+    fun.data = mean_se,
+    geom = "errorbar",
+    width = 0.2
+  ) +
+  # sig annotations
+  geom_text(data = sig_annotations, 
+            aes(x = acc_category, y = max_y, label = sig_symbol),
+            inherit.aes = FALSE, size = 5) +
+  scale_color_manual(values = c("#0097DF", "#E99746"),
+                    labels = c("Stay", "Switch")) +
+  labs(x = "Average Previous Epoch Accuracy",
+       y = "Average Following Epoch Accuracy",
+       color = "Trial Type") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10)
+  ) +
+  ggtitle("Switching tasks improves performance after low-efficacy epochs", 
+          "Significance is based on the logistic mixed effects model results")
+```
+
+
+Same thing but for RT (model is not working atm):
+``` {r}
+ggplot(df_all_blockwise_q2_binned_data, aes(x = acc_category, y = avg_rt, color = cue_type, group = cue_type)) +
+  geom_point(alpha = 0.1, position = position_jitter(0.4)) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    size = 1
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    size = 3
+  ) +
+  stat_summary(
+    fun.data = mean_se,
+    geom = "errorbar",
+    width = 0.2
+  ) +
+  scale_color_manual(values = c("#0097DF", "#E99746"),
+                    labels = c("Stay", "Switch")) +
+  labs(x = "Average Previous Epoch Accuracy",
+       y = "Average Following RT",
+       color = "Trial Type") +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10) 
+  )+
+  ggtitle("Effect of task switching on RT depending on prior performance", 
+          "Not accounting for individual subject RT differences")
+
+
+
+#### accounting for subject differences
+df_all_blockwise_q2_binned_data_rt <- df_all_blockwise_q2_binned_data %>%
+  group_by(subj_id) %>%
+  mutate(scale_rt = scale(avg_rt)) %>%
+  ungroup()
+
+ggplot(df_all_blockwise_q2_binned_data_rt, aes(x = acc_category, y = scale_rt, color = cue_type, group = cue_type)) +
+  geom_point(alpha = 0.1, position = position_jitter(0.4)) +
+  stat_summary(
+    fun = mean,
+    geom = "line",
+    size = 1
+  ) +
+  stat_summary(
+    fun = mean,
+    geom = "point",
+    size = 3
+  ) +
+  stat_summary(
+    fun.data = mean_se,
+    geom = "errorbar",
+    width = 0.2
+  ) +
+  scale_color_manual(values = c("#0097DF", "#E99746"),
+                    labels = c("Stay", "Switch")) +
+  labs(x = "Average Previous Epoch Accuracy",
+       y = "Average Following RT",
+       color = "Trial Type") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.2)) +
+  theme_classic() +
+  theme(
+    legend.position = "top",
+    axis.text = element_text(size = 10),
+    axis.title = element_text(size = 12),
+    legend.title = element_text(size = 12),
+    legend.text = element_text(size = 10) 
+  )+
+  ggtitle("Effect of task switching on RT depending on prior performance", 
+          "RT scaled per subject")
+```

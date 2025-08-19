@@ -382,14 +382,13 @@ mixed_model_rest <- glmer.nb(num_rest_in_chunk ~ group_num + acc_category*cue_ty
 
 emm_rest <- emmeans(mixed_model_rest, ~ cue_type | acc_category)
 
-# Get the simple pairwise comparisons within each accuracy category
+# Get the pairwise comparisons within each accuracy category
 simple_contrasts <- pairs(emm_rest)
 print("Simple contrasts (effect of cue type within each accuracy category):")
 print(simple_contrasts)
 
-# For the interaction contrasts, we need to test whether the switch-stay difference
-# differs between accuracy categories
-# First, create an object that represents the switch-stay difference at each accuracy level
+# test whether the switch-stay difference differs between accuracy categories
+# create an object that represents the switch-stay difference at each accuracy level
 switch_vs_stay <- list(diff = c(-1, 1))  # contrast coefficients for switch minus stay
 diff_by_acc <- emmeans(mixed_model_rest, ~ cue_type | acc_category, contr = switch_vs_stay)
 print("Switch minus Stay effect for each accuracy category:")
