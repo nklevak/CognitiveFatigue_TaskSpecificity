@@ -775,3 +775,303 @@ ggplot(df_all_blockwise_q2_binned_data_rt, aes(x = acc_category, y = scale_rt, c
   ggtitle("Effect of task switching on RT depending on prior performance", 
           "RT scaled per subject")
 ```
+
+
+# POST-HOC POWER ANALYSIS FOR FUTURE REPLICATION
+``` {r}
+library(simr)
+```
+
+``` {r}
+model_data_seq <- model_data_q2
+model_data_seq$seq_id <- as.numeric(factor(model_data_q2$subj_id))
+
+set.seed(999)
+
+# Fit the pilot model
+# simplified by removing game_type
+gmq2 <- glmer(cbind(next_block_successes, next_block_failures) ~ 
+                avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1|seq_id),
+              family = binomial,
+              data = model_data_seq)
+
+# effect size and create the model for power analysis
+effect_to_detect <- 0.1
+model_for_power <- gmq2
+fixef(model_for_power)["avg_block_accuracy:cue_typeswitch"] <- effect_to_detect
+
+breaks <- seq(5, 105, 10)
+nsim <- 1000
+
+power_results <- list()
+
+# sample size
+for (i in 1:length(breaks)) {
+  
+  n_current <- breaks[i]
+  cat(paste0("(", i, "/", length(breaks), ") Running for N = ", n_current, "\n")) # Progress indicator
+  
+  # Extend the model to the current sample size
+  temp_model <- extend(model_for_power, along = "seq_id", n = n_current)
+  
+  # Run the power simulation for this specific size
+  sim_result <- powerSim(temp_model, 
+                         test = fixed("avg_block_accuracy:cue_typeswitch", "z"), 
+                         nsim = nsim)
+  
+  # Store the result
+  power_results[[i]] <- sim_result
+}
+
+power_df <- data.frame(
+  n = breaks,
+  power = numeric(length(breaks)),
+  lower = numeric(length(breaks)),
+  upper = numeric(length(breaks))
+)
+
+for (i in 1:length(power_results)) {
+  
+  res <- power_results[[i]]
+  
+  # Number of significant results (from the p-values)
+  num_significant <- as.integer(sum(res$pval < res$alpha, na.rm = TRUE))
+  
+  # Total number of attempts (the `nsim` you requested)
+  total_attempts <- res$n
+  
+  # Calculate power: significant results / total attempts
+  if (total_attempts > 0) {
+    power_df$power[i] <- num_significant / total_attempts
+  } else {
+    power_df$power[i] <- NA
+  }
+  
+  # Calculate the confidence interval using the same logic
+  if (total_attempts > 0) {
+    ci <- binom.test(num_significant, total_attempts)$conf.int
+    power_df$lower[i] <- ci[1]
+    power_df$upper[i] <- ci[2]
+  } else {
+    power_df$lower[i] <- NA
+    power_df$upper[i] <- NA
+  }
+}
+print("Final, Corrected Data Frame:")
+print(power_df)
+
+ggplot(power_df, aes(x = n, y = power)) +
+  geom_point(size = 3) +
+  geom_line() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 10, linewidth = 0.8) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "red") +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(
+    x = "Number of participants",
+    y = "Power",
+    title = "Power Curve with Convergence Failures",
+    subtitle = "Q2: performance ~ avg_block_accuracy:cue_typeswitch"
+  ) +
+  theme_minimal(base_size = 14)
+```
+
+
+``` {r}
+# do power analysis for Q1
+
+# Best Model before: same as before but also spatial recall is a sig. neg predictor (if it was spatial recall you rest less)
+# fit.mixed_5_nb <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+#                           data = model_data)
+model_data_seq <- model_data
+model_data_seq$seq_id <- as.numeric(factor(model_data$subj_id))
+
+# Verify the new ID
+range(model_data_seq$seq_id)
+length(unique(model_data_seq$seq_id))
+
+set.seed(999)
+
+gmq1 <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|seq_id),
+                 data = model_data_seq)
+model_for_power <- gmq1
+
+# sample sizes
+breaks <- seq(50, 300, 50)
+nsim <- 1000 # Use 100 for testing, 1000 for final results
+
+power_results <- list()
+# Loop through each sample size
+for (i in 1:length(breaks)) {
+  
+  n_current <- breaks[i]
+  cat(paste0("(", i, "/", length(breaks), ") Running for N = ", n_current, "\n")) # Progress indicator
+  
+  # Extend the model to the current sample size
+  temp_model <- extend(model_for_power, along = "seq_id", n = n_current)
+  
+  # Run the power simulation for this specific size
+  sim_result <- powerSim(temp_model, 
+                         test = fixed("avg_block_accuracy", "z"), 
+                         nsim = nsim)
+  
+  # Store the result
+  power_results[[i]] <- sim_result
+}
+
+power_df <- data.frame(
+  n = breaks,
+  power = numeric(length(breaks)),
+  lower = numeric(length(breaks)),
+  upper = numeric(length(breaks))
+)
+
+# 2. Loop through each result and fill the data frame
+for (i in 1:length(power_results)) {
+  
+  res <- power_results[[i]]
+  
+  # Number of significant results (from the p-values)
+  num_significant <- as.integer(sum(res$pval < res$alpha, na.rm = TRUE))
+  
+  # Total number of attempts (the `nsim` you requested)
+  total_attempts <- res$n
+  
+  # Calculate power: significant results / total attempts
+  if (total_attempts > 0) {
+    power_df$power[i] <- num_significant / total_attempts
+  } else {
+    power_df$power[i] <- NA
+  }
+  
+  # Calculate the confidence interval using the same logic
+  if (total_attempts > 0) {
+    ci <- binom.test(num_significant, total_attempts)$conf.int
+    power_df$lower[i] <- ci[1]
+    power_df$upper[i] <- ci[2]
+  } else {
+    power_df$lower[i] <- NA
+    power_df$upper[i] <- NA
+  }
+}
+
+print("Final, Corrected Data Frame:")
+print(power_df)
+
+ggplot(power_df, aes(x = n, y = power)) +
+  geom_point(size = 3) +
+  geom_line() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 10, linewidth = 0.8) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "red") +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(
+    x = "Number of participants",
+    y = "Power",
+    title = "Power Curve by Sample Size",
+    subtitle = "Q1: rest amount ~ avg_block_accuracy"
+  ) +
+  theme_minimal(base_size = 14)
+```
+
+
+``` {r}
+# do power analysis for Q3
+
+# Best Model before: same as before but also spatial recall is a sig. neg predictor (if it was spatial recall you rest less)
+# fit.mixed_5_nb <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|subj_id),
+#                           data = model_data)
+model_data_seq <- model_data
+model_data_seq$seq_id <- as.numeric(factor(model_data$subj_id))
+
+# Verify the new ID
+range(model_data_seq$seq_id)
+length(unique(model_data_seq$seq_id))
+
+set.seed(999)
+
+gmq3 <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy*cue_type + gameA_isSR + game_type + (1|seq_id),
+                 data = model_data_seq)
+model_for_power <- gmq3
+
+# sample sizes
+breaks <- seq(50, 300, 50)
+nsim <- 1000
+
+# 4. Create an empty list to store the results
+power_results <- list()
+
+# Loop through each sample size and get the power at that size (since powerCurve isnt working for some reason)
+for (i in 1:length(breaks)) {
+  
+  n_current <- breaks[i]
+  cat(paste0("(", i, "/", length(breaks), ") Running for N = ", n_current, "\n"))
+  
+  # Extend the model to the current sample size
+  temp_model <- extend(model_for_power, along = "seq_id", n = n_current)
+  
+  # Run the power simulation for this specific size
+  sim_result <- powerSim(temp_model, 
+                         test = fixed("avg_block_accuracy:cue_typeswitch", "z"), 
+                         nsim = nsim)
+  
+  # Store the result
+  power_results[[i]] <- sim_result
+}
+power_results
+
+print(power_results)
+
+str(power_results[[1]])
+
+# 6. Combine and plot the results
+power_df <- data.frame(
+  n = breaks,
+  power = numeric(length(breaks)),
+  lower = numeric(length(breaks)),
+  upper = numeric(length(breaks))
+)
+
+# 2. Loop through each result and fill the data frame
+for (i in 1:length(power_results)) {
+  
+  res <- power_results[[i]]
+  
+  # Number of significant results (from the p-values)
+  num_significant <- as.integer(sum(res$pval < res$alpha, na.rm = TRUE))
+  
+  # Total number of attempts (the `nsim` you requested)
+  total_attempts <- res$n
+  
+  # Calculate power: significant results / total attempts
+  if (total_attempts > 0) {
+    power_df$power[i] <- num_significant / total_attempts
+  } else {
+    power_df$power[i] <- NA
+  }
+  
+  # Calculate the confidence interval using the same logic
+  if (total_attempts > 0) {
+    ci <- binom.test(num_significant, total_attempts)$conf.int
+    power_df$lower[i] <- ci[1]
+    power_df$upper[i] <- ci[2]
+  } else {
+    power_df$lower[i] <- NA
+    power_df$upper[i] <- NA
+  }
+}
+
+
+# plot
+ggplot(power_df, aes(x = n, y = power)) +
+  geom_point(size = 3) +
+  geom_line() +
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 10, linewidth = 0.8) +
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "red") +
+  scale_y_continuous(labels = scales::percent, limits = c(0, 1)) +
+  labs(
+    x = "Number of participants",
+    y = "Power",
+    title = "Power Curve by Sample Size",
+    subtitle = "Q3: rest amount ~ avg_block_accuracy:cue_typeswitch"
+  ) +
+  theme_minimal(base_size = 14)
+```
