@@ -790,10 +790,15 @@ set.seed(999)
 
 # Fit the pilot model
 # simplified by removing game_type
-gmq2 <- glmer(cbind(next_block_successes, next_block_failures) ~ 
-                avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1|seq_id),
-              family = binomial,
-              data = model_data_seq)
+# gmq2 <- glmer(cbind(next_block_successes, next_block_failures) ~ 
+#                 avg_block_accuracy*cue_type + game_type + group_num + gameA_isSR + (1|seq_id),
+#               family = binomial,
+#               data = model_data_seq)
+
+# SUPER SIMPLE MODEL:
+gmq2 <- glmer(cbind(next_block_successes, next_block_failures) ~ avg_block_accuracy*cue_type + num_rest_in_chunk + (1|seq_id),
+               family = binomial,
+               data = model_data_seq)
 
 # effect size and create the model for power analysis
 effect_to_detect <- 0.1
@@ -1074,4 +1079,90 @@ ggplot(power_df, aes(x = n, y = power)) +
     subtitle = "Q3: rest amount ~ avg_block_accuracy:cue_typeswitch"
   ) +
   theme_minimal(base_size = 14)
+```
+# POST-HOC RT ANALYSIS
+Deciding what exclusion criteria to use for the next study regarding reaction time for spatial recall or digit span
+``` {r post_hoc_rt}
+glimpse(df_all)
+
+rt_post_hoc <- df_all %>%
+  select(-gameA_name, -gameA_isSR, -sequence, -trial_type, -follows_group_num, -follows_internal_block_num, -type_desc)
+rt_post_hoc
+
+# some of the digit spans slightly longer than 4200 ms got through
+# rt_post_hoc %>%
+#   filter(rt >= 4200 & response != "null" & response != "[]") %>%
+#   print()
+
+options(repr.plot.width = 18, repr.plot.height = 8)
+rt_post_hoc %>%
+  filter(timed_out == FALSE, game_type != "rest_task") %>%
+  ggplot(mapping = aes(y = rt, color = subj_id, group=subj_id)) +
+  geom_boxplot(outlier.colour = "black", outlier.shape = 16,
+               outlier.size = 0.5) +
+  facet_wrap(~ game_type) +
+  labs(title="distribution of rt per subject per game type (excluding time outs)")
+
+rt_post_hoc %>%
+  filter(timed_out == FALSE, game_type != "rest_task") %>%
+  ggplot(mapping = aes(x=game_type, y = rt, color = game_type)) +
+  geom_boxplot(outlier.colour = "black", outlier.shape = 16,
+               outlier.size = 0.5) +
+  labs(title="distribution of rt across all subjects per game type (excluding time outs)")
+
+#######################################################
+# looking at summary stats to decide on exclusion critera for next rep
+# Calculate summary statistics for correct trials
+rt_summary_correct <- rt_post_hoc %>%
+  filter(timed_out == FALSE, game_type != "rest_task", is_correct_numeric == 1) %>%
+  group_by(subj_id, game_type) %>%
+  summarise(
+    mean_rt = mean(rt, na.rm = TRUE),
+    median_rt = median(rt, na.rm = TRUE),
+    q25 = quantile(rt, 0.25, na.rm = TRUE),
+    q75 = quantile(rt, 0.75, na.rm = TRUE),
+    min_rt = min(rt, na.rm = TRUE),
+    max_rt = max(rt, na.rm = TRUE),
+    sd_rt = sd(rt, na.rm = TRUE),
+    n_trials = n(),
+    .groups = 'drop'
+  )
+# View the summary table
+print(rt_summary_correct)
+
+rt_summary_correct %>%
+  ungroup() %>%
+  ggplot(mapping = aes(x=game_type, y=median_rt, group=game_type, color=game_type)) + 
+  geom_boxplot(outlier.colour = "black", outlier.shape = 16,
+               outlier.size = 0.5) + 
+  geom_point(position = position_jitter(0.1,0), alpha = 0.2) +
+  ylim(0, max(rt_summary$median_rt, na.rm = TRUE)) +
+  labs(title="distribution of median reaction time of each subject for correct trials, per game type (excluding time outs)")
+
+
+# DECISION: base future exclusion criteria per game type on 1) median RT of a subject being below the 5th percentile of median RT in this sample and 2) the sd of reaction time being below the 5th percentile of RT sd in this sample
+# Calculate RT thresholds by game type
+rt_thresholds <- rt_summary_correct %>%
+  group_by(game_type) %>%
+  summarise(
+    p5_median_rt = quantile(median_rt, 0.05, na.rm = TRUE),
+    p5_sd_rt = quantile(sd_rt, 0.05, na.rm = TRUE),
+    .groups = 'drop'
+  )
+print(rt_thresholds)
+
+# see how it would affect this sample: 
+suspicious_subjects <- rt_summary_correct %>%
+  mutate(
+    too_fast = median_rt < quantile(median_rt, 0.05, na.rm = TRUE),
+    too_consistent = sd_rt < quantile(sd_rt, 0.05, na.rm = TRUE),
+  ) %>%
+  group_by(subj_id) %>%
+  summarise(
+    n_too_fast = sum(too_fast, na.rm = TRUE),
+    n_too_consistent = sum(too_consistent, na.rm = TRUE)
+  ) %>%
+  filter(n_too_fast > 0 & n_too_consistent > 0)
+suspicious_subjects
+
 ```
