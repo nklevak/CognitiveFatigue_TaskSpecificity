@@ -1166,3 +1166,12 @@ suspicious_subjects <- rt_summary_correct %>%
 suspicious_subjects
 
 ```
+
+
+
+# looking into model details
+
+``` {r}
+# look into the details of the model
+
+```
