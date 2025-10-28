@@ -95,10 +95,17 @@ df_all_blockwise <- df_all %>%
     game_type = first(game_type),
     .groups = 'drop'
   ) %>%
+#   left_join(rest_info, by = c("subj_id","block_num"))%>%
+#   mutate(cue_transition_type = case_when(
+#   rest_type %in% c("group_A_A", "group_B_B") ~ "stay_within_block",
+#   rest_type == "block_same_same" ~ "stay_between_block",
+#   rest_type %in% c("group_A_B", "group_B_A") ~ "switch_between_block",
+#   TRUE ~ NA_character_  # catch unexpected values
+# )) %>%
   left_join(rest_info, by = c("subj_id","block_num"))%>%
   mutate(cue_transition_type = case_when(
-  rest_type %in% c("group_A_A", "group_B_B") ~ "stay_within_block",
-  rest_type == "block_same_same" ~ "stay_between_block",
+  rest_type %in% c("group_A_A", "group_B_B") ~ "stay_between_block",
+  rest_type == "block_same_same" ~ "stay_within_block",
   rest_type %in% c("group_A_B", "group_B_A") ~ "switch_between_block",
   TRUE ~ NA_character_  # catch unexpected values
 )) %>%
@@ -227,7 +234,14 @@ vif(factor_mixed_6_nb_centered) # good vif
 check_model(factor_mixed_6_nb_centered) # weird check_model output
 check_overdispersion(factor_mixed_6_nb_centered)
 ```
+``` {r}
+# Model 6: acc centered
+factor_mixed_6_nb_centered <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy_centered*cue_transition_type + gameA_isSR + game_type + (1|subj_id),
+                          data = model_data_q1q3)
 
+factor_mixed_2_nb_centered <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy_centered + gameA_isSR + game_type + (1+game_type|subj_id),
+                          data = model_data_q1q3)
+```
 
 ``` {r}
 summary(factor_mixed_6_nb_centered)
@@ -235,8 +249,11 @@ report(factor_mixed_6_nb_centered)
 
 best_model_q1q3_factor <- factor_mixed_6_nb_centered
 report(best_model_q1q3_factor)
-```
 
+
+best_model_q1 <- factor_mixed_2_nb_centered
+report(best_model_q1)
+```
 
 ``` {r rest_cue_mixed_models_negbin_cuetype}
 # MODELS USING THE CUE TYPE
@@ -740,6 +757,8 @@ df_all_blockwise %>%
     plot.title = element_text(size = 16)
   )
 ```
+
+
 # Q2
 ``` {r data_loading}
 df_all_blockwise_q2 <- df_all_blockwise %>%
@@ -1452,34 +1471,36 @@ gmq2_extended <- extend(gmq2, along = "seq_id", n = 200)
 
 
 ############################################
+# gmq2_model_interaction <- gmq2_extended
 gmq2_model_interaction <- gmq2_extended
-fixef(gmq2_model_interaction)["avg_block_accuracy_centered:cue_transition_typeswitch_between_block"] <- -0.05 # conservative estimate of effect (slightly less than half of actual effect that we found which was beta = -2.59)
+fixef(gmq2_model_interaction)["avg_block_accuracy_centered:cue_transition_typeswitch_between_block"] <- -0.5 # conservative estimate of effect (slightly less than half of actual effect that we found which was beta = -2.59)
 
 #Run power curve to find sample size for 80% power
 q2_pc_interaction <- powerCurve(gmq2_model_interaction,
                         test = fixed("avg_block_accuracy_centered:cue_transition_typeswitch_between_block"),
                         along = "seq_id",
                         breaks = c(3,5,10,15,20,30),  # start at current N
-                        nsim = 1000)  # higher nsim for better precision
+                        nsim = 100)  # higher nsim for better precision
 
 print(q2_pc_interaction)
 plot(q2_pc_interaction)
-title("Q2: Power Curve: Accuracy × Switch Between Block Interaction (beta = -1)",cex.main = 1)
+title("Q2: Power Curve: Accuracy × Switch Between Block Interaction (beta = -0.05)",cex.main = 1)
 ```
 
 ``` {r}
 ############################
 gmq2_model_main <- gmq2_extended
-# keep same effect size as we found which was beta = -0.1
+# gmq2_model_main <- gmq2
+# keep same effect size as we found which was beta = -0.19
 
 #Run power curve to find sample size for 80% power
 q2_pc_switch <- powerCurve(gmq2_model_main,
                         test = fixed("cue_transition_typeswitch_between_block"),
                         along = "seq_id",
                         breaks = c(5,10,25,50,75,100),
-                        nsim = 500)  # higher nsim for better precision
+                        nsim = 200)  # higher nsim for better precision
 plot(q2_pc_switch)
-title("Q2: Power Curve: Switch Between-Block Main Effect (β = -0.1)", cex.main = 1)
+title("Q2: Power Curve: Switch Between-Block Main Effect (β = -0.19)", cex.main = 1)
 print(q2_pc_switch)
 
 ```
@@ -1492,23 +1513,23 @@ model_data_seq_q1q3$seq_id <- as.numeric(factor(model_data_q1q3$subj_id))
 
 set.seed(999)
 
-gmq1 <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy_centered*cue_transition_type + gameA_isSR + game_type + (1|seq_id),
+gmq1 <- glmer.nb(num_rest_in_chunk ~ group_num + avg_block_accuracy_centered + gameA_isSR + game_type + (1+game_type|seq_id),
                           data = model_data_seq_q1q3)
-gmq1_extended <- extend(gmq1, along = "seq_id", n = 200)
-# summary(gmq1)
+gmq1_extended <- extend(gmq1, along = "seq_id", n = 150)
+summary(gmq1_extended)
 
 gmq1_model_main <- gmq1_extended
-# fixef(gmq1_model_main)["avg_block_accuracy_centered"] <- -0.235 * 0.5 # use half to be conservative
-#observed effect size of avg_block_accuracy_centered is (β = -0.235)
+# fixef(gmq1_model_main)["avg_block_accuracy_centered"] <- -0.289980 * 0.5 # use half to be conservative
+#observed effect size of avg_block_accuracy_centered is (β = -0.289)
   
 # Run power curve to find sample size for 80% power
 pc_acc <- powerCurve(gmq1_model_main,
                         test = fixed("avg_block_accuracy_centered"),
                         along = "seq_id",
-                        breaks = c(84, 100,105, 110, 125),  # start at current N
-                        nsim = 500)  # higher nsim for better precision
+                        breaks = c(50,60,70,75,80,84),
+                        nsim = 200)  # higher nsim for better precision
 plot(pc_acc)
-title("Q1: Power Curve: Avg Block Accuracy Main Effect (β = -0.235)", cex.main = 1)
+title("Q1: Power Curve: Avg Block Accuracy Main Effect (β = -0.289)", cex.main = 1)
 print(pc_acc)
 ```
 
@@ -1526,15 +1547,15 @@ gmq3_extended <- extend(gmq3, along = "seq_id", n = 200)
 # summary(gmq3)
 
 gmq3_model_main <- gmq3_extended
-# fixef(gmq3_model_main)["avg_block_accuracy_centered:cue_transition_typeswitch_between_block"] <- -0.226020 * 0.5 # use half to be conservative
+# fixef(gmq3_model_main)["avg_block_accuracy_centered:cue_transition_typeswitch_between_block"] <- -0.661285 * 0.5 # use half to be conservative
 
 pc_q3_interaction <- powerCurve(gmq3_model_main,
                         test = fixed("avg_block_accuracy_centered:cue_transition_typeswitch_between_block"),
                         along = "seq_id",
-                        breaks = c(84, 100, 115, 130, 150, 170),  # start at current N
-                        nsim = 500)  # higher nsim for better precision
+                        breaks = c(20,40,60,84,100, 115, 130, 150, 170),
+                        nsim = 200)  # higher nsim for better precision
 plot(pc_q3_interaction)
-title("Q3: Power Curve: Avg Block Accuracy x Switch Interaction Effect (β = -0.226020)",cex.main = 1)
+title("Q3: Power Curve: Avg Block Accuracy x Switch Interaction Effect (β = -0.661285)",cex.main = 1)
 print(pc_q3_interaction)
 ```
 # POST-HOC RT ANALYSIS
